@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">TD</div>
+      <h1 class="header-title">Team Dashboard</h1>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-tab="overview">概要</button>
+      <button class="nav-btn" data-tab="sales">営業</button>
+      <button class="nav-btn" data-tab="admin">管理</button>
+    </nav>
+  </header>
+
+  <main class="main">
+    <!-- ===== 概要ページ ===== -->
+    <section id="page-overview" class="page active">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">今期売上合計</span>
+          <span class="kpi-value" id="kpi-total-sales">--</span>
+          <span class="kpi-sub" id="kpi-total-sales-sub"></span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">目標達成率</span>
+          <span class="kpi-value" id="kpi-achievement">--</span>
+          <div class="kpi-progress"><div class="kpi-progress-bar" id="kpi-achievement-bar"></div></div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">案件数</span>
+          <span class="kpi-value" id="kpi-deals">--</span>
+          <span class="kpi-sub">パイプライン合計</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">成約率</span>
+          <span class="kpi-value" id="kpi-close-rate">--</span>
+          <span class="kpi-sub">商談 → 成約</span>
+        </div>
+      </div>
+      <div class="card chart-card">
+        <h2 class="card-title">月次売上推移</h2>
+        <div class="chart-container">
+          <canvas id="chart-monthly"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 営業ページ ===== -->
+    <section id="page-sales" class="page">
+      <!-- 売上・目標・達成率 -->
+      <h2 class="section-title">売上・目標・達成率</h2>
+      <div class="kpi-grid kpi-grid-3">
+        <div class="kpi-card accent-blue">
+          <span class="kpi-label">今月売上</span>
+          <span class="kpi-value" id="kpi-current-sales">--</span>
+        </div>
+        <div class="kpi-card accent-purple">
+          <span class="kpi-label">今月目標</span>
+          <span class="kpi-value" id="kpi-current-target">--</span>
+        </div>
+        <div class="kpi-card" id="kpi-current-rate-card">
+          <span class="kpi-label">達成率</span>
+          <span class="kpi-value" id="kpi-current-rate">--</span>
+          <div class="kpi-progress"><div class="kpi-progress-bar" id="kpi-current-rate-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- パイプライン -->
+      <h2 class="section-title">案件パイプライン</h2>
+      <div class="card">
+        <div class="funnel" id="funnel-container"></div>
+      </div>
+
+      <!-- 担当者別 -->
+      <h2 class="section-title">担当者別成績</h2>
+      <div class="two-col">
+        <div class="card chart-card">
+          <h3 class="card-title">売上ランキング</h3>
+          <div class="chart-container chart-container-h">
+            <canvas id="chart-members"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">成績一覧</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="table-members">
+              <thead>
+                <tr><th>担当者</th><th>役職</th><th>売上</th><th>目標</th><th>達成率</th><th>件数</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 管理ページ ===== -->
+    <section id="page-admin" class="page">
+      <h2 class="section-title">チームメンバー</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="table-team">
+            <thead>
+              <tr><th>名前</th><th>役職</th><th>メール</th><th>電話</th><th>ステータス</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2 class="section-title">お知らせ</h2>
+      <div class="announcements" id="announcements-list"></div>
+    </section>
+  </main>
+
+  <script src="data/sample-data.js"></script>
+  <script src="js/sheets-api.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
