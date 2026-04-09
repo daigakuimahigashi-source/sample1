@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Team Dashboard</title>
+  <title>焼肉店 売上管理ダッシュボード</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -13,113 +13,211 @@
   <!-- Header -->
   <header class="header">
     <div class="header-left">
-      <div class="logo">TD</div>
-      <h1 class="header-title">Team Dashboard</h1>
+      <div class="logo">🥩</div>
+      <h1 class="header-title">焼肉店 売上管理</h1>
     </div>
     <nav class="nav">
-      <button class="nav-btn active" data-tab="overview">概要</button>
-      <button class="nav-btn" data-tab="sales">営業</button>
+      <button class="nav-btn active" data-tab="overview">ダッシュボード</button>
+      <button class="nav-btn" data-tab="stores">店舗別</button>
       <button class="nav-btn" data-tab="admin">管理</button>
     </nav>
+    <div class="header-right">
+      <input type="date" id="date-picker" class="date-picker" />
+    </div>
   </header>
 
   <main class="main">
-    <!-- ===== 概要ページ ===== -->
+    <!-- ===== ダッシュボードタブ ===== -->
     <section id="page-overview" class="page active">
+      <h2 class="section-title"><span class="icon">📊</span>本日の全店 KPI</h2>
       <div class="kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-label">今期売上合計</span>
-          <span class="kpi-value" id="kpi-total-sales">--</span>
-          <span class="kpi-sub" id="kpi-total-sales-sub"></span>
+        <div class="kpi-card accent-red">
+          <span class="kpi-label">本日売上</span>
+          <span class="kpi-value" id="kpi-sales">--</span>
+          <span class="kpi-sub" id="kpi-sales-diff">前日比 --</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">目標達成率</span>
-          <span class="kpi-value" id="kpi-achievement">--</span>
-          <div class="kpi-progress"><div class="kpi-progress-bar" id="kpi-achievement-bar"></div></div>
+        <div class="kpi-card accent-orange">
+          <span class="kpi-label">F（食材原価）</span>
+          <span class="kpi-value" id="kpi-f">--</span>
+          <span class="kpi-sub" id="kpi-f-rate">--%</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">案件数</span>
-          <span class="kpi-value" id="kpi-deals">--</span>
-          <span class="kpi-sub">パイプライン合計</span>
+        <div class="kpi-card accent-brown">
+          <span class="kpi-label">L（人件費）</span>
+          <span class="kpi-value" id="kpi-l">--</span>
+          <span class="kpi-sub" id="kpi-l-rate">--%</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">成約率</span>
-          <span class="kpi-value" id="kpi-close-rate">--</span>
-          <span class="kpi-sub">商談 → 成約</span>
+        <div class="kpi-card accent-purple">
+          <span class="kpi-label">FL合計比率</span>
+          <span class="kpi-value" id="kpi-fl-rate">--</span>
+          <span class="kpi-sub" id="kpi-fl-diff">目標比 --</span>
+        </div>
+        <div class="kpi-card accent-green">
+          <span class="kpi-label">FL引き後利益</span>
+          <span class="kpi-value" id="kpi-fl-profit">--</span>
+          <span class="kpi-sub" id="kpi-fl-profit-rate">--%</span>
+        </div>
+        <div class="kpi-card accent-green">
+          <span class="kpi-label">営業利益（Daily）</span>
+          <span class="kpi-value" id="kpi-op-profit">--</span>
+          <span class="kpi-sub" id="kpi-op-profit-rate">--%</span>
         </div>
       </div>
+
+      <h2 class="section-title"><span class="icon">📈</span>直近30日の売上 × FL引き後利益</h2>
       <div class="card chart-card">
-        <h2 class="card-title">月次売上推移</h2>
         <div class="chart-container">
-          <canvas id="chart-monthly"></canvas>
+          <canvas id="chart-daily-sales"></canvas>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="card chart-card">
+          <h3 class="card-title">本日の店舗別売上ランキング</h3>
+          <div class="chart-container chart-container-h">
+            <canvas id="chart-store-ranking"></canvas>
+          </div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="card-title">直近14日 F率・L率推移（全店）</h3>
+          <div class="chart-container chart-container-h">
+            <canvas id="chart-fl-trend"></canvas>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== 営業ページ ===== -->
-    <section id="page-sales" class="page">
-      <!-- 売上・目標・達成率 -->
-      <h2 class="section-title">売上・目標・達成率</h2>
-      <div class="kpi-grid kpi-grid-3">
-        <div class="kpi-card accent-blue">
-          <span class="kpi-label">今月売上</span>
-          <span class="kpi-value" id="kpi-current-sales">--</span>
+    <!-- ===== 店舗別タブ ===== -->
+    <section id="page-stores" class="page">
+      <h2 class="section-title"><span class="icon">🏪</span>店舗を選択</h2>
+      <div class="store-chips" id="store-chips"></div>
+
+      <h3 class="section-title"><span class="icon">📌</span><span id="store-title">--</span> の本日実績</h3>
+      <div class="kpi-grid kpi-grid-5">
+        <div class="kpi-card accent-red">
+          <span class="kpi-label">売上</span>
+          <span class="kpi-value" id="store-sales">--</span>
+          <span class="kpi-sub" id="store-customers">-- 組</span>
         </div>
-        <div class="kpi-card accent-purple">
-          <span class="kpi-label">今月目標</span>
-          <span class="kpi-value" id="kpi-current-target">--</span>
+        <div class="kpi-card accent-orange">
+          <span class="kpi-label">F（原価）</span>
+          <span class="kpi-value" id="store-f">--</span>
+          <span class="kpi-sub" id="store-f-rate">--%</span>
+          <div class="kpi-progress"><div class="kpi-progress-bar" id="store-f-bar"></div></div>
         </div>
-        <div class="kpi-card" id="kpi-current-rate-card">
-          <span class="kpi-label">達成率</span>
-          <span class="kpi-value" id="kpi-current-rate">--</span>
-          <div class="kpi-progress"><div class="kpi-progress-bar" id="kpi-current-rate-bar"></div></div>
+        <div class="kpi-card accent-brown">
+          <span class="kpi-label">L（人件費）</span>
+          <span class="kpi-value" id="store-l">--</span>
+          <span class="kpi-sub" id="store-l-rate">--%</span>
+          <div class="kpi-progress"><div class="kpi-progress-bar" id="store-l-bar"></div></div>
+        </div>
+        <div class="kpi-card accent-green">
+          <span class="kpi-label">FL引き後利益</span>
+          <span class="kpi-value" id="store-fl-profit">--</span>
+          <span class="kpi-sub" id="store-fl-profit-rate">--%</span>
+        </div>
+        <div class="kpi-card accent-green">
+          <span class="kpi-label">営業利益</span>
+          <span class="kpi-value" id="store-op-profit">--</span>
+          <span class="kpi-sub" id="store-op-profit-rate">--%</span>
         </div>
       </div>
 
-      <!-- パイプライン -->
-      <h2 class="section-title">案件パイプライン</h2>
-      <div class="card">
-        <div class="funnel" id="funnel-container"></div>
-      </div>
-
-      <!-- 担当者別 -->
-      <h2 class="section-title">担当者別成績</h2>
-      <div class="two-col">
+      <div class="two-col" style="margin-top:1rem;">
         <div class="card chart-card">
-          <h3 class="card-title">売上ランキング</h3>
-          <div class="chart-container chart-container-h">
-            <canvas id="chart-members"></canvas>
+          <h3 class="card-title">直近14日の売上＆利益</h3>
+          <div class="chart-container chart-container-sm">
+            <canvas id="chart-store-daily"></canvas>
           </div>
         </div>
         <div class="card">
-          <h3 class="card-title">成績一覧</h3>
-          <div class="table-wrap">
-            <table class="data-table" id="table-members">
-              <thead>
-                <tr><th>担当者</th><th>役職</th><th>売上</th><th>目標</th><th>達成率</th><th>件数</th></tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+          <h3 class="card-title">目標FL比率との比較</h3>
+          <div id="store-target-info"></div>
+        </div>
+      </div>
+
+      <h3 class="section-title"><span class="icon">📋</span>直近14日の日次明細</h3>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="table-store-detail">
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th class="num">売上</th>
+                <th class="num">F（原価）</th>
+                <th class="num">F率</th>
+                <th class="num">L（人件費）</th>
+                <th class="num">L率</th>
+                <th class="num">FL率</th>
+                <th class="num">FL引き後利益</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    <!-- ===== 管理ページ ===== -->
+    <!-- ===== 管理タブ ===== -->
     <section id="page-admin" class="page">
-      <h2 class="section-title">チームメンバー</h2>
+      <h2 class="section-title"><span class="icon">💰</span>月次PL（全店合算）</h2>
       <div class="card">
         <div class="table-wrap">
-          <table class="data-table" id="table-team">
+          <table class="data-table" id="table-monthly-pl">
             <thead>
-              <tr><th>名前</th><th>役職</th><th>メール</th><th>電話</th><th>ステータス</th></tr>
+              <tr>
+                <th>項目</th>
+                <th class="num">那覇松山店</th>
+                <th class="num">那覇久茂地店</th>
+                <th class="num">美栄橋店</th>
+                <th class="num">美里店</th>
+                <th class="num">一所懸命</th>
+                <th class="num">全店合計</th>
+              </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
       </div>
 
-      <h2 class="section-title">お知らせ</h2>
+      <h2 class="section-title"><span class="icon">🏠</span>固定費（家賃・光熱費）</h2>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="table-expenses">
+            <thead>
+              <tr>
+                <th>店舗</th>
+                <th class="num">家賃</th>
+                <th class="num">光熱費</th>
+                <th class="num">合計</th>
+                <th class="num">日割り</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2 class="section-title"><span class="icon">🔄</span>MF（マネーフォワード）突合</h2>
+      <div class="card">
+        <p class="card-subtitle">当システムの集計値と、MFクラウドの値を比較。差分が大きい項目は赤で表示されます。</p>
+        <div class="table-wrap">
+          <table class="data-table" id="table-mf">
+            <thead>
+              <tr>
+                <th>月</th>
+                <th>項目</th>
+                <th class="num">当システム</th>
+                <th class="num">MF値</th>
+                <th class="num">差分</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2 class="section-title"><span class="icon">📣</span>お知らせ</h2>
       <div class="announcements" id="announcements-list"></div>
     </section>
   </main>
