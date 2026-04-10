@@ -11,6 +11,7 @@
     selectedMonth: null,    // 'YYYY-MM'
     selectedYear: null,     // 'YYYY'
     selectedStoreId: null,
+    laborStoreId: 'ALL',    // 人件費タブの店舗フィルタ
   };
 
   // ===== ユーティリティ =====
@@ -213,9 +214,9 @@
 
   // ===== 期間ラベル（UI文言） =====
   const PERIOD_LABELS = {
-    day:   { kpiTitle: '本日の全店 KPI',        sales: '本日売上', prev: '前日比', trend: '直近30日の売上 × FL引き後利益', ranking: '本日の店舗別売上ランキング', fl: '直近14日 F率・L率推移（全店）', storePeriod: 'の本日実績', storeChart: '直近14日の売上＆利益', storeTable: '直近14日の日次明細', storeCol: '日付', adminPl: '月次PL（全店合算）', opLabel: '営業利益（Daily）' },
-    month: { kpiTitle: '今月の全店 KPI',        sales: '今月売上', prev: '前月比', trend: '直近12ヶ月の売上 × FL引き後利益', ranking: '今月の店舗別売上ランキング', fl: '直近12ヶ月 F率・L率推移（全店）', storePeriod: 'の今月実績', storeChart: '直近12ヶ月の売上＆利益', storeTable: '直近12ヶ月の月次明細', storeCol: '月',   adminPl: '月次PL（全店合算）',     opLabel: '営業利益（Monthly）' },
-    year:  { kpiTitle: '今年の全店 KPI',        sales: '今年売上', prev: '前年比', trend: '直近3年の売上 × FL引き後利益',    ranking: '今年の店舗別売上ランキング', fl: '直近3年 F率・L率推移（全店）',    storePeriod: 'の今年実績', storeChart: '直近3年の売上＆利益',   storeTable: '直近3年の年次明細',   storeCol: '年',   adminPl: '年次PL（全店合算）',     opLabel: '営業利益（Yearly）' },
+    day:   { kpiTitle: '本日の全店 KPI',        sales: '本日売上', prev: '前日比', trend: '直近30日の売上 × FL引き後利益', ranking: '本日の店舗別売上ランキング', fl: '直近14日 F率・L率推移（全店）', storePeriod: 'の本日実績', storeChart: '直近14日の売上＆利益', storeTable: '直近14日の日次明細', storeCol: '日付', opLabel: '営業利益（Daily）' },
+    month: { kpiTitle: '今月の全店 KPI',        sales: '今月売上', prev: '前月比', trend: '直近12ヶ月の売上 × FL引き後利益', ranking: '今月の店舗別売上ランキング', fl: '直近12ヶ月 F率・L率推移（全店）', storePeriod: 'の今月実績', storeChart: '直近12ヶ月の売上＆利益', storeTable: '直近12ヶ月の月次明細', storeCol: '月',   opLabel: '営業利益（Monthly）' },
+    year:  { kpiTitle: '今年の全店 KPI',        sales: '今年売上', prev: '前年比', trend: '直近3年の売上 × FL引き後利益',    ranking: '今年の店舗別売上ランキング', fl: '直近3年 F率・L率推移（全店）',    storePeriod: 'の今年実績', storeChart: '直近3年の売上＆利益',   storeTable: '直近3年の年次明細',   storeCol: '年',   opLabel: '営業利益（Yearly）' },
   };
 
   function rowKey(r) {
@@ -283,19 +284,34 @@
     });
   }
 
-  // ===== F・L明細トグル =====
+  // ===== トグル初期化 =====
   function initDetailToggle() {
+    // F・L明細トグル
     const btn = document.getElementById('detail-toggle');
     const table = document.getElementById('table-store-detail');
     const label = document.getElementById('detail-toggle-label');
-    if (!btn || !table) return;
-    btn.addEventListener('click', () => {
-      const open = !table.classList.contains('show-detail');
-      table.classList.toggle('show-detail', open);
-      btn.classList.toggle('active', open);
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      label.textContent = open ? 'F・L 明細を隠す' : 'F・L 明細を表示';
-    });
+    if (btn && table) {
+      btn.addEventListener('click', () => {
+        const open = !table.classList.contains('show-detail');
+        table.classList.toggle('show-detail', open);
+        btn.classList.toggle('active', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        label.textContent = open ? 'F・L 明細を隠す' : 'F・L 明細を表示';
+      });
+    }
+    // シフト明細トグル
+    const shiftBtn = document.getElementById('shift-toggle');
+    const shiftWrap = document.getElementById('shift-detail-wrap');
+    const shiftLabel = document.getElementById('shift-toggle-label');
+    if (shiftBtn && shiftWrap) {
+      shiftBtn.addEventListener('click', () => {
+        const open = shiftWrap.style.display === 'none';
+        shiftWrap.style.display = open ? '' : 'none';
+        shiftBtn.classList.toggle('active', open);
+        shiftBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        shiftLabel.textContent = open ? 'シフト明細を隠す' : 'シフト明細を表示';
+      });
+    }
   }
 
   // ===== タブ切り替え =====
@@ -498,102 +514,247 @@
     });
   }
 
-  // ===== 管理タブ =====
-  function renderAdmin() {
-    const L = PERIOD_LABELS[state.period];
+  // ===== 人件費管理タブ =====
+
+  /** シフトデータを期間・店舗でフィルタ */
+  function getShiftsForPeriod(storeId) {
+    const shifts = getData().dailyShifts;
+    let filtered;
+    if (state.period === 'year') {
+      filtered = shifts.filter(s => s.date.startsWith(state.selectedYear));
+    } else if (state.period === 'month') {
+      filtered = shifts.filter(s => s.date.startsWith(state.selectedMonth));
+    } else {
+      filtered = shifts.filter(s => s.date === state.selectedDate);
+    }
+    if (storeId && storeId !== 'ALL') {
+      filtered = filtered.filter(s => s.storeId === storeId);
+    }
+    return filtered;
+  }
+
+  function renderLaborChips() {
+    const container = document.getElementById('labor-store-chips');
+    container.innerHTML = '';
+    // 全店ボタン
+    const allBtn = document.createElement('button');
+    allBtn.className = 'store-chip' + (state.laborStoreId === 'ALL' ? ' active' : '');
+    allBtn.textContent = '全店';
+    allBtn.addEventListener('click', () => { state.laborStoreId = 'ALL'; renderLaborChips(); renderLabor(); });
+    container.appendChild(allBtn);
+    getData().stores.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'store-chip' + (s.id === state.laborStoreId ? ' active' : '');
+      btn.textContent = s.name;
+      btn.addEventListener('click', () => { state.laborStoreId = s.id; renderLaborChips(); renderLabor(); });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderLabor() {
+    const $ = (id) => document.getElementById(id);
+    const storeId = state.laborStoreId;
+    const isAll = storeId === 'ALL';
+    const storeName = isAll ? '全店' : getStore(storeId).name;
+    const periodLabels = { day: 'の本日人件費', month: 'の今月人件費', year: 'の今年人件費' };
+
+    $('labor-title').textContent = storeName;
+    $('labor-period-label').textContent = periodLabels[state.period] || 'の人件費サマリ';
+
+    const shifts = getShiftsForPeriod(storeId);
+    const totalCost = shifts.reduce((a, s) => a + s.laborCost, 0);
+    const totalHours = shifts.reduce((a, s) => a + s.hours, 0);
+    const uniqueStaff = new Set(shifts.map(s => s.staffId));
+    const headCount = uniqueStaff.size;
+    const perPerson = headCount > 0 ? totalCost / headCount : 0;
+    const avgHours = headCount > 0 ? totalHours / headCount : 0;
+
+    // 売上を取得してL率を計算
+    const curData = isAll ? calcCurrent('ALL') : calcCurrent(storeId);
+    const sales = curData ? curData.sales : 0;
+    const lRate = sales > 0 ? (totalCost / sales) * 100 : 0;
+    const targetL = isAll
+      ? getData().stores.reduce((a, s) => a + s.targetL, 0) / getData().stores.length
+      : getStore(storeId).targetL;
+
+    $('labor-total-cost').textContent = fmt.yenShort(totalCost);
+    $('labor-l-rate').textContent = fmt.pct(lRate);
+    const lDiff = lRate - targetL;
+    const lGood = lDiff <= 0;
+    $('labor-l-target').innerHTML = `目標 ${targetL}% <span class="diff-badge ${lGood ? 'good' : 'bad'}">${lGood ? '▼' : '▲'} ${Math.abs(lDiff).toFixed(1)}pt</span>`;
+    $('labor-head-count').textContent = headCount + '名';
+    $('labor-total-hours').textContent = `合計 ${totalHours.toFixed(1)}h`;
+    $('labor-per-person').textContent = fmt.yenShort(perPerson);
+    $('labor-avg-hours').textContent = `平均 ${avgHours.toFixed(1)}h`;
+
+    // --- 店舗別人件費チャート（横棒） ---
+    renderLaborByStoreChart(shifts);
+
+    // --- 人件費推移チャート ---
+    renderLaborTrendChart();
+
+    // --- スタッフ別集計テーブル ---
+    renderStaffTable(shifts, storeId);
+
+    // --- シフト明細テーブル ---
+    renderShiftTable(shifts);
+  }
+
+  function renderLaborByStoreChart(shifts) {
+    const canvas = document.getElementById('chart-labor-by-store');
+    const ctx = canvas.getContext('2d');
+    if (canvas._chart) canvas._chart.destroy();
+
     const stores = getData().stores;
-    document.getElementById('admin-pl-title').textContent = L.adminPl;
+    const perStore = stores.map(s => ({
+      name: s.name,
+      cost: shifts.filter(sh => sh.storeId === s.id).reduce((a, sh) => a + sh.laborCost, 0),
+    }));
 
-    // PL（期間対応）
-    const plTbody = document.querySelector('#table-monthly-pl tbody');
-    plTbody.innerHTML = '';
-    const items = [
-      { key: 'sales',     label: '売上',             highlight: false },
-      { key: 'f',         label: 'F（食材原価）',    highlight: false },
-      { key: 'l',         label: 'L（人件費）',      highlight: false },
-      { key: 'flProfit',  label: 'FL引き後利益',     highlight: true  },
-      { key: 'rent',      label: '家賃',             highlight: false },
-      { key: 'utilities', label: '光熱費',           highlight: false },
-      { key: 'opProfit',  label: '営業利益',         highlight: true  },
-      { key: 'ordProfit', label: '経常利益',         highlight: true  },
-    ];
-    const perStore = stores.map(s => ({ store: s, data: calcCurrent(s.id) }));
-    items.forEach(item => {
-      const tr = document.createElement('tr');
-      if (item.highlight) tr.classList.add('highlight-row');
-      let cells = `<td>${item.label}</td>`;
-      let total = 0;
-      perStore.forEach(m => {
-        const val = m.data ? m.data[item.key] : 0;
-        total += val || 0;
-        cells += `<td class="num">${val ? fmt.yenShort(val) : '--'}</td>`;
+    canvas._chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: perStore.map(s => s.name),
+        datasets: [{
+          data: perStore.map(s => s.cost),
+          backgroundColor: ['#e74c3c', '#e67e22', '#8b5e3c', '#27ae60', '#9b59b6'],
+          borderRadius: 6,
+          maxBarThickness: 36,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { callback: v => fmt.yenShort(v) }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  function renderLaborTrendChart() {
+    const canvas = document.getElementById('chart-labor-trend');
+    const ctx = canvas.getContext('2d');
+    if (canvas._chart) canvas._chart.destroy();
+
+    const storeId = state.laborStoreId;
+    const count = state.period === 'day' ? 14 : state.period === 'month' ? 12 : 3;
+    let series, labels;
+
+    if (state.period === 'day') {
+      const dates = getAllDates();
+      const idx = dates.indexOf(state.selectedDate);
+      const slice = dates.slice(Math.max(0, idx - count + 1), idx + 1);
+      labels = slice.map(d => { const [,m,dd] = d.split('-'); return `${parseInt(m)}/${parseInt(dd)}`; });
+      series = slice.map(d => {
+        let sh = getData().dailyShifts.filter(s => s.date === d);
+        if (storeId !== 'ALL') sh = sh.filter(s => s.storeId === storeId);
+        return sh.reduce((a, s) => a + s.laborCost, 0);
       });
-      cells += `<td class="num"><strong>${fmt.yenShort(total)}</strong></td>`;
-      tr.innerHTML = cells;
-      plTbody.appendChild(tr);
-    });
+    } else if (state.period === 'month') {
+      const months = getAllMonths();
+      const idx = months.indexOf(state.selectedMonth);
+      const slice = months.slice(Math.max(0, idx - count + 1), idx + 1);
+      labels = slice.map(m => { const [y,mm] = m.split('-'); return `${y.slice(2)}/${parseInt(mm)}`; });
+      series = slice.map(m => {
+        let sh = getData().dailyShifts.filter(s => s.date.startsWith(m));
+        if (storeId !== 'ALL') sh = sh.filter(s => s.storeId === storeId);
+        return sh.reduce((a, s) => a + s.laborCost, 0);
+      });
+    } else {
+      const years = getAllYears();
+      labels = years.map(y => y + '年');
+      series = years.map(y => {
+        let sh = getData().dailyShifts.filter(s => s.date.startsWith(y));
+        if (storeId !== 'ALL') sh = sh.filter(s => s.storeId === storeId);
+        return sh.reduce((a, s) => a + s.laborCost, 0);
+      });
+    }
 
-    // 固定費テーブル（常に月次ベース：現在選択月 or 選択日が属する月）
-    let refMonth;
-    if (state.period === 'month') refMonth = state.selectedMonth;
-    else if (state.period === 'year') {
-      const monthsInYear = getAllMonths().filter(m => m.startsWith(state.selectedYear));
-      refMonth = monthsInYear[monthsInYear.length - 1] || getLatestMonth();
-    } else refMonth = dateToMonth(state.selectedDate);
-    const expTbody = document.querySelector('#table-expenses tbody');
-    expTbody.innerHTML = '';
-    stores.forEach(s => {
-      const exp = getData().monthlyExpenses.find(e => e.storeId === s.id && e.month === refMonth);
-      if (!exp) return;
-      const total = exp.rent + exp.utilities;
-      const daily = total / daysInMonth(refMonth);
+    canvas._chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: series,
+          borderColor: '#8b5e3c',
+          backgroundColor: 'rgba(139,94,60,0.12)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { ticks: { callback: v => fmt.yenShort(v) }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          x: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  function renderStaffTable(shifts, storeId) {
+    const tbody = document.querySelector('#table-staff-summary tbody');
+    tbody.innerHTML = '';
+
+    // 対象スタッフ
+    const relevantStaff = storeId === 'ALL'
+      ? getData().staff
+      : getData().staff.filter(s => s.stores.includes(storeId));
+
+    const rows = relevantStaff.map(staff => {
+      const myShifts = shifts.filter(s => s.staffId === staff.id);
+      const totalHours = myShifts.reduce((a, s) => a + s.hours, 0);
+      const totalCost = myShifts.reduce((a, s) => a + s.laborCost, 0);
+      const days = new Set(myShifts.map(s => s.date)).size;
+      return { staff, days, totalHours, totalCost };
+    }).filter(r => r.days > 0).sort((a, b) => b.totalCost - a.totalCost);
+
+    rows.forEach(r => {
+      const storeNames = r.staff.stores.map(sid => {
+        const s = getStore(sid);
+        return s ? s.name.replace('那覇', '').replace('店', '') : sid;
+      }).join('・');
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${s.name}</strong></td>
-        <td class="num">${fmt.yen(exp.rent)}</td>
-        <td class="num">${fmt.yen(exp.utilities)}</td>
-        <td class="num">${fmt.yen(total)}</td>
-        <td class="num">${fmt.yen(daily)}</td>
+        <td><strong>${r.staff.name}</strong></td>
+        <td style="font-size:0.82rem; color:var(--text-secondary);">${storeNames}</td>
+        <td class="num">¥${r.staff.hourlyRate.toLocaleString()}</td>
+        <td class="num">${r.days}日</td>
+        <td class="num">${r.totalHours.toFixed(1)}h</td>
+        <td class="num"><strong>${fmt.yen(r.totalCost)}</strong></td>
       `;
-      expTbody.appendChild(tr);
+      tbody.appendChild(tr);
     });
+  }
 
-    // MF突合
-    const mfTbody = document.querySelector('#table-mf tbody');
-    mfTbody.innerHTML = '';
-    getData().mfReconciliation.forEach(r => {
-      const diff = r.mfValue - r.ourValue;
-      const diffAbs = Math.abs(diff);
-      const threshold = r.ourValue * 0.005;
-      const isAlert = diffAbs > threshold && diffAbs > 1000;
-      const cls = diff === 0 ? 'neutral' : (isAlert ? 'bad' : 'neutral');
-      const sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
+  function renderShiftTable(shifts) {
+    const tbody = document.querySelector('#table-shift-detail tbody');
+    tbody.innerHTML = '';
+
+    // 日付降順、直近100件まで
+    const sorted = [...shifts].sort((a, b) => b.date.localeCompare(a.date) || a.staffId.localeCompare(b.staffId));
+    const limited = sorted.slice(0, 100);
+
+    limited.forEach(sh => {
+      const staff = getData().staff.find(s => s.id === sh.staffId);
+      const store = getStore(sh.storeId);
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${r.month}</td>
-        <td>${r.item}</td>
-        <td class="num">${fmt.yen(r.ourValue)}</td>
-        <td class="num">${fmt.yen(r.mfValue)}</td>
-        <td class="num"><span class="diff-badge ${cls}">${sign}${fmt.yen(diffAbs)}</span></td>
-        <td style="color:var(--text-secondary); font-size:0.82rem;">${r.note}</td>
+        <td>${fmt.dateMD(sh.date)}</td>
+        <td>${staff ? staff.name : sh.staffId}</td>
+        <td style="font-size:0.82rem;">${store ? store.name : sh.storeId}</td>
+        <td class="num">${sh.startHour}:00</td>
+        <td class="num">${sh.endHour}:00</td>
+        <td class="num">${sh.hours}h</td>
+        <td class="num">${sh.breakMinutes}分</td>
+        <td class="num">${fmt.yen(sh.laborCost)}</td>
       `;
-      mfTbody.appendChild(tr);
-    });
-
-    // お知らせ
-    const list = document.getElementById('announcements-list');
-    list.innerHTML = '';
-    getData().announcements.forEach(a => {
-      const card = document.createElement('div');
-      card.className = 'announcement-card';
-      card.innerHTML = `
-        <div class="announcement-header">
-          <span class="announcement-title">${a.title}</span>
-          <span class="announcement-date">${a.date}</span>
-        </div>
-        <div class="announcement-content">${a.content}</div>
-      `;
-      list.appendChild(card);
+      tbody.appendChild(tr);
     });
   }
 
@@ -602,7 +763,8 @@
     renderOverview();
     renderStoreChips();
     renderStoreDetail();
-    renderAdmin();
+    renderLaborChips();
+    renderLabor();
   }
 
   // ===== 初期化 =====

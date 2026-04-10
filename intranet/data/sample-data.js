@@ -157,36 +157,124 @@ function generateMonthlyExpenses() {
   return result;
 }
 
+// ===== スタッフマスタ =====
+const STAFF = [
+  // 那覇松山店（6名）
+  { id: 's01', name: '比嘉 太郎',   hourlyRate: 1050, stores: ['matsuyama'] },
+  { id: 's02', name: '仲村 花子',   hourlyRate: 1000, stores: ['matsuyama'] },
+  { id: 's03', name: '上原 健一',   hourlyRate: 1100, stores: ['matsuyama'] },
+  { id: 's04', name: '新垣 美咲',   hourlyRate:  980, stores: ['matsuyama'] },
+  { id: 's05', name: '金城 翔',     hourlyRate: 1020, stores: ['matsuyama', 'kumoji'] },
+  { id: 's06', name: '宮城 真由美', hourlyRate: 1000, stores: ['matsuyama'] },
+  // 那覇久茂地店（5名）
+  { id: 's07', name: '島袋 大輔',   hourlyRate: 1080, stores: ['kumoji'] },
+  { id: 's08', name: '平良 さくら', hourlyRate: 1000, stores: ['kumoji'] },
+  { id: 's09', name: '城間 裕太',   hourlyRate:  980, stores: ['kumoji'] },
+  { id: 's10', name: '赤嶺 えみ',   hourlyRate: 1050, stores: ['kumoji', 'miebashi'] },
+  { id: 's11', name: '仲間 優',     hourlyRate: 1020, stores: ['kumoji'] },
+  // 美栄橋店（4名）
+  { id: 's12', name: '玉城 拓也',   hourlyRate: 1100, stores: ['miebashi'] },
+  { id: 's13', name: '照屋 美穂',   hourlyRate: 1000, stores: ['miebashi'] },
+  { id: 's14', name: '知念 将太',   hourlyRate:  980, stores: ['miebashi', 'misato'] },
+  { id: 's15', name: '大城 あおい', hourlyRate: 1020, stores: ['miebashi'] },
+  // 美里店（3名 ※小規模＋掛持ちでカバー）
+  { id: 's16', name: '具志堅 光',   hourlyRate: 1050, stores: ['misato'] },
+  { id: 's17', name: '喜屋武 琴音', hourlyRate:  980, stores: ['misato'] },
+  // 一所懸命（8名）
+  { id: 's18', name: '安里 修',     hourlyRate: 1080, stores: ['isshokenmei'] },
+  { id: 's19', name: '伊波 凛',     hourlyRate: 1000, stores: ['isshokenmei'] },
+  { id: 's20', name: '嘉手納 大地', hourlyRate: 1050, stores: ['isshokenmei'] },
+  { id: 's21', name: '當山 ひなの', hourlyRate:  980, stores: ['isshokenmei'] },
+  { id: 's22', name: '友寄 聡',     hourlyRate: 1020, stores: ['isshokenmei'] },
+  { id: 's23', name: '屋比久 千夏', hourlyRate: 1000, stores: ['isshokenmei', 'matsuyama'] },
+  { id: 's24', name: '桃原 翼',     hourlyRate:  980, stores: ['isshokenmei'] },
+  { id: 's25', name: '与那嶺 まりな', hourlyRate: 1050, stores: ['isshokenmei'] },
+];
+
+// ===== シフト（日次出勤データ）を生成 =====
+function generateDailyShifts() {
+  const result = [];
+  const startDate = new Date(TODAY);
+  startDate.setMonth(startDate.getMonth() - MONTHS_BACK);
+  startDate.setDate(1);
+  const totalDays = Math.ceil((TODAY - startDate) / (24 * 60 * 60 * 1000));
+
+  // 開店パターン（焼肉屋は午後〜夜）
+  const SHIFT_PATTERNS = [
+    { start: 11, end: 15, hours: 4 },   // ランチ
+    { start: 15, end: 22, hours: 7 },   // 通し午後
+    { start: 17, end: 22, hours: 5 },   // ディナー短
+    { start: 17, end: 23, hours: 6 },   // ディナー長
+    { start: 11, end: 22, hours: 10 },  // フル（休憩1h込み→実質9h）
+  ];
+
+  for (let offset = 0; offset <= totalDays; offset++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + offset);
+    if (date > TODAY) break;
+
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const dd = date.getDate();
+    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+    const dow = date.getDay();
+    const isWeekend = dow === 5 || dow === 6;
+
+    STAFF.forEach(staff => {
+      staff.stores.forEach((storeId, storeIdx) => {
+        const seed = dateStr + staff.id + storeId;
+        const r = pseudoRandom(seed);
+
+        // 出勤確率: メイン店舗は週5、掛持ち先は週2〜3
+        const isMain = storeIdx === 0;
+        const workProb = isMain
+          ? (isWeekend ? 0.85 : 0.72)       // メイン: 金土は高確率
+          : (isWeekend ? 0.40 : 0.25);       // サブ: 週2〜3日
+        // 両方出勤は避ける（掛持ち先の日はメイン店舗は休み）
+        if (!isMain) {
+          const mainSeed = dateStr + staff.id + staff.stores[0];
+          const mainR = pseudoRandom(mainSeed);
+          const mainWork = (isWeekend ? 0.85 : 0.72);
+          if (mainR < mainWork) return; // メイン出勤日なのでサブは休み
+        }
+
+        if (r >= workProb) return; // 休み
+
+        // シフトパターン選択
+        const patIdx = Math.floor(pseudoRandom(seed + 'pat') * SHIFT_PATTERNS.length);
+        const pat = SHIFT_PATTERNS[patIdx];
+        // 週末は少し長め
+        const extraHour = isWeekend && pat.hours < 8 ? 1 : 0;
+        const hours = pat.hours + extraHour;
+        const endHour = Math.min(pat.start + hours + (hours >= 8 ? 1 : 0), 24); // 8h以上は休憩1h込み
+        const breakMin = hours >= 6 ? 60 : (hours >= 4.5 ? 30 : 0);
+        const actualHours = hours; // 休憩除いた実労働
+
+        result.push({
+          date: dateStr,
+          staffId: staff.id,
+          storeId,
+          startHour: pat.start,
+          endHour,
+          hours: actualHours,
+          breakMinutes: breakMin,
+          laborCost: actualHours * staff.hourlyRate,
+        });
+      });
+    });
+  }
+  return result;
+}
+
 const DAILY_SALES = generateDailySales();
 const MONTHLY_EXPENSES = generateMonthlyExpenses();
-
-// ===== MF突合用ダミーデータ（直近数ヶ月） =====
-const MF_RECONCILIATION = [
-  { month: '2026-04', item: '売上',     ourValue: 12450000, mfValue: 12450000, note: '一致' },
-  { month: '2026-04', item: '食材仕入', ourValue: 4012500,  mfValue: 4028900,  note: '仕入明細の計上タイミング差' },
-  { month: '2026-04', item: '人件費',   ourValue: 3385200,  mfValue: 3385200,  note: '一致' },
-  { month: '2026-04', item: '家賃',     ourValue: 2310000,  mfValue: 2310000,  note: '一致' },
-  { month: '2026-04', item: '光熱費',   ourValue: 900000,   mfValue: 912450,   note: '検針日ズレ' },
-  { month: '2026-03', item: '売上',     ourValue: 38920000, mfValue: 38920000, note: '一致' },
-  { month: '2026-03', item: '食材仕入', ourValue: 12680000, mfValue: 12695400, note: '端数調整' },
-  { month: '2026-03', item: '人件費',   ourValue: 10540000, mfValue: 10540000, note: '一致' },
-  { month: '2026-03', item: '家賃',     ourValue: 2310000,  mfValue: 2310000,  note: '一致' },
-  { month: '2026-03', item: '光熱費',   ourValue: 979000,   mfValue: 979000,   note: '一致' },
-];
-
-// ===== お知らせ =====
-const ANNOUNCEMENTS = [
-  { date: '2026-04-10', title: '4月度 月次会議のお知らせ', content: '4/20（月）14:00〜 本部会議室。各店長は3月度実績資料を持参してください。' },
-  { date: '2026-04-08', title: '食材原価高騰への対応', content: '和牛カルビの仕入価格が上昇。推奨売価の見直しを検討中です。' },
-  { date: '2026-04-05', title: 'GW繁忙期シフト調整', content: '4/29〜5/6の繁忙期シフトを各店長は4/15までに提出ください。' },
-  { date: '2026-04-01', title: '新年度FL目標設定', content: '店舗ごとの新年度FL目標を本ダッシュボードに反映済みです。' },
-];
+const DAILY_SHIFTS = generateDailyShifts();
 
 // ===== 全体エクスポート =====
 const SAMPLE_DATA = {
   stores: STORES,
+  staff: STAFF,
   dailySales: DAILY_SALES,
+  dailyShifts: DAILY_SHIFTS,
   monthlyExpenses: MONTHLY_EXPENSES,
-  mfReconciliation: MF_RECONCILIATION,
-  announcements: ANNOUNCEMENTS,
 };

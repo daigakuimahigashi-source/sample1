@@ -19,7 +19,7 @@
     <nav class="nav">
       <button class="nav-btn active" data-tab="overview">ダッシュボード</button>
       <button class="nav-btn" data-tab="stores">店舗別</button>
-      <button class="nav-btn" data-tab="admin">管理</button>
+      <button class="nav-btn" data-tab="labor">人件費</button>
     </nav>
     <div class="header-right">
       <div class="period-toggle" id="period-toggle">
@@ -170,21 +170,62 @@
       </div>
     </section>
 
-    <!-- ===== 管理タブ ===== -->
-    <section id="page-admin" class="page">
-      <h2 class="section-title"><span class="icon">💰</span><span id="admin-pl-title">月次PL（全店合算）</span></h2>
+    <!-- ===== 人件費管理タブ ===== -->
+    <section id="page-labor" class="page">
+      <h2 class="section-title"><span class="icon">👥</span>店舗を選択</h2>
+      <div class="store-chips" id="labor-store-chips"></div>
+
+      <h3 class="section-title"><span class="icon">💰</span><span id="labor-title">全店</span> <span id="labor-period-label">の人件費サマリ</span></h3>
+      <div class="kpi-grid kpi-grid-4">
+        <div class="kpi-card accent-brown">
+          <span class="kpi-label">人件費合計</span>
+          <span class="kpi-value" id="labor-total-cost">--</span>
+          <span class="kpi-sub" id="labor-total-diff">--</span>
+        </div>
+        <div class="kpi-card accent-purple">
+          <span class="kpi-label">L率</span>
+          <span class="kpi-value" id="labor-l-rate">--</span>
+          <span class="kpi-sub" id="labor-l-target">目標 --%</span>
+        </div>
+        <div class="kpi-card accent-orange">
+          <span class="kpi-label">出勤スタッフ数</span>
+          <span class="kpi-value" id="labor-head-count">--</span>
+          <span class="kpi-sub" id="labor-total-hours">合計 --h</span>
+        </div>
+        <div class="kpi-card accent-red">
+          <span class="kpi-label">一人当たり人件費</span>
+          <span class="kpi-value" id="labor-per-person">--</span>
+          <span class="kpi-sub" id="labor-avg-hours">平均 --h</span>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="card chart-card">
+          <h3 class="card-title" id="labor-chart-title">店舗別 人件費比較</h3>
+          <div class="chart-container chart-container-h">
+            <canvas id="chart-labor-by-store"></canvas>
+          </div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="card-title" id="labor-trend-title">人件費推移</h3>
+          <div class="chart-container chart-container-h">
+            <canvas id="chart-labor-trend"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title"><span class="icon">👤</span><span id="labor-staff-title">スタッフ別 集計</span></h3>
       <div class="card">
         <div class="table-wrap">
-          <table class="data-table" id="table-monthly-pl">
+          <table class="data-table" id="table-staff-summary">
             <thead>
               <tr>
-                <th>項目</th>
-                <th class="num">那覇松山店</th>
-                <th class="num">那覇久茂地店</th>
-                <th class="num">美栄橋店</th>
-                <th class="num">美里店</th>
-                <th class="num">一所懸命</th>
-                <th class="num">全店合計</th>
+                <th>名前</th>
+                <th>所属店舗</th>
+                <th class="num">時給</th>
+                <th class="num">出勤日数</th>
+                <th class="num">合計時間</th>
+                <th class="num">人件費</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -192,46 +233,31 @@
         </div>
       </div>
 
-      <h2 class="section-title"><span class="icon">🏠</span>固定費（家賃・光熱費）</h2>
-      <div class="card">
+      <h3 class="section-title">
+        <span class="icon">📋</span><span id="labor-shift-title">シフト明細</span>
+        <button class="detail-toggle" id="shift-toggle" type="button" aria-expanded="false">
+          <span class="detail-toggle-icon">▸</span><span id="shift-toggle-label">シフト明細を表示</span>
+        </button>
+      </h3>
+      <div id="shift-detail-wrap" class="card" style="display:none;">
         <div class="table-wrap">
-          <table class="data-table" id="table-expenses">
+          <table class="data-table" id="table-shift-detail">
             <thead>
               <tr>
+                <th>日付</th>
+                <th>名前</th>
                 <th>店舗</th>
-                <th class="num">家賃</th>
-                <th class="num">光熱費</th>
-                <th class="num">合計</th>
-                <th class="num">日割り</th>
+                <th class="num">開始</th>
+                <th class="num">終了</th>
+                <th class="num">実働</th>
+                <th class="num">休憩</th>
+                <th class="num">人件費</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
       </div>
-
-      <h2 class="section-title"><span class="icon">🔄</span>MF（マネーフォワード）突合</h2>
-      <div class="card">
-        <p class="card-subtitle">当システムの集計値と、MFクラウドの値を比較。差分が大きい項目は赤で表示されます。</p>
-        <div class="table-wrap">
-          <table class="data-table" id="table-mf">
-            <thead>
-              <tr>
-                <th>月</th>
-                <th>項目</th>
-                <th class="num">当システム</th>
-                <th class="num">MF値</th>
-                <th class="num">差分</th>
-                <th>備考</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-      <h2 class="section-title"><span class="icon">📣</span>お知らせ</h2>
-      <div class="announcements" id="announcements-list"></div>
     </section>
   </main>
 
