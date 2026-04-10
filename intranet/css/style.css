@@ -72,7 +72,7 @@ body {
   color: #fff;
   text-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
-.header-right { display: flex; align-items: center; gap: 12px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
 
 /* Date picker in header */
 .date-picker {
@@ -84,6 +84,38 @@ body {
   font-size: 0.85rem;
   color: var(--text-primary);
   cursor: pointer;
+  height: 34px;
+}
+.date-picker.hidden { display: none; }
+
+/* Period toggle (Day / Month / Year) */
+.period-toggle {
+  display: inline-flex;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  height: 34px;
+}
+.period-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 38px;
+}
+.period-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.period-btn.active {
+  color: var(--accent);
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 
 /* Nav */

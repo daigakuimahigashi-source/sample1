@@ -1,8 +1,12 @@
 /**
- * 焼肉店 5店舗 Daily FL管理ダッシュボード用 ダミーデータ
+ * 焼肉店 5店舗 Daily/Monthly/Yearly FL管理ダッシュボード用 ダミーデータ
  *
  * 将来的にはレジPOS・MF勤怠・MFクラウド会計からデータ取得する前提。
  * 当面はこのファイルで開発・検証を行う。
+ *
+ * 生成内容:
+ * - 過去 24ヶ月分の日次売上データ（季節性・成長トレンド付き）
+ * - 24ヶ月分の月次固定費（家賃固定、光熱費は夏冬増加）
  */
 
 // ===== 店舗マスタ =====
@@ -14,51 +18,83 @@ const STORES = [
   { id: 'isshokenmei', name: '一所懸命',     targetF: 34, targetL: 26 },
 ];
 
-// ===== 月次固定費（家賃・光熱費） =====
-const MONTHLY_EXPENSES = [
-  { storeId: 'matsuyama',   month: '2026-04', rent: 520000, utilities: 195000 },
-  { storeId: 'kumoji',      month: '2026-04', rent: 480000, utilities: 180000 },
-  { storeId: 'miebashi',    month: '2026-04', rent: 510000, utilities: 185000 },
-  { storeId: 'misato',      month: '2026-04', rent: 380000, utilities: 165000 },
-  { storeId: 'isshokenmei', month: '2026-04', rent: 420000, utilities: 175000 },
-  { storeId: 'matsuyama',   month: '2026-03', rent: 520000, utilities: 210000 },
-  { storeId: 'kumoji',      month: '2026-03', rent: 480000, utilities: 198000 },
-  { storeId: 'miebashi',    month: '2026-03', rent: 510000, utilities: 205000 },
-  { storeId: 'misato',      month: '2026-03', rent: 380000, utilities: 178000 },
-  { storeId: 'isshokenmei', month: '2026-03', rent: 420000, utilities: 188000 },
-];
+// ===== 基準日 =====
+const TODAY = new Date('2026-04-10');
+const MONTHS_BACK = 24; // 24ヶ月分のデータを生成
 
-// ===== 日次売上データを生成（過去45日分×5店舗） =====
-// 店舗ごとの売上規模・ばらつき特性を定義
+// ===== 店舗プロファイル =====
 const STORE_PROFILES = {
-  matsuyama:   { base: 520000, variance: 120000, fRate: 0.325, lRate: 0.275, weekendBoost: 1.35 },
-  kumoji:      { base: 480000, variance: 110000, fRate: 0.335, lRate: 0.270, weekendBoost: 1.40 },
-  miebashi:    { base: 430000, variance: 100000, fRate: 0.320, lRate: 0.285, weekendBoost: 1.30 },
-  misato:      { base: 380000, variance: 85000,  fRate: 0.295, lRate: 0.260, weekendBoost: 1.25 },
-  isshokenmei: { base: 410000, variance: 95000,  fRate: 0.345, lRate: 0.258, weekendBoost: 1.32 },
+  matsuyama:   { base: 520000, variance: 120000, fRate: 0.325, lRate: 0.275, weekendBoost: 1.35, baseRent: 520000, baseUtilities: 180000 },
+  kumoji:      { base: 480000, variance: 110000, fRate: 0.335, lRate: 0.270, weekendBoost: 1.40, baseRent: 480000, baseUtilities: 170000 },
+  miebashi:    { base: 430000, variance: 100000, fRate: 0.320, lRate: 0.285, weekendBoost: 1.30, baseRent: 510000, baseUtilities: 175000 },
+  misato:      { base: 380000, variance: 85000,  fRate: 0.295, lRate: 0.260, weekendBoost: 1.25, baseRent: 380000, baseUtilities: 155000 },
+  isshokenmei: { base: 410000, variance: 95000,  fRate: 0.345, lRate: 0.258, weekendBoost: 1.32, baseRent: 420000, baseUtilities: 165000 },
 };
 
+// ===== 決定論的な疑似乱数 =====
+function pseudoRandom(seed) {
+  let x = 0;
+  for (let i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) >>> 0;
+  x = (x * 9301 + 49297) % 233280;
+  return x / 233280;
+}
+
+// ===== 季節性係数（月ベース） =====
+function seasonalFactor(month) {
+  // month: 1-12
+  const factors = {
+    1: 0.88,  // 1月: 閑散期
+    2: 0.90,  // 2月: 閑散期
+    3: 1.15,  // 3月: 歓送迎会シーズン
+    4: 1.12,  // 4月: 歓迎会シーズン
+    5: 1.02,  // 5月: GW後やや落ち着く
+    6: 0.98,  // 6月: 梅雨で少し低迷
+    7: 1.10,  // 7月: 夏ビール需要
+    8: 1.12,  // 8月: 夏休み・お盆
+    9: 1.00,  // 9月: 平常
+    10: 1.05, // 10月: 秋の会食シーズン
+    11: 1.08, // 11月: 忘年会シーズン入り
+    12: 1.28, // 12月: 忘年会ピーク
+  };
+  return factors[month] || 1.0;
+}
+
+// ===== 光熱費の季節変動 =====
+function utilitiesFactor(month) {
+  // 夏冬はエアコンで上昇
+  const factors = {
+    1: 1.25, 2: 1.22, 3: 1.05, 4: 0.95, 5: 0.92, 6: 1.00,
+    7: 1.30, 8: 1.35, 9: 1.15, 10: 0.95, 11: 1.00, 12: 1.18,
+  };
+  return factors[month] || 1.0;
+}
+
+// ===== 日次売上データを生成 =====
 function generateDailySales() {
   const result = [];
-  const today = new Date('2026-04-10'); // 今日
-  const DAYS = 45;
+  const startDate = new Date(TODAY);
+  startDate.setMonth(startDate.getMonth() - MONTHS_BACK);
+  startDate.setDate(1);
 
-  // 決定論的な疑似乱数（日付＋店舗IDから計算 → リロードしても同じ値）
-  const pseudoRandom = (seed) => {
-    let x = 0;
-    for (let i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) >>> 0;
-    x = (x * 9301 + 49297) % 233280;
-    return x / 233280;
-  };
+  // 生成総日数
+  const totalDays = Math.ceil((TODAY - startDate) / (24 * 60 * 60 * 1000));
 
-  for (let d = DAYS - 1; d >= 0; d--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - d);
+  for (let offset = 0; offset <= totalDays; offset++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + offset);
+    if (date > TODAY) break;
+
     const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${y}-${m}-${dd}`;
+    const m = date.getMonth() + 1;
+    const dd = date.getDate();
+    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
     const isWeekend = date.getDay() === 5 || date.getDay() === 6; // 金土
+    const dow = date.getDay(); // 0:日 ~ 6:土
+    const season = seasonalFactor(m);
+
+    // 経過月数ベースの成長トレンド (+0.5%/月)
+    const monthsElapsed = (y - startDate.getFullYear()) * 12 + (m - (startDate.getMonth() + 1));
+    const growth = 1 + monthsElapsed * 0.005;
 
     STORES.forEach(store => {
       const p = STORE_PROFILES[store.id];
@@ -66,8 +102,8 @@ function generateDailySales() {
       const r2 = pseudoRandom(dateStr + store.id + '2');
       const r3 = pseudoRandom(dateStr + store.id + '3');
 
-      const weekendMul = isWeekend ? p.weekendBoost : 1;
-      const sales = Math.round((p.base + (r1 - 0.5) * 2 * p.variance) * weekendMul / 1000) * 1000;
+      const weekendMul = isWeekend ? p.weekendBoost : (dow === 0 ? 0.85 : 1); // 日曜日は少し控えめ
+      const sales = Math.round((p.base + (r1 - 0.5) * 2 * p.variance) * weekendMul * season * growth / 1000) * 1000;
       const fRateActual = p.fRate + (r2 - 0.5) * 0.04;
       const lRateActual = p.lRate + (r3 - 0.5) * 0.03;
       const estimatedFoodCost = Math.round(sales * fRateActual / 100) * 100;
@@ -88,9 +124,43 @@ function generateDailySales() {
   return result;
 }
 
-const DAILY_SALES = generateDailySales();
+// ===== 月次固定費を生成（24ヶ月分） =====
+function generateMonthlyExpenses() {
+  const result = [];
+  const startDate = new Date(TODAY);
+  startDate.setMonth(startDate.getMonth() - MONTHS_BACK);
+  startDate.setDate(1);
 
-// ===== MF突合用ダミーデータ（月次） =====
+  for (let i = 0; i <= MONTHS_BACK; i++) {
+    const d = new Date(startDate);
+    d.setMonth(startDate.getMonth() + i);
+    if (d > TODAY) break;
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const monthStr = `${y}-${String(m).padStart(2, '0')}`;
+    const uFactor = utilitiesFactor(m);
+
+    STORES.forEach(store => {
+      const p = STORE_PROFILES[store.id];
+      const r = pseudoRandom(monthStr + store.id);
+      // 光熱費は季節で変動＋±5%ランダム
+      const utilities = Math.round(p.baseUtilities * uFactor * (0.95 + r * 0.1) / 1000) * 1000;
+      result.push({
+        storeId: store.id,
+        month: monthStr,
+        rent: p.baseRent,
+        utilities,
+      });
+    });
+  }
+
+  return result;
+}
+
+const DAILY_SALES = generateDailySales();
+const MONTHLY_EXPENSES = generateMonthlyExpenses();
+
+// ===== MF突合用ダミーデータ（直近数ヶ月） =====
 const MF_RECONCILIATION = [
   { month: '2026-04', item: '売上',     ourValue: 12450000, mfValue: 12450000, note: '一致' },
   { month: '2026-04', item: '食材仕入', ourValue: 4012500,  mfValue: 4028900,  note: '仕入明細の計上タイミング差' },
@@ -104,7 +174,7 @@ const MF_RECONCILIATION = [
   { month: '2026-03', item: '光熱費',   ourValue: 979000,   mfValue: 979000,   note: '一致' },
 ];
 
-// ===== お知らせ（管理タブ用） =====
+// ===== お知らせ =====
 const ANNOUNCEMENTS = [
   { date: '2026-04-10', title: '4月度 月次会議のお知らせ', content: '4/20（月）14:00〜 本部会議室。各店長は3月度実績資料を持参してください。' },
   { date: '2026-04-08', title: '食材原価高騰への対応', content: '和牛カルビの仕入価格が上昇。推奨売価の見直しを検討中です。' },

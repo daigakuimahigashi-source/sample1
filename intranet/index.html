@@ -22,17 +22,24 @@
       <button class="nav-btn" data-tab="admin">管理</button>
     </nav>
     <div class="header-right">
-      <input type="date" id="date-picker" class="date-picker" />
+      <div class="period-toggle" id="period-toggle">
+        <button class="period-btn active" data-period="day">日</button>
+        <button class="period-btn" data-period="month">月</button>
+        <button class="period-btn" data-period="year">年</button>
+      </div>
+      <input type="date"  id="date-picker"  class="date-picker period-input" data-period="day" />
+      <input type="month" id="month-picker" class="date-picker period-input hidden" data-period="month" />
+      <select id="year-picker" class="date-picker period-input hidden" data-period="year"></select>
     </div>
   </header>
 
   <main class="main">
     <!-- ===== ダッシュボードタブ ===== -->
     <section id="page-overview" class="page active">
-      <h2 class="section-title"><span class="icon">📊</span>本日の全店 KPI</h2>
+      <h2 class="section-title"><span class="icon">📊</span><span id="overview-kpi-title">本日の全店 KPI</span></h2>
       <div class="kpi-grid">
         <div class="kpi-card accent-red">
-          <span class="kpi-label">本日売上</span>
+          <span class="kpi-label" id="kpi-sales-label">本日売上</span>
           <span class="kpi-value" id="kpi-sales">--</span>
           <span class="kpi-sub" id="kpi-sales-diff">前日比 --</span>
         </div>
@@ -57,13 +64,13 @@
           <span class="kpi-sub" id="kpi-fl-profit-rate">--%</span>
         </div>
         <div class="kpi-card accent-green">
-          <span class="kpi-label">営業利益（Daily）</span>
+          <span class="kpi-label" id="kpi-op-profit-label">営業利益（Daily）</span>
           <span class="kpi-value" id="kpi-op-profit">--</span>
           <span class="kpi-sub" id="kpi-op-profit-rate">--%</span>
         </div>
       </div>
 
-      <h2 class="section-title"><span class="icon">📈</span>直近30日の売上 × FL引き後利益</h2>
+      <h2 class="section-title"><span class="icon">📈</span><span id="overview-trend-title">直近30日の売上 × FL引き後利益</span></h2>
       <div class="card chart-card">
         <div class="chart-container">
           <canvas id="chart-daily-sales"></canvas>
@@ -72,13 +79,13 @@
 
       <div class="two-col" style="margin-top:1rem;">
         <div class="card chart-card">
-          <h3 class="card-title">本日の店舗別売上ランキング</h3>
+          <h3 class="card-title" id="overview-ranking-title">本日の店舗別売上ランキング</h3>
           <div class="chart-container chart-container-h">
             <canvas id="chart-store-ranking"></canvas>
           </div>
         </div>
         <div class="card chart-card">
-          <h3 class="card-title">直近14日 F率・L率推移（全店）</h3>
+          <h3 class="card-title" id="overview-fl-title">直近14日 F率・L率推移（全店）</h3>
           <div class="chart-container chart-container-h">
             <canvas id="chart-fl-trend"></canvas>
           </div>
@@ -91,7 +98,7 @@
       <h2 class="section-title"><span class="icon">🏪</span>店舗を選択</h2>
       <div class="store-chips" id="store-chips"></div>
 
-      <h3 class="section-title"><span class="icon">📌</span><span id="store-title">--</span> の本日実績</h3>
+      <h3 class="section-title"><span class="icon">📌</span><span id="store-title">--</span> <span id="store-period-label">の本日実績</span></h3>
       <div class="kpi-grid kpi-grid-5">
         <div class="kpi-card accent-red">
           <span class="kpi-label">売上</span>
@@ -124,7 +131,7 @@
 
       <div class="two-col" style="margin-top:1rem;">
         <div class="card chart-card">
-          <h3 class="card-title">直近14日の売上＆利益</h3>
+          <h3 class="card-title" id="store-chart-title">直近14日の売上＆利益</h3>
           <div class="chart-container chart-container-sm">
             <canvas id="chart-store-daily"></canvas>
           </div>
@@ -135,13 +142,13 @@
         </div>
       </div>
 
-      <h3 class="section-title"><span class="icon">📋</span>直近14日の日次明細</h3>
+      <h3 class="section-title"><span class="icon">📋</span><span id="store-table-title">直近14日の日次明細</span></h3>
       <div class="card">
         <div class="table-wrap">
           <table class="data-table" id="table-store-detail">
             <thead>
               <tr>
-                <th>日付</th>
+                <th id="store-table-period-col">日付</th>
                 <th class="num">売上</th>
                 <th class="num">F（原価）</th>
                 <th class="num">F率</th>
@@ -159,7 +166,7 @@
 
     <!-- ===== 管理タブ ===== -->
     <section id="page-admin" class="page">
-      <h2 class="section-title"><span class="icon">💰</span>月次PL（全店合算）</h2>
+      <h2 class="section-title"><span class="icon">💰</span><span id="admin-pl-title">月次PL（全店合算）</span></h2>
       <div class="card">
         <div class="table-wrap">
           <table class="data-table" id="table-monthly-pl">

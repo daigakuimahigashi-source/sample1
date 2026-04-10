@@ -1,6 +1,6 @@
 /**
  * Chart.js グラフ描画モジュール
- * 焼肉店 FL管理ダッシュボード用
+ * 焼肉店 FL管理ダッシュボード用（日次/月次/年次対応）
  */
 const Charts = (() => {
   // Chart.js グローバル設定（ライトテーマ用）
@@ -34,21 +34,34 @@ const Charts = (() => {
   }
 
   const fmtYenAxis = v => {
-    if (Math.abs(v) >= 10000) return (v / 10000).toLocaleString() + '万';
+    const abs = Math.abs(v);
+    if (abs >= 100000000) return (v / 100000000).toFixed(1) + '億';
+    if (abs >= 10000) return Math.round(v / 10000).toLocaleString() + '万';
     return v.toLocaleString();
   };
   const fmtYenTooltip = v => '¥' + Number(v).toLocaleString();
 
-  /** 直近N日の売上（棒）＋FL引き後利益（折れ線） */
-  function renderDailySalesProfit(canvasId, rows) {
+  /** 期間に応じてX軸ラベルを生成 */
+  function periodLabel(row, period) {
+    if (period === 'year') {
+      return row.year + '年';
+    }
+    if (period === 'month') {
+      const [y, m] = row.month.split('-');
+      return `${y.substring(2)}/${parseInt(m)}`;
+    }
+    // day
+    const [, m, d] = row.date.split('-');
+    return `${parseInt(m)}/${parseInt(d)}`;
+  }
+
+  /** 売上（棒）＋FL引き後利益（折れ線） — 期間対応 */
+  function renderPeriodSalesProfit(canvasId, rows, period) {
     destroy(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    const labels = rows.map(r => {
-      const [, m, d] = r.date.split('-');
-      return `${parseInt(m)}/${parseInt(d)}`;
-    });
+    const labels = rows.map(r => periodLabel(r, period));
 
     instances[canvasId] = new Chart(ctx, {
       data: {
@@ -152,16 +165,13 @@ const Charts = (() => {
     });
   }
 
-  /** F率・L率 推移（折れ線、目標ライン付き） */
-  function renderFLTrend(canvasId, rows, targetF, targetL) {
+  /** F率・L率 推移（折れ線、目標ライン付き）— 期間対応 */
+  function renderFLTrend(canvasId, rows, targetF, targetL, period) {
     destroy(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    const labels = rows.map(r => {
-      const [, m, d] = r.date.split('-');
-      return `${parseInt(m)}/${parseInt(d)}`;
-    });
+    const labels = rows.map(r => periodLabel(r, period || 'day'));
 
     instances[canvasId] = new Chart(ctx, {
       type: 'line',
@@ -231,16 +241,13 @@ const Charts = (() => {
     });
   }
 
-  /** 店舗別の日次売上＆FL後利益（小さめ） */
-  function renderStoreDaily(canvasId, rows) {
+  /** 店舗別の売上＆FL後利益（小さめ）— 期間対応 */
+  function renderStorePeriod(canvasId, rows, period) {
     destroy(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    const labels = rows.map(r => {
-      const [, m, d] = r.date.split('-');
-      return `${parseInt(m)}/${parseInt(d)}`;
-    });
+    const labels = rows.map(r => periodLabel(r, period));
 
     instances[canvasId] = new Chart(ctx, {
       data: {
@@ -288,5 +295,17 @@ const Charts = (() => {
     });
   }
 
-  return { renderDailySalesProfit, renderStoreRanking, renderFLTrend, renderStoreDaily };
+  // 互換性のための別名（旧名でも呼べるように）
+  const renderDailySalesProfit = (id, rows) => renderPeriodSalesProfit(id, rows, 'day');
+  const renderStoreDaily = (id, rows) => renderStorePeriod(id, rows, 'day');
+
+  return {
+    renderPeriodSalesProfit,
+    renderStorePeriod,
+    renderStoreRanking,
+    renderFLTrend,
+    // legacy
+    renderDailySalesProfit,
+    renderStoreDaily,
+  };
 })();

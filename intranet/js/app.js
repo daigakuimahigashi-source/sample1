@@ -1,13 +1,16 @@
 /**
- * 焼肉店 FL管理ダッシュボード - メインアプリ
+ * 焼肉店 FL管理ダッシュボード - メインアプリ（日/月/年 対応）
  */
 (function () {
   'use strict';
 
   // ===== 状態管理 =====
   const state = {
+    period: 'day',          // 'day' | 'month' | 'year'
     selectedDate: null,     // 'YYYY-MM-DD'
-    selectedStoreId: null,  // 店舗ID
+    selectedMonth: null,    // 'YYYY-MM'
+    selectedYear: null,     // 'YYYY'
+    selectedStoreId: null,
   };
 
   // ===== ユーティリティ =====
@@ -24,6 +27,10 @@
       const [, m, d] = dateStr.split('-');
       return `${parseInt(m)}/${parseInt(d)}`;
     },
+    monthYM: (monthStr) => {
+      const [y, m] = monthStr.split('-');
+      return `${y}/${parseInt(m)}`;
+    },
   };
 
   function daysInMonth(monthStr) {
@@ -31,9 +38,9 @@
     return new Date(y, m, 0).getDate();
   }
 
-  function dateToMonth(dateStr) {
-    return dateStr.substring(0, 7);
-  }
+  function dateToMonth(dateStr) { return dateStr.substring(0, 7); }
+  function dateToYear(dateStr)  { return dateStr.substring(0, 4); }
+  function monthToYear(monthStr){ return monthStr.substring(0, 4); }
 
   // ===== データアクセス =====
   function getData() { return SAMPLE_DATA; }
@@ -43,22 +50,28 @@
     const set = new Set(getData().dailySales.map(r => r.date));
     return Array.from(set).sort();
   }
-  function getLatestDate() {
-    const dates = getAllDates();
-    return dates[dates.length - 1];
+  function getAllMonths() {
+    const set = new Set(getData().dailySales.map(r => r.date.substring(0, 7)));
+    return Array.from(set).sort();
   }
-  function getPrevDate(dateStr) {
-    const dates = getAllDates();
-    const idx = dates.indexOf(dateStr);
-    return idx > 0 ? dates[idx - 1] : null;
+  function getAllYears() {
+    const set = new Set(getData().dailySales.map(r => r.date.substring(0, 4)));
+    return Array.from(set).sort();
   }
+  function getLatestDate()  { const a = getAllDates();  return a[a.length - 1]; }
+  function getLatestMonth() { const a = getAllMonths(); return a[a.length - 1]; }
+  function getLatestYear()  { const a = getAllYears();  return a[a.length - 1]; }
 
-  /** 指定日の1店舗分の生データ（なければnull） */
+  function getPrevDate(d)  { const a = getAllDates();  const i = a.indexOf(d); return i > 0 ? a[i - 1] : null; }
+  function getPrevMonth(m) { const a = getAllMonths(); const i = a.indexOf(m); return i > 0 ? a[i - 1] : null; }
+  function getPrevYear(y)  { const a = getAllYears();  const i = a.indexOf(y); return i > 0 ? a[i - 1] : null; }
+
   function getDailyRow(storeId, dateStr) {
     return getData().dailySales.find(r => r.storeId === storeId && r.date === dateStr) || null;
   }
 
-  /** 指定日・店舗の集計（F/L/利益を計算） */
+  // ===== 集計関数 =====
+  /** 日次：1店舗 */
   function calcDaily(storeId, dateStr) {
     const row = getDailyRow(storeId, dateStr);
     if (!row) return null;
@@ -66,104 +79,207 @@
     const lRate = (row.laborCost / row.sales) * 100;
     const flProfit = row.sales - row.estimatedFoodCost - row.laborCost;
     const flRate = fRate + lRate;
-    // 日割り固定費
     const exp = getData().monthlyExpenses.find(e => e.storeId === storeId && e.month === dateToMonth(dateStr));
     const dailyFixed = exp ? (exp.rent + exp.utilities) / daysInMonth(exp.month) : 0;
     const opProfit = flProfit - dailyFixed;
     return {
-      date: row.date,
-      storeId: row.storeId,
-      sales: row.sales,
-      f: row.estimatedFoodCost,
-      l: row.laborCost,
+      date: row.date, storeId: row.storeId,
+      sales: row.sales, f: row.estimatedFoodCost, l: row.laborCost,
       customers: row.customers,
-      fRate, lRate, flRate,
-      flProfit,
-      dailyFixed,
-      opProfit,
+      fRate, lRate, flRate, flProfit, dailyFixed, opProfit,
+      rent: dailyFixed ? (exp.rent / daysInMonth(exp.month)) : 0,
+      utilities: dailyFixed ? (exp.utilities / daysInMonth(exp.month)) : 0,
+      ordProfit: opProfit,
       opProfitRate: (opProfit / row.sales) * 100,
       flProfitRate: (flProfit / row.sales) * 100,
     };
   }
 
-  /** 指定日の全店合算 */
   function calcDailyAll(dateStr) {
-    const rows = getData().stores.map(s => calcDaily(s.id, dateStr)).filter(Boolean);
+    return aggregateRows(
+      getData().stores.map(s => calcDaily(s.id, dateStr)).filter(Boolean),
+      { date: dateStr }
+    );
+  }
+
+  /** 月次：1店舗 */
+  function calcMonthly(storeId, monthStr) {
+    const dailyRows = getData().dailySales
+      .filter(r => r.storeId === storeId && r.date.startsWith(monthStr))
+      .map(r => calcDaily(r.storeId, r.date));
+    if (dailyRows.length === 0) return null;
+    const agg = aggregateRows(dailyRows, { storeId, month: monthStr });
+    // 月次の固定費は実経過日数分だけ
+    const exp = getData().monthlyExpenses.find(e => e.storeId === storeId && e.month === monthStr);
+    if (exp) {
+      const ratio = dailyRows.length / daysInMonth(monthStr);
+      agg.rent = exp.rent * ratio;
+      agg.utilities = exp.utilities * ratio;
+    }
+    return agg;
+  }
+
+  function calcMonthlyAll(monthStr) {
+    const rows = getData().stores.map(s => calcMonthly(s.id, monthStr)).filter(Boolean);
+    if (rows.length === 0) return null;
+    return aggregateRows(rows, { month: monthStr });
+  }
+
+  /** 年次：1店舗 */
+  function calcYearly(storeId, yearStr) {
+    const months = getAllMonths().filter(m => m.startsWith(yearStr));
+    const rows = months.map(m => calcMonthly(storeId, m)).filter(Boolean);
+    if (rows.length === 0) return null;
+    return aggregateRows(rows, { storeId, year: yearStr });
+  }
+
+  function calcYearlyAll(yearStr) {
+    const rows = getData().stores.map(s => calcYearly(s.id, yearStr)).filter(Boolean);
+    if (rows.length === 0) return null;
+    return aggregateRows(rows, { year: yearStr });
+  }
+
+  /** 集計ヘルパ：flProfit/opProfit/f/l/sales/rent/utilities を合算し、率を再計算 */
+  function aggregateRows(rows, meta) {
     const sum = rows.reduce((a, r) => ({
-      sales: a.sales + r.sales,
-      f: a.f + r.f,
-      l: a.l + r.l,
-      flProfit: a.flProfit + r.flProfit,
-      dailyFixed: a.dailyFixed + r.dailyFixed,
-      opProfit: a.opProfit + r.opProfit,
-    }), { sales: 0, f: 0, l: 0, flProfit: 0, dailyFixed: 0, opProfit: 0 });
+      sales: a.sales + (r.sales || 0),
+      f:     a.f     + (r.f     || 0),
+      l:     a.l     + (r.l     || 0),
+      flProfit:  a.flProfit  + (r.flProfit  || 0),
+      rent:      a.rent      + (r.rent      || 0),
+      utilities: a.utilities + (r.utilities || 0),
+      customers: a.customers + (r.customers || 0),
+    }), { sales: 0, f: 0, l: 0, flProfit: 0, rent: 0, utilities: 0, customers: 0 });
+    const fixed = sum.rent + sum.utilities;
+    const opProfit = sum.flProfit - fixed;
     return {
-      ...sum,
-      date: dateStr,
+      ...meta,
+      sales: sum.sales, f: sum.f, l: sum.l,
+      customers: sum.customers,
+      flProfit: sum.flProfit,
+      rent: sum.rent, utilities: sum.utilities,
+      dailyFixed: fixed,
+      opProfit,
+      ordProfit: opProfit,
       fRate: (sum.f / sum.sales) * 100,
       lRate: (sum.l / sum.sales) * 100,
       flRate: ((sum.f + sum.l) / sum.sales) * 100,
       flProfitRate: (sum.flProfit / sum.sales) * 100,
-      opProfitRate: (sum.opProfit / sum.sales) * 100,
+      opProfitRate: (opProfit / sum.sales) * 100,
     };
   }
 
-  /** 店舗の過去N日間の集計（降順） */
-  function calcRecentDays(storeId, dateStr, days) {
+  // ===== 期間シリーズ（グラフ用） =====
+  /** 現在のstateに応じて店舗×期間シリーズを返す（直近N件、古い→新しい順） */
+  function getPeriodSeries(storeId, count) {
+    if (state.period === 'year') {
+      const years = getAllYears();
+      const idx = years.indexOf(state.selectedYear);
+      const slice = years.slice(Math.max(0, idx - count + 1), idx + 1);
+      return slice.map(y => storeId === 'ALL' ? calcYearlyAll(y) : calcYearly(storeId, y)).filter(Boolean);
+    }
+    if (state.period === 'month') {
+      const months = getAllMonths();
+      const idx = months.indexOf(state.selectedMonth);
+      const slice = months.slice(Math.max(0, idx - count + 1), idx + 1);
+      return slice.map(m => storeId === 'ALL' ? calcMonthlyAll(m) : calcMonthly(storeId, m)).filter(Boolean);
+    }
     const dates = getAllDates();
-    const idx = dates.indexOf(dateStr);
-    if (idx < 0) return [];
-    const start = Math.max(0, idx - days + 1);
-    const targetDates = dates.slice(start, idx + 1);
-    return targetDates.map(d => storeId === 'ALL' ? calcDailyAll(d) : calcDaily(storeId, d)).filter(Boolean);
+    const idx = dates.indexOf(state.selectedDate);
+    const slice = dates.slice(Math.max(0, idx - count + 1), idx + 1);
+    return slice.map(d => storeId === 'ALL' ? calcDailyAll(d) : calcDaily(storeId, d)).filter(Boolean);
   }
 
-  /** 月次集計 */
-  function calcMonthly(storeId, monthStr) {
-    const rows = getData().dailySales.filter(r => r.storeId === storeId && r.date.startsWith(monthStr));
-    if (rows.length === 0) return null;
-    const daily = rows.map(r => calcDaily(r.storeId, r.date));
-    const sum = daily.reduce((a, r) => ({
-      sales: a.sales + r.sales,
-      f: a.f + r.f,
-      l: a.l + r.l,
-      flProfit: a.flProfit + r.flProfit,
-    }), { sales: 0, f: 0, l: 0, flProfit: 0 });
-    const exp = getData().monthlyExpenses.find(e => e.storeId === storeId && e.month === monthStr);
-    const rent = exp ? exp.rent : 0;
-    const utilities = exp ? exp.utilities : 0;
-    // 経過日数分の固定費を計算（その月の全日ではなく現在までの日割り × 日数）
-    const fixedTotal = (rent + utilities) * (rows.length / daysInMonth(monthStr));
-    const opProfit = sum.flProfit - fixedTotal;
-    return {
-      storeId, month: monthStr,
-      sales: sum.sales, f: sum.f, l: sum.l,
-      flProfit: sum.flProfit,
-      rent: rent * (rows.length / daysInMonth(monthStr)),
-      utilities: utilities * (rows.length / daysInMonth(monthStr)),
-      opProfit,
-      ordProfit: opProfit, // 営業利益＝経常利益の簡易モデル
-      fRate: (sum.f / sum.sales) * 100,
-      lRate: (sum.l / sum.sales) * 100,
-    };
+  /** 現在選択中の「単一期間」の集計を返す */
+  function calcCurrent(storeId) {
+    if (state.period === 'year')  return storeId === 'ALL' ? calcYearlyAll(state.selectedYear)   : calcYearly(storeId, state.selectedYear);
+    if (state.period === 'month') return storeId === 'ALL' ? calcMonthlyAll(state.selectedMonth) : calcMonthly(storeId, state.selectedMonth);
+    return storeId === 'ALL' ? calcDailyAll(state.selectedDate) : calcDaily(storeId, state.selectedDate);
   }
 
-  // ===== ヘッダー日付ピッカー =====
-  function initDatePicker() {
-    const picker = document.getElementById('date-picker');
-    picker.value = state.selectedDate;
-    picker.min = getAllDates()[0];
-    picker.max = getAllDates()[getAllDates().length - 1];
-    picker.addEventListener('change', (e) => {
+  /** 前期比較用 */
+  function calcPrev(storeId) {
+    if (state.period === 'year') {
+      const y = getPrevYear(state.selectedYear);
+      return y ? (storeId === 'ALL' ? calcYearlyAll(y) : calcYearly(storeId, y)) : null;
+    }
+    if (state.period === 'month') {
+      const m = getPrevMonth(state.selectedMonth);
+      return m ? (storeId === 'ALL' ? calcMonthlyAll(m) : calcMonthly(storeId, m)) : null;
+    }
+    const d = getPrevDate(state.selectedDate);
+    return d ? (storeId === 'ALL' ? calcDailyAll(d) : calcDaily(storeId, d)) : null;
+  }
+
+  // ===== 期間ラベル（UI文言） =====
+  const PERIOD_LABELS = {
+    day:   { kpiTitle: '本日の全店 KPI',        sales: '本日売上', prev: '前日比', trend: '直近30日の売上 × FL引き後利益', ranking: '本日の店舗別売上ランキング', fl: '直近14日 F率・L率推移（全店）', storePeriod: 'の本日実績', storeChart: '直近14日の売上＆利益', storeTable: '直近14日の日次明細', storeCol: '日付', adminPl: '月次PL（全店合算）', opLabel: '営業利益（Daily）' },
+    month: { kpiTitle: '今月の全店 KPI',        sales: '今月売上', prev: '前月比', trend: '直近12ヶ月の売上 × FL引き後利益', ranking: '今月の店舗別売上ランキング', fl: '直近12ヶ月 F率・L率推移（全店）', storePeriod: 'の今月実績', storeChart: '直近12ヶ月の売上＆利益', storeTable: '直近12ヶ月の月次明細', storeCol: '月',   adminPl: '月次PL（全店合算）',     opLabel: '営業利益（Monthly）' },
+    year:  { kpiTitle: '今年の全店 KPI',        sales: '今年売上', prev: '前年比', trend: '直近3年の売上 × FL引き後利益',    ranking: '今年の店舗別売上ランキング', fl: '直近3年 F率・L率推移（全店）',    storePeriod: 'の今年実績', storeChart: '直近3年の売上＆利益',   storeTable: '直近3年の年次明細',   storeCol: '年',   adminPl: '年次PL（全店合算）',     opLabel: '営業利益（Yearly）' },
+  };
+
+  function rowKey(r) {
+    if (state.period === 'year')  return r.year + '年';
+    if (state.period === 'month') return fmt.monthYM(r.month);
+    return fmt.dateMD(r.date);
+  }
+
+  // ===== 期間セレクタ & ピッカー =====
+  function initPickers() {
+    // year picker options
+    const yearSel = document.getElementById('year-picker');
+    yearSel.innerHTML = '';
+    getAllYears().forEach(y => {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y + '年';
+      yearSel.appendChild(o);
+    });
+
+    const datePicker  = document.getElementById('date-picker');
+    const monthPicker = document.getElementById('month-picker');
+
+    datePicker.min  = getAllDates()[0];
+    datePicker.max  = getLatestDate();
+    monthPicker.min = getAllMonths()[0];
+    monthPicker.max = getLatestMonth();
+
+    datePicker.value  = state.selectedDate;
+    monthPicker.value = state.selectedMonth;
+    yearSel.value     = state.selectedYear;
+
+    datePicker.addEventListener('change', (e) => {
       const dates = getAllDates();
-      if (dates.includes(e.target.value)) {
-        state.selectedDate = e.target.value;
-      } else {
-        // 最寄りの実在日付にフォールバック
-        state.selectedDate = dates.reduce((best, d) => Math.abs(new Date(d) - new Date(e.target.value)) < Math.abs(new Date(best) - new Date(e.target.value)) ? d : best, dates[0]);
-        picker.value = state.selectedDate;
-      }
+      state.selectedDate = dates.includes(e.target.value)
+        ? e.target.value
+        : dates.reduce((best, d) => Math.abs(new Date(d) - new Date(e.target.value)) < Math.abs(new Date(best) - new Date(e.target.value)) ? d : best, dates[0]);
+      datePicker.value = state.selectedDate;
       renderAll();
+    });
+    monthPicker.addEventListener('change', (e) => {
+      const months = getAllMonths();
+      state.selectedMonth = months.includes(e.target.value) ? e.target.value : getLatestMonth();
+      monthPicker.value = state.selectedMonth;
+      renderAll();
+    });
+    yearSel.addEventListener('change', (e) => {
+      state.selectedYear = e.target.value;
+      renderAll();
+    });
+  }
+
+  function initPeriodToggle() {
+    const btns = document.querySelectorAll('.period-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.period = btn.dataset.period;
+        // ピッカー切替
+        document.querySelectorAll('.period-input').forEach(p => {
+          p.classList.toggle('hidden', p.dataset.period !== state.period);
+        });
+        renderAll();
+      });
     });
   }
 
@@ -182,7 +298,7 @@
     });
   }
 
-  // ===== 差分バッジ生成 =====
+  // ===== 差分バッジ =====
   function diffBadge(current, previous, isRate = false, invertColor = false) {
     if (!isFinite(current) || !isFinite(previous) || previous === 0) {
       return '<span class="diff-badge neutral">--</span>';
@@ -198,49 +314,61 @@
 
   // ===== ダッシュボードタブ =====
   function renderOverview() {
-    const date = state.selectedDate;
-    const today = calcDailyAll(date);
-    const prev = getPrevDate(date) ? calcDailyAll(getPrevDate(date)) : null;
-
+    const L = PERIOD_LABELS[state.period];
+    const cur = calcCurrent('ALL');
+    const prev = calcPrev('ALL');
     const $ = (id) => document.getElementById(id);
 
-    $('kpi-sales').textContent = fmt.yenShort(today.sales);
-    $('kpi-sales-diff').innerHTML = '前日比 ' + (prev ? diffBadge(today.sales, prev.sales) : '--');
+    $('overview-kpi-title').textContent = L.kpiTitle;
+    $('kpi-sales-label').textContent = L.sales;
+    $('kpi-op-profit-label').textContent = L.opLabel;
+    $('overview-trend-title').textContent = L.trend;
+    $('overview-ranking-title').textContent = L.ranking;
+    $('overview-fl-title').textContent = L.fl;
 
-    $('kpi-f').textContent = fmt.yenShort(today.f);
-    $('kpi-f-rate').textContent = fmt.pct(today.fRate);
+    if (!cur) {
+      ['kpi-sales','kpi-f','kpi-l','kpi-fl-rate','kpi-fl-profit','kpi-op-profit'].forEach(id => $(id).textContent = '--');
+      return;
+    }
 
-    $('kpi-l').textContent = fmt.yenShort(today.l);
-    $('kpi-l-rate').textContent = fmt.pct(today.lRate);
+    $('kpi-sales').textContent = fmt.yenShort(cur.sales);
+    $('kpi-sales-diff').innerHTML = L.prev + ' ' + (prev ? diffBadge(cur.sales, prev.sales) : '--');
 
-    // FL合計比率 vs 平均目標（全店の目標平均）
+    $('kpi-f').textContent = fmt.yenShort(cur.f);
+    $('kpi-f-rate').textContent = fmt.pct(cur.fRate);
+
+    $('kpi-l').textContent = fmt.yenShort(cur.l);
+    $('kpi-l-rate').textContent = fmt.pct(cur.lRate);
+
     const avgTargetFL = getData().stores.reduce((a, s) => a + s.targetF + s.targetL, 0) / getData().stores.length;
-    $('kpi-fl-rate').textContent = fmt.pct(today.flRate);
-    const flDiff = today.flRate - avgTargetFL;
+    $('kpi-fl-rate').textContent = fmt.pct(cur.flRate);
+    const flDiff = cur.flRate - avgTargetFL;
     const flBadgeCls = flDiff <= 0 ? 'good' : 'bad';
     const flSign = flDiff >= 0 ? '▲' : '▼';
     $('kpi-fl-diff').innerHTML = `目標平均 ${avgTargetFL.toFixed(1)}% <span class="diff-badge ${flBadgeCls}">${flSign} ${Math.abs(flDiff).toFixed(1)}pt</span>`;
 
-    $('kpi-fl-profit').textContent = fmt.yenShort(today.flProfit);
-    $('kpi-fl-profit-rate').textContent = fmt.pct(today.flProfitRate);
+    $('kpi-fl-profit').textContent = fmt.yenShort(cur.flProfit);
+    $('kpi-fl-profit-rate').textContent = fmt.pct(cur.flProfitRate);
 
-    $('kpi-op-profit').textContent = fmt.yenShort(today.opProfit);
-    $('kpi-op-profit-rate').textContent = fmt.pct(today.opProfitRate);
+    $('kpi-op-profit').textContent = fmt.yenShort(cur.opProfit);
+    $('kpi-op-profit-rate').textContent = fmt.pct(cur.opProfitRate);
 
-    // 直近30日のグラフ
-    const recent30 = calcRecentDays('ALL', date, 30);
-    Charts.renderDailySalesProfit('chart-daily-sales', recent30);
+    // トレンドグラフ
+    const trendCount = state.period === 'day' ? 30 : state.period === 'month' ? 12 : 3;
+    const trendRows = getPeriodSeries('ALL', trendCount);
+    Charts.renderPeriodSalesProfit('chart-daily-sales', trendRows, state.period);
 
     // 店舗別ランキング
     const storeRows = getData().stores.map(s => {
-      const d = calcDaily(s.id, date);
+      const d = calcCurrent(s.id);
       return d ? { name: s.name, sales: d.sales } : null;
     }).filter(Boolean);
     Charts.renderStoreRanking('chart-store-ranking', storeRows);
 
-    // FL比率推移（14日）
-    const recent14 = calcRecentDays('ALL', date, 14);
-    Charts.renderFLTrend('chart-fl-trend', recent14, 32, 27);
+    // FL比率推移
+    const flCount = state.period === 'day' ? 14 : state.period === 'month' ? 12 : 3;
+    const flRows = getPeriodSeries('ALL', flCount);
+    Charts.renderFLTrend('chart-fl-trend', flRows, 32, 27, state.period);
   }
 
   // ===== 店舗別タブ =====
@@ -261,12 +389,17 @@
   }
 
   function renderStoreDetail() {
+    const L = PERIOD_LABELS[state.period];
     const store = getStore(state.selectedStoreId);
     if (!store) return;
-    const d = calcDaily(store.id, state.selectedDate);
+    const d = calcCurrent(store.id);
     const $ = (id) => document.getElementById(id);
 
     $('store-title').textContent = store.name;
+    $('store-period-label').textContent = L.storePeriod;
+    $('store-chart-title').textContent = L.storeChart;
+    $('store-table-title').textContent = L.storeTable;
+    $('store-table-period-col').textContent = L.storeCol;
 
     if (!d) {
       ['store-sales','store-f','store-l','store-fl-profit','store-op-profit'].forEach(id => $(id).textContent = '--');
@@ -274,7 +407,7 @@
     }
 
     $('store-sales').textContent = fmt.yenShort(d.sales);
-    $('store-customers').textContent = `${d.customers} 組`;
+    $('store-customers').textContent = `${(d.customers || 0).toLocaleString()} 組`;
 
     $('store-f').textContent = fmt.yenShort(d.f);
     $('store-f-rate').textContent = `${fmt.pct(d.fRate)}（目標 ${store.targetF}%）`;
@@ -306,7 +439,7 @@
           <strong style="font-size:1.1rem;">${targetFL}%（F:${store.targetF}% / L:${store.targetL}%）</strong>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="color:var(--text-secondary); font-size:0.85rem;">本日FL比率</span>
+          <span style="color:var(--text-secondary); font-size:0.85rem;">当期FL比率</span>
           <strong style="font-size:1.1rem; color:${good ? 'var(--success)' : 'var(--danger)'};">${d.flRate.toFixed(1)}%</strong>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px solid var(--border);">
@@ -323,19 +456,19 @@
       </div>
     `;
 
-    // 直近14日グラフ
-    const recent14 = calcRecentDays(store.id, state.selectedDate, 14);
-    Charts.renderStoreDaily('chart-store-daily', recent14);
+    // グラフ & テーブル
+    const count = state.period === 'day' ? 14 : state.period === 'month' ? 12 : 3;
+    const series = getPeriodSeries(store.id, count);
+    Charts.renderStorePeriod('chart-store-daily', series, state.period);
 
-    // 日次明細テーブル（新しい順）
     const tbody = document.querySelector('#table-store-detail tbody');
     tbody.innerHTML = '';
-    [...recent14].reverse().forEach(r => {
+    [...series].reverse().forEach(r => {
       const fGood = r.fRate <= store.targetF;
       const lGood = r.lRate <= store.targetL;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${fmt.dateMD(r.date)}</strong></td>
+        <td><strong>${rowKey(r)}</strong></td>
         <td class="num">${fmt.yen(r.sales)}</td>
         <td class="num">${fmt.yen(r.f)}</td>
         <td class="num" style="color:${fGood ? 'var(--success)' : 'var(--danger)'};">${r.fRate.toFixed(1)}%</td>
@@ -350,29 +483,30 @@
 
   // ===== 管理タブ =====
   function renderAdmin() {
-    const month = dateToMonth(state.selectedDate);
+    const L = PERIOD_LABELS[state.period];
     const stores = getData().stores;
+    document.getElementById('admin-pl-title').textContent = L.adminPl;
 
-    // 月次PL
+    // PL（期間対応）
     const plTbody = document.querySelector('#table-monthly-pl tbody');
     plTbody.innerHTML = '';
     const items = [
-      { key: 'sales',     label: '売上',          highlight: false },
-      { key: 'f',         label: 'F（食材原価）', highlight: false },
-      { key: 'l',         label: 'L（人件費）',   highlight: false },
-      { key: 'flProfit',  label: 'FL引き後利益',  highlight: true  },
-      { key: 'rent',      label: '家賃（経過日割）',   highlight: false },
-      { key: 'utilities', label: '光熱費（経過日割）', highlight: false },
-      { key: 'opProfit',  label: '営業利益',      highlight: true  },
-      { key: 'ordProfit', label: '経常利益',      highlight: true  },
+      { key: 'sales',     label: '売上',             highlight: false },
+      { key: 'f',         label: 'F（食材原価）',    highlight: false },
+      { key: 'l',         label: 'L（人件費）',      highlight: false },
+      { key: 'flProfit',  label: 'FL引き後利益',     highlight: true  },
+      { key: 'rent',      label: '家賃',             highlight: false },
+      { key: 'utilities', label: '光熱費',           highlight: false },
+      { key: 'opProfit',  label: '営業利益',         highlight: true  },
+      { key: 'ordProfit', label: '経常利益',         highlight: true  },
     ];
-    const monthly = stores.map(s => ({ store: s, data: calcMonthly(s.id, month) }));
+    const perStore = stores.map(s => ({ store: s, data: calcCurrent(s.id) }));
     items.forEach(item => {
       const tr = document.createElement('tr');
       if (item.highlight) tr.classList.add('highlight-row');
       let cells = `<td>${item.label}</td>`;
       let total = 0;
-      monthly.forEach(m => {
+      perStore.forEach(m => {
         const val = m.data ? m.data[item.key] : 0;
         total += val || 0;
         cells += `<td class="num">${val ? fmt.yenShort(val) : '--'}</td>`;
@@ -382,14 +516,20 @@
       plTbody.appendChild(tr);
     });
 
-    // 固定費テーブル
+    // 固定費テーブル（常に月次ベース：現在選択月 or 選択日が属する月）
+    let refMonth;
+    if (state.period === 'month') refMonth = state.selectedMonth;
+    else if (state.period === 'year') {
+      const monthsInYear = getAllMonths().filter(m => m.startsWith(state.selectedYear));
+      refMonth = monthsInYear[monthsInYear.length - 1] || getLatestMonth();
+    } else refMonth = dateToMonth(state.selectedDate);
     const expTbody = document.querySelector('#table-expenses tbody');
     expTbody.innerHTML = '';
     stores.forEach(s => {
-      const exp = getData().monthlyExpenses.find(e => e.storeId === s.id && e.month === month);
+      const exp = getData().monthlyExpenses.find(e => e.storeId === s.id && e.month === refMonth);
       if (!exp) return;
       const total = exp.rent + exp.utilities;
-      const daily = total / daysInMonth(month);
+      const daily = total / daysInMonth(refMonth);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${s.name}</strong></td>
@@ -401,13 +541,13 @@
       expTbody.appendChild(tr);
     });
 
-    // MF突合テーブル
+    // MF突合
     const mfTbody = document.querySelector('#table-mf tbody');
     mfTbody.innerHTML = '';
     getData().mfReconciliation.forEach(r => {
       const diff = r.mfValue - r.ourValue;
       const diffAbs = Math.abs(diff);
-      const threshold = r.ourValue * 0.005; // 0.5%を閾値
+      const threshold = r.ourValue * 0.005;
       const isAlert = diffAbs > threshold && diffAbs > 1000;
       const cls = diff === 0 ? 'neutral' : (isAlert ? 'bad' : 'neutral');
       const sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
@@ -417,7 +557,7 @@
         <td>${r.item}</td>
         <td class="num">${fmt.yen(r.ourValue)}</td>
         <td class="num">${fmt.yen(r.mfValue)}</td>
-        <td class="num"><span class="diff-badge ${cls}">${sign}${fmt.yen(diffAbs).replace('¥', '¥')}</span></td>
+        <td class="num"><span class="diff-badge ${cls}">${sign}${fmt.yen(diffAbs)}</span></td>
         <td style="color:var(--text-secondary); font-size:0.82rem;">${r.note}</td>
       `;
       mfTbody.appendChild(tr);
@@ -450,10 +590,13 @@
 
   // ===== 初期化 =====
   function init() {
-    state.selectedDate = getLatestDate();
+    state.selectedDate  = getLatestDate();
+    state.selectedMonth = getLatestMonth();
+    state.selectedYear  = getLatestYear();
     state.selectedStoreId = getData().stores[0].id;
     initTabs();
-    initDatePicker();
+    initPeriodToggle();
+    initPickers();
     renderAll();
   }
 
