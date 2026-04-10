@@ -557,7 +557,7 @@
     const isAll = storeId === 'ALL';
     const storeName = isAll ? '全店' : getStore(storeId).name;
     const periodLabels = { day: 'の本日人件費', month: 'の今月人件費', year: 'の今年人件費' };
-    const trendLabels = { day: '人件費 × 売上推移（直近14日）', month: '人件費 × 売上推移（直近12ヶ月）', year: '人件費 × 売上推移' };
+    const trendLabels = { day: '人件費推移（直近14日）', month: '人件費推移（直近12ヶ月）', year: '人件費推移' };
 
     $('labor-title').textContent = storeName;
     $('labor-period-label').textContent = periodLabels[state.period] || 'の人件費サマリ';
@@ -590,7 +590,7 @@
     renderShiftTable(shifts);
   }
 
-  /** 人件費（棒）× 売上（線）の複合チャート、ツールチップにL率表示 */
+  /** 人件費の棒グラフ（売上・L率は下段に参考表示） */
   function renderLaborTrendChart() {
     const canvas = document.getElementById('chart-labor-trend');
     const ctx = canvas.getContext('2d');
@@ -616,7 +616,6 @@
       labels = keys.map(y => y + '年');
     }
 
-    // データ構築
     const laborData = [];
     const salesData = [];
     keys.forEach(key => {
@@ -624,7 +623,6 @@
       if (!isAll) sh = sh.filter(s => s.storeId === storeId);
       laborData.push(sh.reduce((a, s) => a + s.laborCost, 0));
 
-      // 売上
       let salesRow;
       if (state.period === 'day') salesRow = isAll ? calcDailyAll(key) : calcDaily(storeId, key);
       else if (state.period === 'month') salesRow = isAll ? calcMonthlyAll(key) : calcMonthly(storeId, key);
@@ -636,59 +634,44 @@
       type: 'bar',
       data: {
         labels,
-        datasets: [
-          {
-            label: '人件費',
-            data: laborData,
-            backgroundColor: 'rgba(139,94,60,0.7)',
-            borderRadius: 4,
-            yAxisID: 'y',
-            order: 2,
-          },
-          {
-            label: '売上',
-            type: 'line',
-            data: salesData,
-            borderColor: '#e74c3c',
-            backgroundColor: 'rgba(231,76,60,0.08)',
-            fill: false,
-            tension: 0.3,
-            pointRadius: 3,
-            borderWidth: 2,
-            yAxisID: 'y',
-            order: 1,
-          },
-        ],
+        datasets: [{
+          label: '人件費',
+          data: laborData,
+          backgroundColor: 'rgba(139,94,60,0.75)',
+          borderRadius: 4,
+        }],
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+          legend: { display: false },
           tooltip: {
             callbacks: {
+              label: function(c) { return `人件費: ${fmt.yenShort(c.raw)}`; },
               afterBody: function(items) {
                 const idx = items[0].dataIndex;
-                const labor = laborData[idx];
-                const sales = salesData[idx];
-                const lR = sales > 0 ? (labor / sales * 100).toFixed(1) : '--';
-                return `L率: ${lR}%`;
-              },
-              label: function(ctx) {
-                return `${ctx.dataset.label}: ${fmt.yenShort(ctx.raw)}`;
+                const s = salesData[idx];
+                const lR = s > 0 ? (laborData[idx] / s * 100).toFixed(1) : '--';
+                return `売上: ${fmt.yenShort(s)}\nL率: ${lR}%`;
               },
             },
           },
         },
         scales: {
-          y: {
-            ticks: { callback: v => fmt.yenShort(v) },
-            grid: { color: 'rgba(0,0,0,0.06)' },
-          },
+          y: { ticks: { callback: v => fmt.yenShort(v) }, grid: { color: 'rgba(0,0,0,0.06)' } },
           x: { grid: { display: false } },
         },
       },
     });
+
+    // 下段に売上・L率を参考表示
+    const refRow = document.getElementById('labor-ref-row');
+    refRow.innerHTML = keys.map((_, i) => {
+      const s = salesData[i];
+      const lR = s > 0 ? (laborData[i] / s * 100).toFixed(1) + '%' : '--';
+      const sMn = Math.round(s / 10000);
+      return `<div class="chart-ref-item"><span class="ref-val">${sMn}万</span><span class="ref-val">${lR}</span></div>`;
+    }).join('');
   }
 
   function renderStaffTable(shifts, storeId) {

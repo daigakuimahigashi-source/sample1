@@ -281,6 +281,26 @@ body {
 .chart-container-sm { height: 220px; }
 .chart-container-h { height: 260px; }
 
+/* Chart reference row */
+.chart-ref-row {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding: 8px 12px 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.chart-ref-item {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.chart-ref-item .ref-label { font-weight: 600; color: var(--text-secondary); }
+.chart-ref-item .ref-val { display: block; font-variant-numeric: tabular-nums; }
+
 /* ===== Store Selector Chips ===== */
 .store-chips {
   display: flex;
