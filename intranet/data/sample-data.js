@@ -158,37 +158,38 @@ function generateMonthlyExpenses() {
 }
 
 // ===== スタッフマスタ =====
+// type: 'fulltime'=正社員, 'parttime'=アルバイト
 const STAFF = [
-  // 那覇松山店（6名）
-  { id: 's01', name: '比嘉 太郎',   hourlyRate: 1050, stores: ['matsuyama'] },
-  { id: 's02', name: '仲村 花子',   hourlyRate: 1000, stores: ['matsuyama'] },
-  { id: 's03', name: '上原 健一',   hourlyRate: 1100, stores: ['matsuyama'] },
-  { id: 's04', name: '新垣 美咲',   hourlyRate:  980, stores: ['matsuyama'] },
-  { id: 's05', name: '金城 翔',     hourlyRate: 1020, stores: ['matsuyama', 'kumoji'] },
-  { id: 's06', name: '宮城 真由美', hourlyRate: 1000, stores: ['matsuyama'] },
-  // 那覇久茂地店（5名）
-  { id: 's07', name: '島袋 大輔',   hourlyRate: 1080, stores: ['kumoji'] },
-  { id: 's08', name: '平良 さくら', hourlyRate: 1000, stores: ['kumoji'] },
-  { id: 's09', name: '城間 裕太',   hourlyRate:  980, stores: ['kumoji'] },
-  { id: 's10', name: '赤嶺 えみ',   hourlyRate: 1050, stores: ['kumoji', 'miebashi'] },
-  { id: 's11', name: '仲間 優',     hourlyRate: 1020, stores: ['kumoji'] },
-  // 美栄橋店（4名）
-  { id: 's12', name: '玉城 拓也',   hourlyRate: 1100, stores: ['miebashi'] },
-  { id: 's13', name: '照屋 美穂',   hourlyRate: 1000, stores: ['miebashi'] },
-  { id: 's14', name: '知念 将太',   hourlyRate:  980, stores: ['miebashi', 'misato'] },
-  { id: 's15', name: '大城 あおい', hourlyRate: 1020, stores: ['miebashi'] },
-  // 美里店（3名 ※小規模＋掛持ちでカバー）
-  { id: 's16', name: '具志堅 光',   hourlyRate: 1050, stores: ['misato'] },
-  { id: 's17', name: '喜屋武 琴音', hourlyRate:  980, stores: ['misato'] },
-  // 一所懸命（8名）
-  { id: 's18', name: '安里 修',     hourlyRate: 1080, stores: ['isshokenmei'] },
-  { id: 's19', name: '伊波 凛',     hourlyRate: 1000, stores: ['isshokenmei'] },
-  { id: 's20', name: '嘉手納 大地', hourlyRate: 1050, stores: ['isshokenmei'] },
-  { id: 's21', name: '當山 ひなの', hourlyRate:  980, stores: ['isshokenmei'] },
-  { id: 's22', name: '友寄 聡',     hourlyRate: 1020, stores: ['isshokenmei'] },
-  { id: 's23', name: '屋比久 千夏', hourlyRate: 1000, stores: ['isshokenmei', 'matsuyama'] },
-  { id: 's24', name: '桃原 翼',     hourlyRate:  980, stores: ['isshokenmei'] },
-  { id: 's25', name: '与那嶺 まりな', hourlyRate: 1050, stores: ['isshokenmei'] },
+  // 那覇松山店（6名：正社員2、バイト4）
+  { id: 's01', name: '比嘉 太郎',   hourlyRate: 1050, stores: ['matsuyama'],          type: 'fulltime' },
+  { id: 's02', name: '仲村 花子',   hourlyRate: 1000, stores: ['matsuyama'],          type: 'fulltime' },
+  { id: 's03', name: '上原 健一',   hourlyRate: 1100, stores: ['matsuyama'],          type: 'parttime' },
+  { id: 's04', name: '新垣 美咲',   hourlyRate:  980, stores: ['matsuyama'],          type: 'parttime' },
+  { id: 's05', name: '金城 翔',     hourlyRate: 1020, stores: ['matsuyama', 'kumoji'], type: 'parttime' },
+  { id: 's06', name: '宮城 真由美', hourlyRate: 1000, stores: ['matsuyama'],          type: 'parttime' },
+  // 那覇久茂地店（5名：正社員2、バイト3）
+  { id: 's07', name: '島袋 大輔',   hourlyRate: 1080, stores: ['kumoji'],              type: 'fulltime' },
+  { id: 's08', name: '平良 さくら', hourlyRate: 1000, stores: ['kumoji'],              type: 'fulltime' },
+  { id: 's09', name: '城間 裕太',   hourlyRate:  980, stores: ['kumoji'],              type: 'parttime' },
+  { id: 's10', name: '赤嶺 えみ',   hourlyRate: 1050, stores: ['kumoji', 'miebashi'],  type: 'parttime' },
+  { id: 's11', name: '仲間 優',     hourlyRate: 1020, stores: ['kumoji'],              type: 'parttime' },
+  // 美栄橋店（4名：正社員1、バイト3）
+  { id: 's12', name: '玉城 拓也',   hourlyRate: 1100, stores: ['miebashi'],            type: 'fulltime' },
+  { id: 's13', name: '照屋 美穂',   hourlyRate: 1000, stores: ['miebashi'],            type: 'parttime' },
+  { id: 's14', name: '知念 将太',   hourlyRate:  980, stores: ['miebashi', 'misato'],  type: 'parttime' },
+  { id: 's15', name: '大城 あおい', hourlyRate: 1020, stores: ['miebashi'],            type: 'parttime' },
+  // 美里店（3名：正社員1、バイト2 ※小規模＋掛持ちでカバー）
+  { id: 's16', name: '具志堅 光',   hourlyRate: 1050, stores: ['misato'],              type: 'fulltime' },
+  { id: 's17', name: '喜屋武 琴音', hourlyRate:  980, stores: ['misato'],              type: 'parttime' },
+  // 一所懸命（8名：正社員2、バイト6）
+  { id: 's18', name: '安里 修',     hourlyRate: 1080, stores: ['isshokenmei'],             type: 'fulltime' },
+  { id: 's19', name: '伊波 凛',     hourlyRate: 1000, stores: ['isshokenmei'],             type: 'fulltime' },
+  { id: 's20', name: '嘉手納 大地', hourlyRate: 1050, stores: ['isshokenmei'],             type: 'parttime' },
+  { id: 's21', name: '當山 ひなの', hourlyRate:  980, stores: ['isshokenmei'],             type: 'parttime' },
+  { id: 's22', name: '友寄 聡',     hourlyRate: 1020, stores: ['isshokenmei'],             type: 'parttime' },
+  { id: 's23', name: '屋比久 千夏', hourlyRate: 1000, stores: ['isshokenmei', 'matsuyama'], type: 'parttime' },
+  { id: 's24', name: '桃原 翼',     hourlyRate:  980, stores: ['isshokenmei'],             type: 'parttime' },
+  { id: 's25', name: '与那嶺 まりな', hourlyRate: 1050, stores: ['isshokenmei'],           type: 'parttime' },
 ];
 
 // ===== シフト（日次出勤データ）を生成 =====
@@ -250,6 +251,13 @@ function generateDailyShifts() {
         const breakMin = hours >= 6 ? 60 : (hours >= 4.5 ? 30 : 0);
         const actualHours = hours; // 休憩除いた実労働
 
+        // 深夜割増計算（22時以降 ×1.25）
+        const lateNightHours = endHour > 22 ? endHour - 22 : 0;
+        const normalHours = actualHours - lateNightHours;
+        const laborCost = Math.round(
+          normalHours * staff.hourlyRate + lateNightHours * staff.hourlyRate * 1.25
+        );
+
         result.push({
           date: dateStr,
           staffId: staff.id,
@@ -257,8 +265,9 @@ function generateDailyShifts() {
           startHour: pat.start,
           endHour,
           hours: actualHours,
+          lateNightHours,
           breakMinutes: breakMin,
-          laborCost: actualHours * staff.hourlyRate,
+          laborCost,
         });
       });
     });

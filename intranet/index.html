@@ -176,7 +176,7 @@
       <div class="store-chips" id="labor-store-chips"></div>
 
       <h3 class="section-title"><span class="icon">💰</span><span id="labor-title">全店</span> <span id="labor-period-label">の人件費サマリ</span></h3>
-      <div class="kpi-grid kpi-grid-4">
+      <div class="kpi-grid kpi-grid-3">
         <div class="kpi-card accent-brown">
           <span class="kpi-label">人件費合計</span>
           <span class="kpi-value" id="labor-total-cost">--</span>
@@ -192,25 +192,12 @@
           <span class="kpi-value" id="labor-head-count">--</span>
           <span class="kpi-sub" id="labor-total-hours">合計 --h</span>
         </div>
-        <div class="kpi-card accent-red">
-          <span class="kpi-label">一人当たり人件費</span>
-          <span class="kpi-value" id="labor-per-person">--</span>
-          <span class="kpi-sub" id="labor-avg-hours">平均 --h</span>
-        </div>
       </div>
 
-      <div class="two-col" style="margin-top:1rem;">
-        <div class="card chart-card">
-          <h3 class="card-title" id="labor-chart-title">店舗別 人件費比較</h3>
-          <div class="chart-container chart-container-h">
-            <canvas id="chart-labor-by-store"></canvas>
-          </div>
-        </div>
-        <div class="card chart-card">
-          <h3 class="card-title" id="labor-trend-title">人件費推移</h3>
-          <div class="chart-container chart-container-h">
-            <canvas id="chart-labor-trend"></canvas>
-          </div>
+      <h3 class="section-title"><span class="icon">📊</span><span id="labor-trend-title">人件費 × 売上推移</span></h3>
+      <div class="card chart-card">
+        <div class="chart-container">
+          <canvas id="chart-labor-trend"></canvas>
         </div>
       </div>
 
@@ -221,10 +208,12 @@
             <thead>
               <tr>
                 <th>名前</th>
+                <th>区分</th>
                 <th>所属店舗</th>
                 <th class="num">時給</th>
                 <th class="num">出勤日数</th>
                 <th class="num">合計時間</th>
+                <th class="num">深夜</th>
                 <th class="num">人件費</th>
               </tr>
             </thead>

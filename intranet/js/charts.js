@@ -55,7 +55,7 @@ const Charts = (() => {
     return `${parseInt(m)}/${parseInt(d)}`;
   }
 
-  /** 売上（棒）＋FL引き後利益（折れ線） — 期間対応 */
+  /** 売上（棒）＋FL引き後利益（折れ線） — 期間対応、ツールチップに利益率 */
   function renderPeriodSalesProfit(canvasId, rows, period) {
     destroy(canvasId);
     const ctx = document.getElementById(canvasId);
@@ -109,6 +109,12 @@ const Charts = (() => {
           tooltip: {
             callbacks: {
               label: ctx => `${ctx.dataset.label}: ${fmtYenTooltip(ctx.parsed.y)}`,
+              afterBody: function(items) {
+                const idx = items[0].dataIndex;
+                const r = rows[idx];
+                if (!r) return '';
+                return `利益率: ${r.flProfitRate != null ? r.flProfitRate.toFixed(1) + '%' : '--'}`;
+              },
             },
           },
         },
@@ -288,6 +294,12 @@ const Charts = (() => {
           tooltip: {
             callbacks: {
               label: ctx => `${ctx.dataset.label}: ${fmtYenTooltip(ctx.parsed.y)}`,
+              afterBody: function(items) {
+                const idx = items[0].dataIndex;
+                const r = rows[idx];
+                if (!r) return '';
+                return `利益率: ${r.flProfitRate != null ? r.flProfitRate.toFixed(1) + '%' : '--'}`;
+              },
             },
           },
         },
