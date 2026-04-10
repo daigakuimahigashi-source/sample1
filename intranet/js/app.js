@@ -283,6 +283,21 @@
     });
   }
 
+  // ===== F・L明細トグル =====
+  function initDetailToggle() {
+    const btn = document.getElementById('detail-toggle');
+    const table = document.getElementById('table-store-detail');
+    const label = document.getElementById('detail-toggle-label');
+    if (!btn || !table) return;
+    btn.addEventListener('click', () => {
+      const open = !table.classList.contains('show-detail');
+      table.classList.toggle('show-detail', open);
+      btn.classList.toggle('active', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      label.textContent = open ? 'F・L 明細を隠す' : 'F・L 明細を表示';
+    });
+  }
+
   // ===== タブ切り替え =====
   function initTabs() {
     const btns = document.querySelectorAll('.nav-btn');
@@ -466,16 +481,18 @@
     [...series].reverse().forEach(r => {
       const fGood = r.fRate <= store.targetF;
       const lGood = r.lRate <= store.targetL;
+      const profitGood = r.flProfit >= 0;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${rowKey(r)}</strong></td>
         <td class="num">${fmt.yen(r.sales)}</td>
-        <td class="num">${fmt.yen(r.f)}</td>
-        <td class="num" style="color:${fGood ? 'var(--success)' : 'var(--danger)'};">${r.fRate.toFixed(1)}%</td>
-        <td class="num">${fmt.yen(r.l)}</td>
-        <td class="num" style="color:${lGood ? 'var(--success)' : 'var(--danger)'};">${r.lRate.toFixed(1)}%</td>
-        <td class="num">${r.flRate.toFixed(1)}%</td>
-        <td class="num"><strong>${fmt.yen(r.flProfit)}</strong></td>
+        <td class="num"><strong style="color:${profitGood ? 'var(--success)' : 'var(--danger)'};">${fmt.yen(r.flProfit)}</strong></td>
+        <td class="num">${r.flProfitRate.toFixed(1)}%</td>
+        <td class="num detail-col">${fmt.yen(r.f)}</td>
+        <td class="num detail-col" style="color:${fGood ? 'var(--success)' : 'var(--danger)'};">${r.fRate.toFixed(1)}%</td>
+        <td class="num detail-col">${fmt.yen(r.l)}</td>
+        <td class="num detail-col" style="color:${lGood ? 'var(--success)' : 'var(--danger)'};">${r.lRate.toFixed(1)}%</td>
+        <td class="num detail-col">${r.flRate.toFixed(1)}%</td>
       `;
       tbody.appendChild(tr);
     });
@@ -597,6 +614,7 @@
     initTabs();
     initPeriodToggle();
     initPickers();
+    initDetailToggle();
     renderAll();
   }
 

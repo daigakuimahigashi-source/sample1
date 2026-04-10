@@ -142,7 +142,12 @@
         </div>
       </div>
 
-      <h3 class="section-title"><span class="icon">📋</span><span id="store-table-title">直近14日の日次明細</span></h3>
+      <h3 class="section-title">
+        <span class="icon">📋</span><span id="store-table-title">直近14日の日次明細</span>
+        <button class="detail-toggle" id="detail-toggle" type="button" aria-expanded="false">
+          <span class="detail-toggle-icon">▸</span><span id="detail-toggle-label">F・L 明細を表示</span>
+        </button>
+      </h3>
       <div class="card">
         <div class="table-wrap">
           <table class="data-table" id="table-store-detail">
@@ -150,12 +155,13 @@
               <tr>
                 <th id="store-table-period-col">日付</th>
                 <th class="num">売上</th>
-                <th class="num">F（原価）</th>
-                <th class="num">F率</th>
-                <th class="num">L（人件費）</th>
-                <th class="num">L率</th>
-                <th class="num">FL率</th>
                 <th class="num">FL引き後利益</th>
+                <th class="num">FL引き後利益率</th>
+                <th class="num detail-col">F（原価）</th>
+                <th class="num detail-col">F率</th>
+                <th class="num detail-col">L（人件費）</th>
+                <th class="num detail-col">L率</th>
+                <th class="num detail-col">FL率</th>
               </tr>
             </thead>
             <tbody></tbody>
