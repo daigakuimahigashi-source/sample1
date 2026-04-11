@@ -12,6 +12,7 @@
     selectedYear: null,     // 'YYYY'
     selectedStoreId: null,
     laborStoreId: 'ALL',    // 人件費タブの店舗フィルタ
+    costStoreId: 'ALL',     // 原価タブの店舗フィルタ
   };
 
   // ===== ユーティリティ =====
@@ -514,6 +515,225 @@
     });
   }
 
+  // ===== 原価タブ =====
+
+  function getProductSalesForPeriod(storeId) {
+    const ps = getData().productSales;
+    let filtered;
+    if (state.period === 'year') filtered = ps.filter(s => s.date.startsWith(state.selectedYear));
+    else if (state.period === 'month') filtered = ps.filter(s => s.date.startsWith(state.selectedMonth));
+    else filtered = ps.filter(s => s.date === state.selectedDate);
+    if (storeId && storeId !== 'ALL') filtered = filtered.filter(s => s.storeId === storeId);
+    return filtered;
+  }
+
+  function renderCostChips() {
+    const container = document.getElementById('cost-store-chips');
+    container.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.className = 'store-chip' + (state.costStoreId === 'ALL' ? ' active' : '');
+    allBtn.textContent = '全店';
+    allBtn.addEventListener('click', () => { state.costStoreId = 'ALL'; renderCostChips(); renderCost(); });
+    container.appendChild(allBtn);
+    getData().stores.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'store-chip' + (s.id === state.costStoreId ? ' active' : '');
+      btn.textContent = s.name;
+      btn.addEventListener('click', () => { state.costStoreId = s.id; renderCostChips(); renderCost(); });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderCost() {
+    const $ = (id) => document.getElementById(id);
+    const storeId = state.costStoreId;
+    const isAll = storeId === 'ALL';
+    const storeName = isAll ? '全店' : getStore(storeId).name;
+    const pLabels = { day: 'の本日商品売上', month: 'の今月商品売上', year: 'の今年商品売上' };
+
+    $('cost-title').textContent = storeName;
+    $('cost-period-label').textContent = pLabels[state.period] || 'の商品別売上';
+
+    const rows = getProductSalesForPeriod(storeId);
+    const menu = getData().menu;
+
+    // 商品ごとに集計
+    const byItem = {};
+    rows.forEach(r => {
+      if (!byItem[r.menuId]) byItem[r.menuId] = { qty: 0, sales: 0, cost: 0 };
+      byItem[r.menuId].qty += r.quantity;
+      byItem[r.menuId].sales += r.sales;
+      byItem[r.menuId].cost += r.cost;
+    });
+
+    const itemRows = menu.map(m => {
+      const d = byItem[m.id] || { qty: 0, sales: 0, cost: 0 };
+      return {
+        ...m,
+        qty: d.qty,
+        sales: d.sales,
+        cost: d.cost,
+        gross: d.sales - d.cost,
+        costRate: d.sales > 0 ? (d.cost / d.sales) * 100 : 0,
+      };
+    }).filter(r => r.qty > 0).sort((a, b) => b.sales - a.sales);
+
+    const totalSales = itemRows.reduce((a, r) => a + r.sales, 0);
+    const totalCost = itemRows.reduce((a, r) => a + r.cost, 0);
+    const totalQty = itemRows.reduce((a, r) => a + r.qty, 0);
+    const totalGross = totalSales - totalCost;
+    const fRate = totalSales > 0 ? (totalCost / totalSales) * 100 : 0;
+    const grossRate = totalSales > 0 ? (totalGross / totalSales) * 100 : 0;
+
+    $('cost-total-sales').textContent = fmt.yenShort(totalSales);
+    $('cost-total-qty').textContent = totalQty.toLocaleString() + ' 点';
+    $('cost-total-cost').textContent = fmt.yenShort(totalCost);
+    $('cost-f-rate').textContent = 'F率 ' + fmt.pct(fRate);
+    $('cost-gross-profit').textContent = fmt.yenShort(totalGross);
+    $('cost-gross-rate').textContent = '粗利率 ' + fmt.pct(grossRate);
+    $('cost-item-count').textContent = itemRows.length + '品';
+    $('cost-top-item').textContent = itemRows.length > 0 ? '1位: ' + itemRows[0].name : '--';
+
+    // 商品ランキングチャート（横棒）
+    renderProductRankingChart(itemRows);
+
+    // カテゴリ別ドーナツ
+    renderCategoryChart(itemRows);
+
+    // 明細テーブル
+    renderProductTable(itemRows, totalSales);
+  }
+
+  function renderProductRankingChart(itemRows) {
+    const canvas = document.getElementById('chart-product-ranking');
+    const ctx = canvas.getContext('2d');
+    if (canvas._chart) canvas._chart.destroy();
+
+    const top15 = itemRows.slice(0, 15);
+    const catColors = { '肉': '#e74c3c', 'サイド': '#f4a261', 'ドリンク': '#3498db' };
+
+    canvas._chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: top15.map(r => r.name),
+        datasets: [{
+          data: top15.map(r => r.sales),
+          backgroundColor: top15.map(r => (catColors[r.category] || '#8b5e3c') + 'cc'),
+          borderColor: top15.map(r => catColors[r.category] || '#8b5e3c'),
+          borderWidth: 1,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(c) {
+                const r = top15[c.dataIndex];
+                return `売上: ${fmt.yenShort(r.sales)}（${r.qty}点）`;
+              },
+              afterLabel: function(c) {
+                const r = top15[c.dataIndex];
+                return `原価率: ${r.costRate.toFixed(1)}%  粗利: ${fmt.yenShort(r.gross)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: { ticks: { callback: v => fmt.yenShort(v) }, grid: { color: 'rgba(0,0,0,0.06)' } },
+          y: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  function renderCategoryChart(itemRows) {
+    const canvas = document.getElementById('chart-category-breakdown');
+    const ctx = canvas.getContext('2d');
+    if (canvas._chart) canvas._chart.destroy();
+
+    const cats = {};
+    itemRows.forEach(r => {
+      if (!cats[r.category]) cats[r.category] = { sales: 0, cost: 0 };
+      cats[r.category].sales += r.sales;
+      cats[r.category].cost += r.cost;
+    });
+    const catNames = Object.keys(cats);
+    const catColors = { '肉': '#e74c3c', 'サイド': '#f4a261', 'ドリンク': '#3498db' };
+    const totalSales = catNames.reduce((a, c) => a + cats[c].sales, 0);
+
+    canvas._chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: catNames,
+        datasets: [{
+          data: catNames.map(c => cats[c].sales),
+          backgroundColor: catNames.map(c => catColors[c] || '#8b5e3c'),
+          borderWidth: 2,
+          borderColor: '#fff',
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } },
+          tooltip: {
+            callbacks: {
+              label: function(c) {
+                const cat = catNames[c.dataIndex];
+                const s = cats[cat].sales;
+                const pct = totalSales > 0 ? (s / totalSales * 100).toFixed(1) : '0';
+                const cRate = s > 0 ? (cats[cat].cost / s * 100).toFixed(1) : '0';
+                return `${cat}: ${fmt.yenShort(s)}（${pct}%）原価率${cRate}%`;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  function renderProductTable(itemRows, totalSales) {
+    const tbody = document.querySelector('#table-product-detail tbody');
+    tbody.innerHTML = '';
+
+    // カテゴリ順でグループ化
+    const catOrder = ['肉', 'サイド', 'ドリンク'];
+    const grouped = {};
+    itemRows.forEach(r => {
+      if (!grouped[r.category]) grouped[r.category] = [];
+      grouped[r.category].push(r);
+    });
+
+    catOrder.forEach(cat => {
+      const items = grouped[cat];
+      if (!items || items.length === 0) return;
+      // セクションヘッダ
+      const htr = document.createElement('tr');
+      htr.innerHTML = `<td colspan="8" style="background:var(--bg-subtle); font-weight:700; font-size:0.85rem; padding:6px 12px; color:var(--text-secondary);">${cat}（${items.length}品）</td>`;
+      tbody.appendChild(htr);
+      items.forEach(r => {
+        const highCost = r.costRate > 35;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${r.name}</strong></td>
+          <td style="font-size:0.82rem; color:var(--text-muted);">${r.category}</td>
+          <td class="num">¥${r.price.toLocaleString()}</td>
+          <td class="num">${r.qty.toLocaleString()}</td>
+          <td class="num"><strong>${fmt.yen(r.sales)}</strong></td>
+          <td class="num">${fmt.yen(r.cost)}</td>
+          <td class="num" style="color:${highCost ? 'var(--danger)' : 'var(--success)'};">${r.costRate.toFixed(1)}%</td>
+          <td class="num"><strong style="color:var(--success);">${fmt.yen(r.gross)}</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
   // ===== 人件費管理タブ =====
 
   /** シフトデータを期間・店舗でフィルタ */
@@ -763,6 +983,8 @@
     renderOverview();
     renderStoreChips();
     renderStoreDetail();
+    renderCostChips();
+    renderCost();
     renderLaborChips();
     renderLabor();
   }

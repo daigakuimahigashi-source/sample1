@@ -275,15 +275,121 @@ function generateDailyShifts() {
   return result;
 }
 
+// ===== メニュー（商品）マスタ =====
+const MENU = [
+  // 肉（メイン）
+  { id: 'm01', name: '和牛カルビ',     category: '肉', price: 1480, costRate: 0.42 },
+  { id: 'm02', name: '上ハラミ',       category: '肉', price: 1380, costRate: 0.40 },
+  { id: 'm03', name: '牛タン塩',       category: '肉', price: 1280, costRate: 0.38 },
+  { id: 'm04', name: 'ロース',         category: '肉', price: 1180, costRate: 0.36 },
+  { id: 'm05', name: 'ホルモン盛合せ', category: '肉', price: 980,  costRate: 0.30 },
+  { id: 'm06', name: '豚トロ',         category: '肉', price: 780,  costRate: 0.28 },
+  { id: 'm07', name: '鶏もも',         category: '肉', price: 580,  costRate: 0.25 },
+  { id: 'm08', name: 'ユッケ',         category: '肉', price: 1280, costRate: 0.45 },
+  // サイド
+  { id: 'm09', name: 'キムチ盛合せ',   category: 'サイド', price: 480, costRate: 0.20 },
+  { id: 'm10', name: 'ナムル3種',      category: 'サイド', price: 420, costRate: 0.18 },
+  { id: 'm11', name: 'チョレギサラダ', category: 'サイド', price: 580, costRate: 0.22 },
+  { id: 'm12', name: 'ライス',         category: 'サイド', price: 250, costRate: 0.12 },
+  { id: 'm13', name: 'カルビクッパ',   category: 'サイド', price: 780, costRate: 0.28 },
+  { id: 'm14', name: '石焼ビビンバ',   category: 'サイド', price: 880, costRate: 0.26 },
+  // ドリンク
+  { id: 'm15', name: '生ビール',       category: 'ドリンク', price: 580, costRate: 0.25 },
+  { id: 'm16', name: 'ハイボール',     category: 'ドリンク', price: 480, costRate: 0.18 },
+  { id: 'm17', name: 'レモンサワー',   category: 'ドリンク', price: 450, costRate: 0.16 },
+  { id: 'm18', name: 'ソフトドリンク', category: 'ドリンク', price: 280, costRate: 0.10 },
+  { id: 'm19', name: '焼酎（グラス）', category: 'ドリンク', price: 520, costRate: 0.20 },
+  { id: 'm20', name: '飲み放題',       category: 'ドリンク', price: 1500, costRate: 0.30 },
+];
+
+// ===== 商品別日次売上を生成 =====
+function generateProductSales() {
+  const result = [];
+  const startDate = new Date(TODAY);
+  startDate.setMonth(startDate.getMonth() - MONTHS_BACK);
+  startDate.setDate(1);
+  const totalDays = Math.ceil((TODAY - startDate) / (24 * 60 * 60 * 1000));
+
+  // 店舗ごとの商品人気傾向（乗数）
+  const STORE_MENU_BIAS = {
+    matsuyama:   { m01: 1.3, m02: 1.2, m05: 0.8, m15: 1.4, m20: 1.3 },  // 高級肉＆飲み多め
+    kumoji:      { m03: 1.3, m04: 1.1, m15: 1.5, m16: 1.3 },             // タン人気＆ビール
+    miebashi:    { m05: 1.4, m06: 1.2, m07: 1.3, m17: 1.2 },             // リーズナブル志向
+    misato:      { m01: 0.9, m06: 1.3, m07: 1.4, m12: 1.5, m18: 1.3 },  // ファミリー
+    isshokenmei: { m01: 1.4, m02: 1.3, m08: 1.5, m20: 1.4, m14: 1.2 },  // 高単価・宴会向け
+  };
+
+  for (let offset = 0; offset <= totalDays; offset++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + offset);
+    if (date > TODAY) break;
+
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const dd = date.getDate();
+    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+    const dow = date.getDay();
+    const isWeekend = dow === 5 || dow === 6;
+    const season = seasonalFactor(m);
+
+    STORES.forEach(store => {
+      const p = STORE_PROFILES[store.id];
+      const bias = STORE_MENU_BIAS[store.id] || {};
+      // 当日の店舗売上からおおよその客数を逆算
+      const r0 = pseudoRandom(dateStr + store.id + '1');
+      const weekendMul = isWeekend ? p.weekendBoost : (dow === 0 ? 0.85 : 1);
+      const dayScale = weekendMul * season;
+      // ベース客数（売上÷客単価4200前後）
+      const baseCustomers = Math.round((p.base * dayScale) / 4200);
+
+      MENU.forEach(item => {
+        const seed = dateStr + store.id + item.id;
+        const r = pseudoRandom(seed);
+        const storeBias = bias[item.id] || 1.0;
+
+        // 商品カテゴリごとの注文確率
+        let baseQty;
+        if (item.category === '肉') {
+          baseQty = baseCustomers * (0.3 + r * 0.25) * storeBias;
+        } else if (item.category === 'サイド') {
+          baseQty = baseCustomers * (0.15 + r * 0.15) * storeBias;
+        } else {
+          baseQty = baseCustomers * (0.25 + r * 0.3) * storeBias;
+        }
+        // ライス・ソフトドリンクは多め
+        if (item.id === 'm12') baseQty *= 1.8;
+        if (item.id === 'm18') baseQty *= 1.5;
+
+        const qty = Math.max(1, Math.round(baseQty));
+        const sales = qty * item.price;
+        const cost = Math.round(sales * item.costRate);
+
+        result.push({
+          date: dateStr,
+          storeId: store.id,
+          menuId: item.id,
+          quantity: qty,
+          sales,
+          cost,
+        });
+      });
+    });
+  }
+  return result;
+}
+
 const DAILY_SALES = generateDailySales();
 const MONTHLY_EXPENSES = generateMonthlyExpenses();
 const DAILY_SHIFTS = generateDailyShifts();
+const PRODUCT_SALES = generateProductSales();
 
 // ===== 全体エクスポート =====
 const SAMPLE_DATA = {
   stores: STORES,
   staff: STAFF,
+  menu: MENU,
   dailySales: DAILY_SALES,
   dailyShifts: DAILY_SHIFTS,
+  productSales: PRODUCT_SALES,
   monthlyExpenses: MONTHLY_EXPENSES,
 };

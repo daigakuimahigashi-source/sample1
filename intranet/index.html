@@ -19,6 +19,7 @@
     <nav class="nav">
       <button class="nav-btn active" data-tab="overview">ダッシュボード</button>
       <button class="nav-btn" data-tab="stores">店舗別</button>
+      <button class="nav-btn" data-tab="cost">原価</button>
       <button class="nav-btn" data-tab="labor">人件費</button>
     </nav>
     <div class="header-right">
@@ -162,6 +163,72 @@
                 <th class="num detail-col">L（人件費）</th>
                 <th class="num detail-col">L率</th>
                 <th class="num detail-col">FL率</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 原価タブ ===== -->
+    <section id="page-cost" class="page">
+      <h2 class="section-title"><span class="icon">🥩</span>店舗を選択</h2>
+      <div class="store-chips" id="cost-store-chips"></div>
+
+      <h3 class="section-title"><span class="icon">📦</span><span id="cost-title">全店</span> <span id="cost-period-label">の商品別売上</span></h3>
+      <div class="kpi-grid kpi-grid-4">
+        <div class="kpi-card accent-red">
+          <span class="kpi-label">商品売上合計</span>
+          <span class="kpi-value" id="cost-total-sales">--</span>
+          <span class="kpi-sub" id="cost-total-qty">-- 点</span>
+        </div>
+        <div class="kpi-card accent-orange">
+          <span class="kpi-label">原価合計</span>
+          <span class="kpi-value" id="cost-total-cost">--</span>
+          <span class="kpi-sub" id="cost-f-rate">F率 --%</span>
+        </div>
+        <div class="kpi-card accent-green">
+          <span class="kpi-label">粗利</span>
+          <span class="kpi-value" id="cost-gross-profit">--</span>
+          <span class="kpi-sub" id="cost-gross-rate">粗利率 --%</span>
+        </div>
+        <div class="kpi-card accent-purple">
+          <span class="kpi-label">商品数</span>
+          <span class="kpi-value" id="cost-item-count">--</span>
+          <span class="kpi-sub" id="cost-top-item">--</span>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="card chart-card">
+          <h3 class="card-title" id="cost-ranking-title">商品別 売上ランキング</h3>
+          <div class="chart-container" style="height:400px;">
+            <canvas id="chart-product-ranking"></canvas>
+          </div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="card-title" id="cost-category-title">カテゴリ別 売上構成</h3>
+          <div class="chart-container chart-container-h">
+            <canvas id="chart-category-breakdown"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title"><span class="icon">📋</span><span id="cost-table-title">商品別 明細</span></h3>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="table-product-detail">
+            <thead>
+              <tr>
+                <th>商品名</th>
+                <th>カテゴリ</th>
+                <th class="num">単価</th>
+                <th class="num">数量</th>
+                <th class="num">売上</th>
+                <th class="num">原価</th>
+                <th class="num">原価率</th>
+                <th class="num">粗利</th>
               </tr>
             </thead>
             <tbody></tbody>
