@@ -3,11 +3,11 @@
 
 :root {
   /* 温かみ・飲食店テーマ（ライト） */
-  --bg-primary:    #fdf8f3;
+  --bg-primary:    #fdfcf0;
   --bg-secondary:  #ffffff;
   --bg-card:       #ffffff;
-  --bg-card-hover: #fff9f3;
-  --bg-subtle:     #f7efe4;
+  --bg-card-hover: #fffce8;
+  --bg-subtle:     #f7f3e0;
   --text-primary:  #2c1810;
   --text-secondary:#7a5d4a;
   --text-muted:    #a89384;
