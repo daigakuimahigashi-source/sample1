@@ -807,6 +807,7 @@
 
     renderLaborTrendChart();
     renderStaffTable(shifts, storeId);
+    renderLaborCompliance();
     renderShiftTable(shifts);
   }
 
@@ -950,6 +951,140 @@
       addSectionRow('アルバイト', parttime.length);
       parttime.forEach(addRow);
     }
+  }
+
+  // ===== 36協定 労務管理 =====
+
+  /**
+   * 対象期間の月文字列を返す（期間モードに関わらず「選択中の月」を使う）
+   * 日モードのときは selectedDate から月を導出
+   */
+  function getComplianceMonth() {
+    if (state.period === 'day')   return state.selectedDate.substring(0, 7);
+    if (state.period === 'month') return state.selectedMonth;
+    return state.selectedMonth; // 年モードでも直近選択月を表示
+  }
+
+  function renderLaborCompliance() {
+    const summaryEl = document.getElementById('compliance-summary');
+    const gridEl    = document.getElementById('compliance-grid');
+    const noteEl    = document.getElementById('compliance-period-note');
+    if (!summaryEl || !gridEl) return;
+
+    let monthStr = getComplianceMonth();
+    const yearStr  = state.selectedYear;
+
+    // 今月が途中（15日未満）の場合は前月の確定値を使う
+    const allMonths = getAllMonths();
+    const monthDaysAvailable = new Set(
+      getData().dailyShifts.filter(s => s.date.startsWith(monthStr)).map(s => s.date)
+    ).size;
+    let isPrevMonthFallback = false;
+    if (monthDaysAvailable < 15) {
+      const idx = allMonths.indexOf(monthStr);
+      if (idx > 0) {
+        monthStr = allMonths[idx - 1];
+        isPrevMonthFallback = true;
+      }
+    }
+
+    if (noteEl) {
+      noteEl.textContent = isPrevMonthFallback
+        ? `（${yearStr}年 / ${monthStr} 確定値・今月は日数不足）`
+        : `（${yearStr}年 / ${monthStr}）`;
+    }
+
+    const fulltimeStaff = getData().staff.filter(s => s.type === 'fulltime');
+    const allShifts     = getData().dailyShifts;
+
+    // 各正社員の残業時間を集計
+    const results = fulltimeStaff.map(staff => {
+      const monthShifts = allShifts.filter(s => s.staffId === staff.id && s.date.startsWith(monthStr));
+      const yearShifts  = allShifts.filter(s => s.staffId === staff.id && s.date.startsWith(yearStr));
+
+      // 法定労働時間超過分（1日8h超 × 日数）
+      const monthlyOT = monthShifts.reduce((a, s) => a + Math.max(0, s.hours - 8), 0);
+      const yearlyOT  = yearShifts.reduce((a,  s) => a + Math.max(0, s.hours - 8), 0);
+
+      // ステータス判定（一般条項: 月45h / 年360h / 注意ライン: 80%）
+      const mDanger  = monthlyOT >= 45;
+      const mWarning = monthlyOT >= 36;
+      const yDanger  = yearlyOT  >= 360;
+      const yWarning = yearlyOT  >= 288;
+
+      let status = 'good';
+      if (mDanger || yDanger)       status = 'danger';
+      else if (mWarning || yWarning) status = 'warning';
+
+      const store = getStore(staff.stores[0]);
+      return { staff, store, monthlyOT, yearlyOT, status };
+    });
+
+    // ===== サマリーバー =====
+    const dangerCount  = results.filter(r => r.status === 'danger').length;
+    const warningCount = results.filter(r => r.status === 'warning').length;
+    const goodCount    = results.filter(r => r.status === 'good').length;
+
+    summaryEl.innerHTML = `
+      <div class="compliance-summary-bar">
+        ${dangerCount  > 0 ? `<span class="compliance-summary-chip danger">🔴 ${dangerCount}名 超過</span>`  : ''}
+        ${warningCount > 0 ? `<span class="compliance-summary-chip warning">🟡 ${warningCount}名 注意</span>` : ''}
+        ${goodCount    > 0 ? `<span class="compliance-summary-chip good">🟢 ${goodCount}名 OK</span>`        : ''}
+        <span class="compliance-summary-note">基準: 月45h・年360h（36協定 一般条項）｜点線: 80%ライン</span>
+      </div>
+    `;
+
+    // ===== カードグリッド（危険→注意→OK 順） =====
+    const ORDER = { danger: 0, warning: 1, good: 2 };
+    const sorted = [...results].sort((a, b) => ORDER[a.status] - ORDER[b.status]);
+
+    gridEl.innerHTML = sorted.map(r => {
+      const mPct  = Math.min((r.monthlyOT / 45)  * 100, 115);
+      const yPct  = Math.min((r.yearlyOT  / 360) * 100, 115);
+      const mCls  = r.monthlyOT >= 45  ? 'danger' : r.monthlyOT >= 36  ? 'warning' : 'good';
+      const yCls  = r.yearlyOT  >= 360 ? 'danger' : r.yearlyOT  >= 288 ? 'warning' : 'good';
+
+      const statusLabel = r.status === 'danger'  ? '🔴 超過'
+                        : r.status === 'warning' ? '🟡 注意'
+                        :                          '🟢 OK';
+      const storeName = r.store ? r.store.name.replace('那覇', '') : '';
+
+      return `
+        <div class="compliance-card status-${r.status}">
+          <div class="compliance-header">
+            <div>
+              <div class="compliance-name">${r.staff.name}</div>
+              <div class="compliance-store">${storeName} ／ 正社員</div>
+            </div>
+            <span class="compliance-status-badge ${r.status}">${statusLabel}</span>
+          </div>
+
+          <div class="compliance-meter">
+            <div class="compliance-meter-label">
+              <span>今月残業（${monthStr}）</span>
+              <span class="compliance-meter-value ${mCls}">${r.monthlyOT.toFixed(1)}h
+                <small style="font-weight:400;color:var(--text-muted);"> / 45h上限</small>
+              </span>
+            </div>
+            <div class="compliance-meter-track">
+              <div class="compliance-meter-fill ${mCls}" style="width:${mPct}%;"></div>
+            </div>
+          </div>
+
+          <div class="compliance-meter">
+            <div class="compliance-meter-label">
+              <span>年間残業（${yearStr}年）</span>
+              <span class="compliance-meter-value ${yCls}">${r.yearlyOT.toFixed(1)}h
+                <small style="font-weight:400;color:var(--text-muted);"> / 360h上限</small>
+              </span>
+            </div>
+            <div class="compliance-meter-track">
+              <div class="compliance-meter-fill ${yCls}" style="width:${yPct}%;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   function renderShiftTable(shifts) {

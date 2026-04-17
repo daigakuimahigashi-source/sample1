@@ -408,6 +408,132 @@ body {
 .announcement-date { font-size: 0.75rem; color: var(--text-muted); }
 .announcement-content { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.55; }
 
+/* ===== 36協定 コンプライアンスカード ===== */
+.compliance-period-note {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.compliance-summary-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1rem;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.compliance-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 14px;
+}
+.compliance-summary-chip.danger  { background: rgba(201,63,46,0.12);  color: var(--danger);  }
+.compliance-summary-chip.warning { background: rgba(233,185,73,0.18); color: #9a7000;        }
+.compliance-summary-chip.good    { background: rgba(74,153,96,0.12);  color: var(--success); }
+.compliance-summary-note {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.compliance-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid;
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s;
+}
+.compliance-card:hover { box-shadow: var(--shadow-hover); }
+.compliance-card.status-good    { border-left-color: var(--success); }
+.compliance-card.status-warning { border-left-color: var(--warning); }
+.compliance-card.status-danger  { border-left-color: var(--danger);  background: rgba(201,63,46,0.03); }
+
+.compliance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+.compliance-name  { font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.compliance-store { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+.compliance-status-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.compliance-status-badge.good    { background: rgba(74,153,96,0.12);  color: var(--success); }
+.compliance-status-badge.warning { background: rgba(233,185,73,0.18); color: #9a7000;        }
+.compliance-status-badge.danger  { background: rgba(201,63,46,0.12);  color: var(--danger);  }
+
+.compliance-meter { margin-bottom: 0.7rem; }
+.compliance-meter:last-of-type { margin-bottom: 0; }
+
+.compliance-meter-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+.compliance-meter-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.compliance-meter-value.good    { color: var(--success); }
+.compliance-meter-value.warning { color: #9a7000; }
+.compliance-meter-value.danger  { color: var(--danger); }
+
+.compliance-meter-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: var(--bg-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.compliance-meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.7s ease;
+  min-width: 4px;
+}
+.compliance-meter-fill.good    { background: linear-gradient(90deg, var(--success), #6bb87f); }
+.compliance-meter-fill.warning { background: linear-gradient(90deg, #e9b949, #f0c94a); }
+.compliance-meter-fill.danger  { background: linear-gradient(90deg, var(--danger), var(--accent)); }
+
+/* バーに上限ライン（80%警告ライン表示用） */
+.compliance-meter-track::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 80%;
+  width: 2px;
+  background: rgba(44, 24, 16, 0.15);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1280px) {
   .kpi-grid    { grid-template-columns: repeat(3, 1fr); }

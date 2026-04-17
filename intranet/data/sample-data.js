@@ -200,14 +200,27 @@ function generateDailyShifts() {
   startDate.setDate(1);
   const totalDays = Math.ceil((TODAY - startDate) / (24 * 60 * 60 * 1000));
 
-  // 開店パターン（焼肉屋は午後〜夜）
-  const SHIFT_PATTERNS = [
+  // アルバイト用シフトパターン（短〜中）
+  const PARTTIME_PATTERNS = [
     { start: 11, end: 15, hours: 4 },   // ランチ
     { start: 15, end: 22, hours: 7 },   // 通し午後
     { start: 17, end: 22, hours: 5 },   // ディナー短
     { start: 17, end: 23, hours: 6 },   // ディナー長
-    { start: 11, end: 22, hours: 10 },  // フル（休憩1h込み→実質9h）
+    { start: 11, end: 22, hours: 10 },  // フル
   ];
+
+  // 正社員用シフトパターン（長時間・残業あり）
+  const FULLTIME_PATTERNS = [
+    { start: 11, end: 23, hours: 11 },  // フル+延長（3h OT）
+    { start: 11, end: 22, hours: 10 },  // フル標準（2h OT）
+    { start: 11, end: 22, hours: 10 },  // フル標準（2h OT）
+    { start: 11, end: 22, hours: 10 },  // フル標準（確率↑）
+    { start: 14, end: 23, hours:  8 },  // ディナー集中（0h OT）
+    { start: 11, end: 21, hours:  9 },  // やや短め（1h OT）
+  ];
+
+  // 繁忙月（残業が増える月）
+  const BUSY_MONTHS = [3, 4, 7, 8, 11, 12];
 
   for (let offset = 0; offset <= totalDays; offset++) {
     const date = new Date(startDate);
@@ -220,40 +233,65 @@ function generateDailyShifts() {
     const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
     const dow = date.getDay();
     const isWeekend = dow === 5 || dow === 6;
+    const isBusy = BUSY_MONTHS.includes(m);
 
     STAFF.forEach(staff => {
+      const isFulltime = staff.type === 'fulltime';
+
       staff.stores.forEach((storeId, storeIdx) => {
         const seed = dateStr + staff.id + storeId;
         const r = pseudoRandom(seed);
-
-        // 出勤確率: メイン店舗は週5、掛持ち先は週2〜3
         const isMain = storeIdx === 0;
-        const workProb = isMain
-          ? (isWeekend ? 0.85 : 0.72)       // メイン: 金土は高確率
-          : (isWeekend ? 0.40 : 0.25);       // サブ: 週2〜3日
-        // 両方出勤は避ける（掛持ち先の日はメイン店舗は休み）
-        if (!isMain) {
-          const mainSeed = dateStr + staff.id + staff.stores[0];
-          const mainR = pseudoRandom(mainSeed);
-          const mainWork = (isWeekend ? 0.85 : 0.72);
-          if (mainR < mainWork) return; // メイン出勤日なのでサブは休み
+
+        // ===== 出勤確率 =====
+        let workProb;
+        if (isFulltime) {
+          // 正社員: ほぼ毎日出勤（月22日前後）
+          workProb = isWeekend ? 0.88 : 0.75;
+        } else {
+          // アルバイト: メイン店舗は週4〜5、掛持ち先は週2〜3
+          workProb = isMain
+            ? (isWeekend ? 0.85 : 0.72)
+            : (isWeekend ? 0.40 : 0.25);
+          // 掛持ちの場合: メイン出勤日はサブ休み
+          if (!isMain) {
+            const mainSeed = dateStr + staff.id + staff.stores[0];
+            if (pseudoRandom(mainSeed) < (isWeekend ? 0.85 : 0.72)) return;
+          }
         }
 
         if (r >= workProb) return; // 休み
 
-        // シフトパターン選択
-        const patIdx = Math.floor(pseudoRandom(seed + 'pat') * SHIFT_PATTERNS.length);
-        const pat = SHIFT_PATTERNS[patIdx];
-        // 週末は少し長め
-        const extraHour = isWeekend && pat.hours < 8 ? 1 : 0;
-        const hours = pat.hours + extraHour;
-        const endHour = Math.min(pat.start + hours + (hours >= 8 ? 1 : 0), 24); // 8h以上は休憩1h込み
+        // ===== シフトパターン選択 =====
+        let hours, startHour, endHour;
+
+        if (isFulltime) {
+          const patIdx = Math.floor(pseudoRandom(seed + 'pat') * FULLTIME_PATTERNS.length);
+          const pat = FULLTIME_PATTERNS[patIdx];
+          hours = pat.hours;
+          startHour = pat.start;
+
+          // 繁忙月: 追加残業（45%の確率で+1〜2h）
+          if (isBusy) {
+            const otRand = pseudoRandom(seed + 'ot');
+            if (otRand > 0.55) hours = Math.min(hours + 1, 12);
+            if (otRand > 0.80) hours = Math.min(hours + 1, 13); // 上位20%は更に+1h
+          }
+          endHour = Math.min(startHour + hours + (hours >= 8 ? 1 : 0), 25);
+        } else {
+          const patIdx = Math.floor(pseudoRandom(seed + 'pat') * PARTTIME_PATTERNS.length);
+          const pat = PARTTIME_PATTERNS[patIdx];
+          const extraHour = isWeekend && pat.hours < 8 ? 1 : 0;
+          hours = pat.hours + extraHour;
+          startHour = pat.start;
+          endHour = Math.min(startHour + hours + (hours >= 8 ? 1 : 0), 24);
+        }
+
         const breakMin = hours >= 6 ? 60 : (hours >= 4.5 ? 30 : 0);
-        const actualHours = hours; // 休憩除いた実労働
 
         // 深夜割増計算（22時以降 ×1.25）
         const lateNightHours = endHour > 22 ? endHour - 22 : 0;
-        const normalHours = actualHours - lateNightHours;
+        const normalHours = hours - lateNightHours;
         const laborCost = Math.round(
           normalHours * staff.hourlyRate + lateNightHours * staff.hourlyRate * 1.25
         );
@@ -262,9 +300,9 @@ function generateDailyShifts() {
           date: dateStr,
           staffId: staff.id,
           storeId,
-          startHour: pat.start,
+          startHour,
           endHour,
-          hours: actualHours,
+          hours,
           lateNightHours,
           breakMinutes: breakMin,
           laborCost,
