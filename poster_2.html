@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>焼肉ここから ポスター ver.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #bbb;
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+  min-height: 100vh;
+}
+
+.poster {
+  width: 820px;
+  background: #f0eee9;
+  padding: 44px 50px 36px;
+  font-family: 'Noto Sans JP', 'Hiragino Kachi Gothic ProN', 'HiraKakuProN-W6', 'Yu Gothic', 'Meiryo', sans-serif;
+  border: 1px solid #d8d6d0;
+}
+
+.top-text {
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.38;
+  color: #111;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.middle {
+  display: grid;
+  grid-template-columns: 1fr 300px 1fr;
+  column-gap: 10px;
+  align-items: center;
+}
+
+.left-col, .right-col {
+  font-size: 37px;
+  font-weight: 900;
+  line-height: 1.38;
+  color: #111;
+  letter-spacing: -0.5px;
+}
+
+.photo-col img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.bottom-text {
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.38;
+  color: #111;
+  letter-spacing: -0.5px;
+  margin-top: 4px;
+}
+
+.logo {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 100px;
+  font-weight: 900;
+  color: #8bbad6;
+  letter-spacing: -4px;
+  line-height: 1;
+  text-shadow:
+    2px 2px 0 #6898b6,
+    4px 4px 0 #4e7898,
+    6px 6px 0 #3a6080,
+    7px 7px 10px rgba(0,0,0,0.3);
+}
+
+@media print {
+  body { background: white; padding: 0; }
+  .poster { width: 100%; border: none; }
+}
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="top-text">焼肉ここからも物価上昇、人件費上昇、人手不足とモーレツに戦っています！深夜営業をやめる？つづける？の悩みどころ！！</div>
+
+  <div class="middle">
+    <div class="left-col">でも、続けたいんです！松山で皆さんの顔見たいんです！だから、だから、</div>
+    <div class="photo-col">
+      <img src="photo_2.jpg" alt="店主">
+    </div>
+    <div class="right-col">深夜は少し対応遅くなるけど許してください。だから、だから、深夜はメニューを少し減らさないといけないけど許してください！</div>
+  </div>
+
+  <div class="bottom-text">それでも深夜営業続けたいんです！皆さんのご理解に感謝！！</div>
+
+  <div class="logo">焼肉ここから</div>
+
+</div>
+</body>
+</html>

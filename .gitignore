@@ -4,3 +4,5 @@ package-lock.json
 Thumbs.db
 *.log
 .claude/plans/
+.env
+notion/.notion-ids.json
