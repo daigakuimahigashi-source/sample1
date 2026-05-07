@@ -45,7 +45,8 @@
   function monthToYear(monthStr){ return monthStr.substring(0, 4); }
 
   // ===== データアクセス =====
-  function getData() { return SAMPLE_DATA; }
+  let LIVE_DATA = null;
+  function getData() { return LIVE_DATA || SAMPLE_DATA; }
   function getStore(storeId) { return getData().stores.find(s => s.id === storeId); }
 
   function getAllDates() {
@@ -1125,7 +1126,23 @@
   }
 
   // ===== 初期化 =====
-  function init() {
+  async function init() {
+    // リアルデータ取得を試みる（失敗してもサンプルデータで継続）
+    try {
+      const realRows = await SheetsAPI.fetchDailySummary();
+      if (realRows && realRows.length > 0) {
+        // 実データの日付セット
+        const realKeys = new Set(realRows.map(r => r.date + '|' + r.storeId));
+        // サンプルデータから実データと重複する行を除外してマージ
+        const mergedSales = SAMPLE_DATA.dailySales
+          .filter(r => !realKeys.has(r.date + '|' + r.storeId))
+          .concat(realRows);
+        LIVE_DATA = { ...SAMPLE_DATA, dailySales: mergedSales };
+        console.log('✅ リアルデータ読み込み完了:', realRows.length + '件');
+      }
+    } catch (e) {
+      console.warn('⚠️ リアルデータ取得失敗、サンプルデータで起動:', e.message);
+    }
     state.selectedDate  = getLatestDate();
     state.selectedMonth = getLatestMonth();
     state.selectedYear  = getLatestYear();
