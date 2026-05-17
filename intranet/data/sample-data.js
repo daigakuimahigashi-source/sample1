@@ -426,7 +426,7 @@ const SAMPLE_DATA = {
   stores: STORES,
   staff: STAFF,
   menu: MENU,
-  dailySales: DAILY_SALES,
+  dailySales: [], // 実データはGASから取得するため、サンプルデータは空にする
   dailyShifts: DAILY_SHIFTS,
   productSales: PRODUCT_SALES,
   monthlyExpenses: MONTHLY_EXPENSES,
