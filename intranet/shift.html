@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>焼肉ここから - シフト管理</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans JP', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .staff-card { cursor: grab; transition: transform 0.1s; }
+        .staff-card:active { cursor: grabbing; transform: scale(0.98); }
+        .drop-zone { min-height: 80px; transition: background-color 0.2s; }
+        .drop-zone.drag-over { background-color: #f8fafc; border-color: #fbbf24; border-style: dashed; }
+
+        /* テーブル用のスタイル */
+        .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 0.5rem; text-align: center; }
+        .schedule-table th { background-color: #f8fafc; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+        .schedule-table tr:hover { background-color: #f8fafc; }
+
+        /* シフトラベルのバッジ */
+        .badge-shift { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .bg-shift-early { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .bg-shift-late { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .bg-shift-off { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- ヘッダー -->
+    <header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md z-20">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm transition font-medium flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> 売上ダッシュボード
+            </a>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider"><i class="fa-solid fa-fire text-amber-500 mr-2"></i>焼肉ここから シフト・労務管理ダッシュボード</h1>
+                <p class="text-xs text-slate-400 mt-1">日次配置・週間シフト・月間労務の統合プロトタイプ</p>
+            </div>
+        </div>
+        <div class="flex gap-2" id="header-actions">
+            <!-- JSでビューに応じたボタンが挿入されます -->
+        </div>
+    </header>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white border-b border-gray-200 px-6 flex gap-6 text-sm font-medium text-slate-500 shadow-sm z-10">
+        <button onclick="switchView('day')" id="tab-day" class="py-3 border-b-2 border-amber-500 text-amber-600 transition-colors">
+            <i class="fa-solid fa-calendar-day mr-1"></i> 1日の詳細配置
+        </button>
+        <button onclick="switchView('week')" id="tab-week" class="py-3 border-b-2 border-transparent hover:text-slate-800 transition-colors">
+            <i class="fa-solid fa-calendar-week mr-1"></i> 1週間のシフト表
+        </button>
+        <button onclick="switchView('month')" id="tab-month" class="py-3 border-b-2 border-transparent hover:text-slate-800 transition-colors">
+            <i class="fa-solid fa-chart-line mr-1"></i> 1ヶ月の労務サマリー
+        </button>
+    </div>
+
+    <!-- コンテンツエリア -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- ==================== 【1日ビュー】 ==================== -->
+        <div id="view-day" class="flex flex-1 w-full h-full absolute top-0 left-0 transition-opacity duration-300">
+            <!-- 左側：スタッフプール -->
+            <div class="w-72 bg-white border-r border-gray-200 flex flex-col shadow-lg z-10">
+                <div class="p-4 border-b border-gray-100 bg-gray-50">
+                    <h2 class="font-bold text-gray-700"><i class="fa-solid fa-users mr-2"></i>待機スタッフ</h2>
+                    <p class="text-xs text-gray-500 mt-1">ドラッグ＆ドロップで右の枠に配置</p>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-3" id="staff-pool">
+                    <!-- JSでスタッフ一覧が生成されます -->
+                </div>
+
+                <div class="p-4 border-t border-gray-200 bg-gray-50 text-xs text-gray-500">
+                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>A: 日本人正社員</div>
+                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>B: 外国人正社員</div>
+                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>C: 成熟バイト</div>
+                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>D: 未熟バイト</div>
+                </div>
+            </div>
+
+            <!-- 右側：シフトボード ＆ ガントチャート ＆ アラート -->
+            <div class="flex-1 flex flex-col bg-gray-100 overflow-hidden relative">
+                <div id="alert-container" class="absolute top-0 left-0 w-full p-4 z-20 pointer-events-none flex flex-col gap-2"></div>
+
+                <!-- 1日ビュー用 サブタブ -->
+                <div class="px-6 pt-16 flex gap-2 z-10">
+                    <button id="subtab-day-board" onclick="switchDayView('board')" class="bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors">配置ボード</button>
+                    <button id="subtab-day-gantt" onclick="switchDayView('gantt')" class="bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors">ガントチャート</button>
+                </div>
+
+                <div id="day-view-board" class="flex-1 overflow-y-auto p-6 pt-4 flex flex-col gap-6 block">
+                    <!-- 【上段】シフトボード (各店舗の配置枠) -->
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-shrink-0">
+                        <!-- 【松山店】 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-slate-800 text-white px-4 py-3 flex justify-between items-center">
+                                <h3 class="font-bold text-lg"><i class="fa-solid fa-store mr-2"></i>松山店</h3>
+                                <span class="text-xs bg-amber-500 text-slate-900 px-2 py-1 rounded font-bold">深夜合流拠点</span>
+                            </div>
+                            <div class="p-4 space-y-4">
+                                <div class="bg-red-50 rounded-lg p-3 border border-red-100">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <h4 class="font-bold text-red-800"><i class="fa-solid fa-moon mr-1"></i> 遅番 <span class="text-sm font-normal text-red-600 ml-1">20:00〜30:00</span></h4>
+                                        <span class="text-xs font-bold text-red-500 bg-white px-2 py-0.5 rounded border border-red-200">A層のみ / 1名必須</span>
+                                    </div>
+                                    <div class="drop-zone border-2 border-transparent bg-white rounded-lg p-2 flex flex-wrap gap-2" data-store="matsuyama" data-shift="late"></div>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <h4 class="font-bold text-slate-700"><i class="fa-solid fa-sun mr-1"></i> 早番 <span class="text-sm font-normal text-slate-500 ml-1">17:30〜26:30</span></h4>
+                                        <span class="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">責任者(AorB)1名必須</span>
+                                    </div>
+                                    <div class="drop-zone border-2 border-transparent bg-white rounded-lg p-2 flex flex-wrap gap-2" data-store="matsuyama" data-shift="early"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 【久茂地店】 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-slate-700 text-white px-4 py-3 flex justify-between items-center">
+                                <h3 class="font-bold text-lg"><i class="fa-solid fa-store mr-2"></i>久茂地店</h3>
+                                <span class="text-xs bg-slate-600 text-white px-2 py-1 rounded">25:00閉店</span>
+                            </div>
+                            <div class="p-4 h-full">
+                                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 h-full flex flex-col">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <h4 class="font-bold text-slate-700"><i class="fa-solid fa-sun mr-1"></i> 早番 <span class="text-sm font-normal text-slate-500 ml-1">17:30〜26:30</span></h4>
+                                    </div>
+                                    <div class="drop-zone border-2 border-transparent bg-white rounded-lg p-2 flex flex-wrap gap-2 flex-1" data-store="kumoji" data-shift="early"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 【美栄橋店】 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-slate-700 text-white px-4 py-3 flex justify-between items-center">
+                                <h3 class="font-bold text-lg"><i class="fa-solid fa-store mr-2"></i>美栄橋店</h3>
+                                <span class="text-xs bg-slate-600 text-white px-2 py-1 rounded">25:00閉店</span>
+                            </div>
+                            <div class="p-4 h-full">
+                                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 h-full flex flex-col">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <h4 class="font-bold text-slate-700"><i class="fa-solid fa-sun mr-1"></i> 早番 <span class="text-sm font-normal text-slate-500 ml-1">17:30〜26:30</span></h4>
+                                    </div>
+                                    <div class="drop-zone border-2 border-transparent bg-white rounded-lg p-2 flex flex-wrap gap-2 flex-1" data-store="miebash" data-shift="early"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 【美里店】 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-slate-700 text-white px-4 py-3 flex justify-between items-center">
+                                <h3 class="font-bold text-lg"><i class="fa-solid fa-store mr-2"></i>美里店</h3>
+                                <span class="text-xs bg-slate-600 text-white px-2 py-1 rounded">25:00閉店 (合流なし)</span>
+                            </div>
+                            <div class="p-4 h-full">
+                                <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 h-full flex flex-col">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <h4 class="font-bold text-slate-700"><i class="fa-solid fa-sun mr-1"></i> 早番 <span class="text-sm font-normal text-slate-500 ml-1">17:30〜26:30</span></h4>
+                                    </div>
+                                    <div class="drop-zone border-2 border-transparent bg-white rounded-lg p-2 flex flex-wrap gap-2 flex-1" data-store="misato" data-shift="early"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 【下段】ガントチャート (サブタブで切り替え) -->
+                <div id="day-view-gantt" class="flex-1 overflow-y-auto p-6 pt-4 hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full min-h-[500px]">
+                        <div class="bg-slate-700 text-white px-4 py-3 flex justify-between items-center">
+                            <h3 class="font-bold text-base"><i class="fa-solid fa-chart-gantt mr-2 text-amber-500"></i>時間帯別 稼働ガントチャート</h3>
+                            <span class="text-[10px] bg-slate-600 px-2 py-1 rounded text-white border border-slate-500">手薄な時間帯と松山合流を可視化</span>
+                        </div>
+                        <div class="p-4 overflow-x-auto bg-gray-50 flex-1">
+                            <div id="day-timeline-container" class="min-w-[800px]"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== 【1週間ビュー】 ==================== -->
+        <div id="view-week" class="w-full h-full absolute top-0 left-0 bg-white opacity-0 pointer-events-none transition-opacity duration-300 p-6 overflow-y-auto">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-4">
+                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-calendar-week mr-2 text-amber-500"></i>週間シフト表 (5/25 - 5/31)</h2>
+                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <p class="text-sm text-slate-500">※遅番Aが週1回に分散されているか、公休が取れているかを確認します。</p>
+                </div>
+
+                <div class="flex gap-2 mb-4">
+                    <button id="subtab-week-staff" onclick="switchWeekView('staff')" class="bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors">スタッフ別</button>
+                    <button id="subtab-week-store" onclick="switchWeekView('store')" class="bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors">店舗別</button>
+                </div>
+
+                <div id="week-view-staff" class="bg-white border border-gray-200 rounded-b-lg rounded-tr-lg shadow-sm overflow-hidden block">
+                    <table class="w-full schedule-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="w-40 text-left pl-4">スタッフ</th>
+                                <th class="w-24">月</th>
+                                <th class="w-24">火</th>
+                                <th class="w-24">水</th>
+                                <th class="w-24">木</th>
+                                <th class="w-24">金</th>
+                                <th class="w-24 text-blue-600">土</th>
+                                <th class="w-24 text-red-600">日</th>
+                            </tr>
+                        </thead>
+                        <tbody id="week-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div id="week-view-store" class="bg-white border border-gray-200 rounded-b-lg rounded-tr-lg shadow-sm overflow-hidden hidden">
+                    <table class="w-full schedule-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="w-40 text-left pl-4">店舗・シフト</th>
+                                <th class="w-24">月</th>
+                                <th class="w-24">火</th>
+                                <th class="w-24">水</th>
+                                <th class="w-24">木</th>
+                                <th class="w-24">金</th>
+                                <th class="w-24 text-blue-600">土</th>
+                                <th class="w-24 text-red-600">日</th>
+                            </tr>
+                        </thead>
+                        <tbody id="week-store-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 【1ヶ月ビュー】 ==================== -->
+        <div id="view-month" class="w-full h-full absolute top-0 left-0 bg-white opacity-0 pointer-events-none transition-opacity duration-300 p-6 overflow-y-auto">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-4">
+                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-chart-line mr-2 text-amber-500"></i>月間労務・給与サマリー (5月度)</h2>
+                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <p class="text-sm text-slate-500">※「公休6日」の遵守状況と、時給設定に基づく想定給与を可視化します。</p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+                        <div class="bg-green-100 text-green-600 w-12 h-12 rounded-full flex items-center justify-center text-xl mr-4"><i class="fa-solid fa-shield-check"></i></div>
+                        <div>
+                            <p class="text-sm text-green-800 font-bold">公休要件クリア</p>
+                            <p class="text-2xl font-black text-green-700">15<span class="text-sm font-normal text-green-600 ml-1">/ 15名</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center">
+                        <div class="bg-amber-100 text-amber-600 w-12 h-12 rounded-full flex items-center justify-center text-xl mr-4"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <p class="text-sm text-amber-800 font-bold">残業25h 超過者</p>
+                            <p class="text-2xl font-black text-amber-700" id="overtime-count">1<span class="text-sm font-normal text-amber-600 ml-1">名</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center">
+                        <div class="bg-blue-100 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-xl mr-4"><i class="fa-solid fa-yen-sign"></i></div>
+                        <div>
+                            <p class="text-sm text-blue-800 font-bold">総想定人件費</p>
+                            <p class="text-2xl font-black text-blue-700" id="total-payroll">¥---</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <table class="w-full schedule-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="w-40 text-left pl-4">スタッフ</th>
+                                <th>レイヤー</th>
+                                <th>出勤日数</th>
+                                <th>公休日数</th>
+                                <th>総実働時間</th>
+                                <th>総残業時間</th>
+                                <th>想定給与</th>
+                                <th>ステータス</th>
+                            </tr>
+                        </thead>
+                        <tbody id="month-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const initialStaff = [
+            { id: 'a1', name: '店長 佐藤', layer: 'A', workHours: 0, overtime: 0, salaryType: 'fixed', baseSalary: 350000 },
+            { id: 'a2', name: '鈴木', layer: 'A', workHours: 0, overtime: 0, salaryType: 'fixed', baseSalary: 300000 },
+            { id: 'a3', name: '高橋', layer: 'A', workHours: 0, overtime: 0, salaryType: 'fixed', baseSalary: 300000 },
+            { id: 'a4', name: '田中', layer: 'A', workHours: 0, overtime: 0, salaryType: 'fixed', baseSalary: 280000 },
+            { id: 'b1', name: 'ジョン', layer: 'B', workHours: 0, overtime: 0, salaryType: 'fixed', baseSalary: 250000 },
+            { id: 'b2', name: 'ソン', layer: 'B', workHours: 0, overtime: 0, salaryType: 'fixed', baseSalary: 250000 },
+            { id: 'c1', name: '渡辺 (C)', layer: 'C', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1200 },
+            { id: 'c2', name: '伊藤 (C)', layer: 'C', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1200 },
+            { id: 'c3', name: '山本 (C)', layer: 'C', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1100 },
+            { id: 'c4', name: '中村 (C)', layer: 'C', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1100 },
+            { id: 'd1', name: '小林 (D)', layer: 'D', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1000 },
+            { id: 'd2', name: '加藤 (D)', layer: 'D', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1000 },
+            { id: 'd3', name: '吉田 (D)', layer: 'D', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1000 },
+            { id: 'd4', name: '山田 (D)', layer: 'D', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1000 },
+            { id: 'd5', name: '佐々木 (D)', layer: 'D', workHours: 0, overtime: 0, salaryType: 'hourly', wage: 1000 },
+        ];
+
+        const layerStyles = {
+            'A': 'bg-red-100 text-red-800 border-red-200',
+            'B': 'bg-blue-100 text-blue-800 border-blue-200',
+            'C': 'bg-green-100 text-green-800 border-green-200',
+            'D': 'bg-gray-100 text-gray-700 border-gray-200'
+        };
+
+        const staffPoolEl = document.getElementById('staff-pool');
+        const alertContainer = document.getElementById('alert-container');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        let currentView = 'day';
+
+        function init() {
+            renderStaffPool();
+            setupDragAndDrop();
+            updateHeaderActions();
+            generateWeekAndMonthMockData();
+            validateShifts();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            ['day', 'week', 'month'].forEach(v => {
+                const tab = document.getElementById(`tab-${v}`);
+                if (v === view) {
+                    tab.classList.replace('border-transparent', 'border-amber-500');
+                    tab.classList.replace('text-slate-500', 'text-amber-600');
+                    tab.classList.remove('hover:text-slate-800');
+                } else {
+                    tab.classList.replace('border-amber-500', 'border-transparent');
+                    tab.classList.replace('text-amber-600', 'text-slate-500');
+                    tab.classList.add('hover:text-slate-800');
+                }
+                const el = document.getElementById(`view-${v}`);
+                if (v === view) {
+                    el.classList.remove('opacity-0', 'pointer-events-none');
+                    el.classList.add('z-10');
+                } else {
+                    el.classList.add('opacity-0', 'pointer-events-none');
+                    el.classList.remove('z-10');
+                }
+            });
+            updateHeaderActions();
+        }
+
+        function updateHeaderActions() {
+            const headerActions = document.getElementById('header-actions');
+            if (currentView === 'day') {
+                headerActions.innerHTML = `
+                    <button onclick="autoAssign()" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 自動おまかせ配置
+                    </button>
+                    <button onclick="resetBoard()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition font-medium">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> リセット
+                    </button>
+                `;
+            } else if (currentView === 'week') {
+                headerActions.innerHTML = `<button class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm"><i class="fa-solid fa-robot mr-1"></i> 1週間分を自動生成</button>`;
+            } else {
+                headerActions.innerHTML = `<button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm"><i class="fa-solid fa-file-export mr-1"></i> CSV出力</button>`;
+            }
+        }
+
+        function renderStaffPool() {
+            staffPoolEl.innerHTML = '';
+            initialStaff.forEach(staff => {
+                const div = document.createElement('div');
+                div.className = `staff-card px-3 py-2 rounded-lg border shadow-sm select-none ${layerStyles[staff.layer]}`;
+                div.draggable = true;
+                div.dataset.id = staff.id;
+                div.dataset.layer = staff.layer;
+                div.dataset.name = staff.name;
+                div.innerHTML = `
+                    <div class="flex items-center w-full">
+                        <div class="font-bold text-sm w-6 text-center opacity-70 border-r border-current mr-2 pr-2">${staff.layer}</div>
+                        <div class="flex-1 flex flex-col">
+                            <div class="font-medium text-sm">${staff.name}</div>
+                            <div class="time-display text-[10px] opacity-80 mt-0.5 font-mono"></div>
+                        </div>
+                        <i class="fa-solid fa-grip-vertical opacity-30 text-sm ml-2"></i>
+                    </div>
+                `;
+                div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', staff.id); setTimeout(() => div.classList.add('opacity-50'), 0); });
+                div.addEventListener('dragend', () => { div.classList.remove('opacity-50'); });
+                staffPoolEl.appendChild(div);
+            });
+        }
+
+        function setupDragAndDrop() {
+            staffPoolEl.addEventListener('dragover', e => e.preventDefault());
+            staffPoolEl.addEventListener('drop', handleDrop);
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => { zone.classList.remove('drag-over'); });
+                zone.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropZone = e.target.closest('.drop-zone') || e.target.closest('#staff-pool');
+            if (dropZone) {
+                if (dropZone.classList.contains('drop-zone')) dropZone.classList.remove('drag-over');
+                const staffId = e.dataTransfer.getData('text/plain');
+                const staffEl = document.querySelector(`[data-id="${staffId}"]`);
+                if (staffEl) { dropZone.appendChild(staffEl); validateShifts(); }
+            }
+        }
+
+        function resetBoard() {
+            document.querySelectorAll('.staff-card').forEach(el => staffPoolEl.appendChild(el));
+            validateShifts();
+        }
+
+        function updateStaffTimeDisplays() {
+            document.querySelectorAll('.staff-card').forEach(card => {
+                let addedWork = 0, addedOvertime = 0;
+                const dropZone = card.closest('.drop-zone');
+                if (dropZone) { addedWork = 8; addedOvertime = dropZone.dataset.shift === 'late' ? 1 : 0; }
+                card.querySelector('.time-display').innerHTML = addedWork > 0 ? `本日の実働:${addedWork}h (+残業${addedOvertime}h)` : '';
+            });
+        }
+
+        function autoAssign() {
+            resetBoard();
+            const shuffle = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+            const staffElements = Array.from(staffPoolEl.querySelectorAll('.staff-card'));
+            const aStaff = shuffle(staffElements.filter(el => el.dataset.layer === 'A'));
+            const bStaff = shuffle(staffElements.filter(el => el.dataset.layer === 'B'));
+            if (aStaff.length > 0) document.querySelector('.drop-zone[data-store="matsuyama"][data-shift="late"]').appendChild(aStaff.pop());
+            const earlyZones = ['matsuyama', 'kumoji', 'miebash', 'misato'].map(s => document.querySelector(`.drop-zone[data-store="${s}"][data-shift="early"]`));
+            let leaders = shuffle([...aStaff, ...bStaff]);
+            earlyZones.forEach(zone => { if (leaders.length > 0) zone.appendChild(leaders.pop()); });
+            shuffle(Array.from(staffPoolEl.querySelectorAll('.staff-card'))).forEach((staff, i) => earlyZones[i % earlyZones.length].appendChild(staff));
+            validateShifts();
+        }
+
+        function getStaffInZone(store, shift) {
+            const zone = document.querySelector(`.drop-zone[data-store="${store}"][data-shift="${shift}"]`);
+            return zone ? Array.from(zone.querySelectorAll('.staff-card')).map(el => ({ id: el.dataset.id, layer: el.dataset.layer, name: el.dataset.name })) : [];
+        }
+
+        function validateShifts() {
+            updateStaffTimeDisplays();
+            const alerts = [];
+            const matsuyamaLate = getStaffInZone('matsuyama', 'late');
+            if (matsuyamaLate.length === 0) alerts.push({ type: 'error', msg: '松山店の「遅番」にスタッフが配置されていません。' });
+            else if (!matsuyamaLate.some(s => s.layer === 'A')) alerts.push({ type: 'error', msg: '松山店の「遅番」には【A人材】が必要です。' });
+            ['matsuyama', 'kumoji', 'miebash', 'misato'].forEach(store => {
+                const earlyData = getStaffInZone(store, 'early');
+                if (earlyData.length > 0 && !earlyData.some(s => s.layer === 'A' || s.layer === 'B'))
+                    alerts.push({ type: 'error', msg: `早番に【責任者(AまたはB)】がいない店舗があります。` });
+            });
+            alertContainer.innerHTML = '';
+            if (alerts.length === 0) {
+                alertContainer.innerHTML = `<div class="bg-emerald-500 text-white px-4 py-3 rounded shadow-lg pointer-events-auto flex items-center w-full max-w-2xl mx-auto"><i class="fa-solid fa-circle-check mr-3 text-xl"></i><span class="font-bold">すべてのコンプライアンス要件をクリアしています！</span></div>`;
+            } else {
+                alerts.forEach(alert => {
+                    const bgClass = alert.type === 'error' ? 'bg-red-500' : 'bg-amber-500';
+                    const icon = alert.type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info';
+                    alertContainer.innerHTML += `<div class="${bgClass} text-white px-4 py-3 rounded shadow-lg pointer-events-auto flex items-center w-full max-w-2xl mx-auto mb-2"><i class="fa-solid ${icon} mr-3 text-xl"></i><span class="font-medium">${alert.msg}</span></div>`;
+                });
+            }
+            renderTimeline();
+        }
+
+        function switchDayView(viewType) {
+            const boardView = document.getElementById('day-view-board');
+            const ganttView = document.getElementById('day-view-gantt');
+            document.getElementById('subtab-day-board').className = viewType === 'board' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
+            document.getElementById('subtab-day-gantt').className = viewType === 'gantt' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
+            if (viewType === 'board') { boardView.classList.remove('hidden'); ganttView.classList.add('hidden'); }
+            else { ganttView.classList.remove('hidden'); boardView.classList.add('hidden'); renderTimeline(); }
+        }
+
+        function renderTimeline() {
+            const gridClass = "grid grid-cols-[80px_repeat(26,_minmax(24px,_1fr))] gap-y-1 items-center relative";
+            let html = `<div class="${gridClass} border-b border-gray-300 pb-1 mb-2"><div></div>`;
+            for(let i=17; i<=29; i++) html += `<div class="col-span-2 text-left text-[10px] font-bold text-gray-500 border-l border-gray-300 pl-1">${i}:00</div>`;
+            html += `</div>`;
+            const stores = [{ id: 'matsuyama', name: '松山店' }, { id: 'kumoji', name: '久茂地店' }, { id: 'miebash', name: '美栄橋店' }, { id: 'misato', name: '美里店' }];
+            let matsuyamaCounts = new Array(26).fill(0);
+            let hasAny = false;
+            stores.forEach(store => {
+                const earlyStaff = getStaffInZone(store.id, 'early');
+                const lateStaff = getStaffInZone(store.id, 'late');
+                if (earlyStaff.length === 0 && lateStaff.length === 0) return;
+                hasAny = true;
+                html += `<div class="${gridClass} py-2 border-b border-gray-200">`;
+                html += `<div class="font-bold text-[11px] text-slate-700 z-10 self-start mt-1 truncate pr-2">${store.name}</div>`;
+                html += `<div class="col-start-2 col-span-26 grid grid-cols-[repeat(26,_minmax(24px,_1fr))] gap-y-1 z-10">`;
+                earlyStaff.forEach(staff => {
+                    const colorClasses = layerStyles[staff.layer];
+                    if (store.id === 'matsuyama' || store.id === 'misato') {
+                        html += `<div class="${colorClasses} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm truncate border" style="grid-column: 2 / span 18;"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
+                        if (store.id === 'matsuyama') for(let i=1; i<19; i++) matsuyamaCounts[i]++;
+                    } else {
+                        html += `<div class="${colorClasses} text-[10px] leading-tight rounded-l px-1 py-0.5 shadow-sm truncate border border-r-0" style="grid-column: 2 / span 15;"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
+                        html += `<div class="bg-amber-100 text-amber-800 border border-amber-300 text-[9px] leading-tight rounded-r px-1 py-0.5 shadow-sm truncate flex items-center justify-center" style="grid-column: 17 / span 3;"><i class="fa-solid fa-person-running mr-1 text-[8px] opacity-70"></i>合流</div>`;
+                        for(let i=16; i<19; i++) matsuyamaCounts[i]++;
+                    }
+                });
+                lateStaff.forEach(staff => {
+                    const colorClasses = layerStyles[staff.layer];
+                    html += `<div class="${colorClasses} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm truncate border" style="grid-column: 7 / span 20;"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
+                    if (store.id === 'matsuyama') for(let i=6; i<26; i++) matsuyamaCounts[i]++;
+                });
+                html += `</div></div>`;
+            });
+            html += `<div class="grid grid-cols-[80px_repeat(26,_minmax(24px,_1fr))] pt-3 items-end border-t border-gray-300 mt-2"><div class="font-bold text-[10px] text-slate-600 self-end pb-1 pr-2 leading-tight">松山店<br>総稼働人数</div><div class="col-start-2 col-span-26 grid grid-cols-[repeat(26,_minmax(24px,_1fr))] gap-x-0.5 h-12">`;
+            for(let i=0; i<26; i++) {
+                const count = matsuyamaCounts[i];
+                const height = count === 0 ? '0%' : `${Math.min(count * 20, 100)}%`;
+                const bgColor = count >= 4 ? 'bg-emerald-400' : (count >= 2 ? 'bg-amber-400' : (count === 1 ? 'bg-red-400' : 'bg-gray-100'));
+                html += `<div class="flex flex-col justify-end h-full"><div class="text-center text-[9px] font-bold text-gray-500 mb-0.5 ${count === 0 ? 'opacity-0' : ''}">${count}</div><div class="w-full rounded-t ${bgColor} transition-all duration-300" style="height: ${height}"></div></div>`;
+            }
+            html += `</div></div>`;
+            if (!hasAny) html = `<div class="text-center text-gray-400 py-10 text-sm"><i class="fa-solid fa-box-open mb-2 text-2xl"></i><br>スタッフを配置すると、ここにタイムラインが表示されます</div>`;
+            document.getElementById('day-timeline-container').innerHTML = html;
+        }
+
+        function switchWeekView(viewType) {
+            document.getElementById('subtab-week-staff').className = viewType === 'staff' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
+            document.getElementById('subtab-week-store').className = viewType === 'store' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
+            if (viewType === 'staff') { document.getElementById('week-view-staff').classList.remove('hidden'); document.getElementById('week-view-store').classList.add('hidden'); }
+            else { document.getElementById('week-view-store').classList.remove('hidden'); document.getElementById('week-view-staff').classList.add('hidden'); }
+        }
+
+        function generateWeekAndMonthMockData() {
+            const shiftTypes = [
+                { label: '松(早)', class: 'bg-shift-early', key: 'matsuyama_early' },
+                { label: '松(遅)', class: 'bg-shift-late', key: 'matsuyama_late' },
+                { label: '久(早)', class: 'bg-shift-early', key: 'kumoji_early' },
+                { label: '美栄(早)', class: 'bg-shift-early', key: 'miebash_early' },
+                { label: '美里(早)', class: 'bg-shift-early', key: 'misato_early' },
+                { label: '休', class: 'bg-shift-off', key: 'off' }
+            ];
+            const weekBody = document.getElementById('week-table-body');
+            const monthBody = document.getElementById('month-table-body');
+            const storeBody = document.getElementById('week-store-table-body');
+            let overTimeUsersCount = 0, totalPayrollCalc = 0;
+            let storeSchedules = { matsuyama_early:[[],[],[],[],[],[],[]], matsuyama_late:[[],[],[],[],[],[],[]], kumoji_early:[[],[],[],[],[],[],[]], miebash_early:[[],[],[],[],[],[],[]], misato_early:[[],[],[],[],[],[],[]] };
+
+            initialStaff.forEach(staff => {
+                const trWeek = document.createElement('tr');
+                let rowHtml = `<td class="text-left pl-4 font-medium"><span class="text-xs font-bold w-4 inline-block text-center mr-1 ${staff.layer==='A'?'text-red-500':staff.layer==='B'?'text-blue-500':'text-gray-500'}">${staff.layer}</span> ${staff.name}</td>`;
+                let lateCount = 0;
+                for (let i = 0; i < 7; i++) {
+                    let shift;
+                    if (staff.layer === 'A' && lateCount < 1 && Math.random() > 0.7) { shift = shiftTypes[1]; lateCount++; }
+                    else if (Math.random() > 0.8) { shift = shiftTypes[5]; }
+                    else { shift = shiftTypes[Math.floor(Math.random() * 4) === 0 ? 0 : 2 + Math.floor(Math.random() * 3)]; }
+                    rowHtml += `<td><span class="badge-shift ${shift.class}">${shift.label}</span></td>`;
+                    if (shift.key !== 'off' && storeSchedules[shift.key]) storeSchedules[shift.key][i].push(staff);
+                }
+                trWeek.innerHTML = rowHtml;
+                weekBody.appendChild(trWeek);
+
+                const offDays = Math.floor(Math.random() * 3) + 5;
+                const workDays = 30 - offDays;
+                const totalWork = workDays * 8;
+                let totalOvertime = staff.layer === 'A' ? Math.floor(Math.random() * 15) + 12 : (staff.layer === 'B' ? Math.floor(Math.random() * 10) : 0);
+                const isOvertimeAlert = totalOvertime > 25;
+                const isOffDayAlert = offDays < 6;
+                if (isOvertimeAlert) overTimeUsersCount++;
+
+                let calcSalary = 0, salaryHtml = '';
+                if (staff.salaryType === 'fixed') {
+                    const extraPay = Math.max(0, totalOvertime - 25) * 2500;
+                    calcSalary = staff.baseSalary + extraPay;
+                    salaryHtml = `¥${calcSalary.toLocaleString()}` + (extraPay > 0 ? `<br><span class="text-[10px] text-red-500">(割増 +¥${extraPay.toLocaleString()})</span>` : '');
+                } else {
+                    calcSalary = (totalWork * staff.wage) + (totalOvertime * staff.wage * 1.25);
+                    salaryHtml = `¥${calcSalary.toLocaleString()}<br><span class="text-[10px] text-gray-400">(@${staff.wage})</span>`;
+                }
+                totalPayrollCalc += calcSalary;
+
+                let statusHtml = `<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> 適正</span>`;
+                if (isOvertimeAlert) statusHtml = `<span class="text-red-600 font-bold bg-red-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation"></i> みなし超過</span>`;
+                else if (isOffDayAlert) statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation"></i> 公休不足</span>`;
+
+                const trMonth = document.createElement('tr');
+                trMonth.innerHTML = `<td class="text-left pl-4 font-medium">${staff.name}</td><td><span class="px-2 py-1 rounded text-xs font-bold ${layerStyles[staff.layer].replace('border','')}">${staff.layer}</span></td><td>${workDays} 日</td><td class="${isOffDayAlert?'text-red-600 font-bold':''}">${offDays} 日</td><td>${totalWork} h</td><td class="${isOvertimeAlert?'text-red-600 font-bold':''}">${totalOvertime} h</td><td class="font-mono text-right pr-4">${salaryHtml}</td><td>${statusHtml}</td>`;
+                monthBody.appendChild(trMonth);
+            });
+
+            document.getElementById('overtime-count').innerHTML = `${overTimeUsersCount}<span class="text-sm font-normal text-amber-600 ml-1">名</span>`;
+            document.getElementById('total-payroll').innerText = `¥${totalPayrollCalc.toLocaleString()}`;
+
+            [
+                { title: '松山店 (遅番)', key: 'matsuyama_late', icon: 'fa-moon', color: 'text-red-800', bg: 'bg-red-50' },
+                { title: '松山店 (早番)', key: 'matsuyama_early', icon: 'fa-sun', color: 'text-slate-700', bg: 'bg-slate-50' },
+                { title: '久茂地店', key: 'kumoji_early', icon: 'fa-store', color: 'text-slate-700', bg: 'bg-slate-50' },
+                { title: '美栄橋店', key: 'miebash_early', icon: 'fa-store', color: 'text-slate-700', bg: 'bg-slate-50' },
+                { title: '美里店', key: 'misato_early', icon: 'fa-store', color: 'text-slate-700', bg: 'bg-slate-50' },
+            ].forEach(rowInfo => {
+                const tr = document.createElement('tr');
+                let rowHtml = `<td class="text-left pl-4 font-bold ${rowInfo.bg} border-b-2"><i class="fa-solid ${rowInfo.icon} mr-1 ${rowInfo.color}"></i><span class="${rowInfo.color}">${rowInfo.title}</span></td>`;
+                for (let i = 0; i < 7; i++) {
+                    const staffInShift = storeSchedules[rowInfo.key][i];
+                    rowHtml += `<td class="align-top p-1 bg-gray-50/50">${staffInShift.map(s => `<div class="text-[11px] mb-1 bg-white border border-gray-200 rounded px-1 py-0.5 text-left shadow-sm flex items-center"><span class="font-bold ${s.layer==='A'?'text-red-600':s.layer==='B'?'text-blue-600':'text-gray-700'} w-3 text-center mr-1">${s.layer}</span><span class="truncate text-gray-800">${s.name}</span></div>`).join('')}</td>`;
+                }
+                tr.innerHTML = rowHtml;
+                storeBody.appendChild(tr);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
