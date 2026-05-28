@@ -28,7 +28,7 @@
     <div class="flex items-center gap-3">
       <span id="today-date" class="text-xs text-gray-500 hidden md:block"></span>
       <button onclick="toggleAdminLogin()" id="admin-login-btn"
-        class="border border-gray-700 hover:border-amber-500/50 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-all duration-200">
+        class="border border-gray-700 hover:border-yellow-400/50 px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 transition-all duration-200">
         <i class="fa-solid fa-lock text-gray-500 transition" id="lock-icon"></i>
         <span id="admin-status-label" class="text-gray-400 transition">経営者ログイン</span>
       </button>
@@ -37,11 +37,11 @@
 
   <!-- HERO MESSAGE -->
   <section class="px-6 md:px-10 py-12 md:py-16 text-center border-b border-gray-800/50">
-    <div class="text-[10px] text-amber-500 font-bold tracking-[0.4em] mb-5 uppercase">Today's Mission</div>
+    <div class="text-[10px] text-yellow-400 font-bold tracking-[0.4em] mb-5 uppercase">Today's Mission</div>
     <p id="monthly-message" class="text-2xl md:text-4xl font-black text-white leading-snug max-w-2xl mx-auto"></p>
     <div id="today-display" class="mt-4 text-gray-600 text-sm"></div>
     <button onclick="editMessage()" id="edit-msg-btn"
-      class="hidden mt-5 text-xs text-amber-500 hover:text-amber-300 border border-amber-900 hover:border-amber-500 px-4 py-1.5 rounded-full transition">
+      class="hidden mt-5 text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-900 hover:border-yellow-400 px-4 py-1.5 rounded-full transition">
       <i class="fa-solid fa-pen mr-1"></i>メッセージを編集
     </button>
   </section>
@@ -50,11 +50,11 @@
   <section class="px-6 md:px-10 py-8 border-b border-gray-800/50">
     <div class="flex justify-between items-center mb-5">
       <h2 class="text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-        <i class="fa-solid fa-bullseye mr-2 text-amber-500"></i>今月の目標
+        <i class="fa-solid fa-bullseye mr-2 text-yellow-400"></i>今月の目標
         <span id="month-label" class="ml-2 text-gray-700 font-normal normal-case tracking-normal"></span>
       </h2>
       <button onclick="editGoals()" id="edit-goals-btn"
-        class="hidden text-xs text-amber-500 hover:text-amber-300 border border-amber-900 hover:border-amber-500 px-3 py-1 rounded-full transition">
+        class="hidden text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-900 hover:border-yellow-400 px-3 py-1 rounded-full transition">
         <i class="fa-solid fa-pen mr-1"></i>目標を編集
       </button>
     </div>
@@ -74,7 +74,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
       <a href="index.html"
         class="block bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-amber-700/50 rounded-2xl p-5 transition-all group">
-        <i class="fa-solid fa-chart-line text-2xl text-amber-500 mb-3 block group-hover:scale-110 transition-transform origin-left"></i>
+        <i class="fa-solid fa-chart-line text-2xl text-yellow-400 mb-3 block group-hover:scale-110 transition-transform origin-left"></i>
         <div class="font-bold text-sm text-white">売上ダッシュボード</div>
         <div class="text-[11px] text-gray-600 mt-1">日次・月次・店舗別売上</div>
       </a>
@@ -104,7 +104,7 @@
     <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl mx-4">
       <div class="text-center mb-6">
         <div class="w-14 h-14 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <i class="fa-solid fa-lock text-amber-400 text-2xl"></i>
+          <i class="fa-solid fa-lock text-yellow-400 text-2xl"></i>
         </div>
         <h3 class="font-black text-white text-lg">経営者ログイン</h3>
         <p class="text-gray-500 text-xs mt-1">パスワードを入力してください</p>
@@ -129,7 +129,7 @@
   <!-- Edit Message Modal -->
   <div id="msg-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
     <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl mx-4">
-      <h3 class="font-bold text-white mb-1"><i class="fa-solid fa-pen mr-2 text-amber-400"></i>今月のメッセージ</h3>
+      <h3 class="font-bold text-white mb-1"><i class="fa-solid fa-pen mr-2 text-yellow-400"></i>今月のメッセージ</h3>
       <p class="text-xs text-gray-500 mb-4">改行はそのまま反映されます</p>
       <textarea id="msg-input" rows="4"
         class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 resize-none mb-4 text-sm transition"></textarea>
@@ -149,7 +149,7 @@
   <!-- Edit Goals Modal -->
   <div id="goals-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
     <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl mx-4 max-h-[90vh] overflow-y-auto">
-      <h3 class="font-bold text-white mb-5"><i class="fa-solid fa-pen mr-2 text-amber-400"></i>目標を編集</h3>
+      <h3 class="font-bold text-white mb-5"><i class="fa-solid fa-pen mr-2 text-yellow-400"></i>目標を編集</h3>
       <div class="space-y-2 mb-5" id="goals-form"></div>
       <div class="flex gap-3 justify-end">
         <button onclick="document.getElementById('goals-modal').classList.add('hidden')"
@@ -242,12 +242,12 @@
       const icon  = document.getElementById('lock-icon');
       const label = document.getElementById('admin-status-label');
       if (isAdmin) {
-        btn.classList.add('border-amber-500/40', 'bg-amber-500/5');
-        icon.className  = 'fa-solid fa-lock-open text-amber-400 transition';
-        label.className = 'text-amber-400 transition text-xs';
+        btn.classList.add('border-yellow-400/40', 'bg-yellow-400/5');
+        icon.className  = 'fa-solid fa-lock-open text-yellow-400 transition';
+        label.className = 'text-yellow-400 transition text-xs';
         label.textContent = '経営者モード ON（ログアウト）';
       } else {
-        btn.classList.remove('border-amber-500/40', 'bg-amber-500/5');
+        btn.classList.remove('border-yellow-400/40', 'bg-yellow-400/5');
         icon.className  = 'fa-solid fa-lock text-gray-500 transition';
         label.className = 'text-gray-400 transition text-xs';
         label.textContent = '経営者ログイン';
@@ -284,7 +284,7 @@
           const actual = salesActuals[id] || 0;
           const pct    = s.target > 0 ? Math.min(100, Math.round(actual / s.target * 100)) : 0;
           const barClr = pct >= 100 ? 'bg-emerald-500' : pct >= 80 ? 'bg-amber-400' : pct >= 50 ? 'bg-amber-600' : 'bg-red-500';
-          const txtClr = pct >= 100 ? 'text-emerald-400' : pct >= 80 ? 'text-amber-400' : pct >= 50 ? 'text-amber-500' : 'text-red-400';
+          const txtClr = pct >= 100 ? 'text-emerald-400' : pct >= 80 ? 'text-yellow-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400';
           const actualTxt = actual > 0
             ? `¥${Math.round(actual/10000).toLocaleString()}万 <span class="font-black">${pct}%</span>`
             : '<span class="text-gray-700">実績取得中...</span>';
