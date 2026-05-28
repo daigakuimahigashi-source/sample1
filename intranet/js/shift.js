@@ -1,5 +1,6 @@
 // ===== デフォルトスタッフデータ =====
 const DEFAULT_STAFF = [
+    { id: 's1', name: '又吉 達朗', layer: 'S', salaryType: 'monthly', salary: 500000, birthdate: '1980-01-01', fixedStore: '', unavailableDays: [], notes: '代表取締役・フレキシブル配置' },
     { id: 'a1', name: '店長 佐藤', layer: 'A', salaryType: 'monthly', salary: 350000, birthdate: '1985-04-01', fixedStore: '', unavailableDays: [], notes: '' },
     { id: 'a2', name: '鈴木',      layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '1990-06-15', fixedStore: '', unavailableDays: [], notes: '' },
     { id: 'a3', name: '高橋',      layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '1992-09-20', fixedStore: '', unavailableDays: [], notes: '' },
@@ -50,7 +51,7 @@ const layerStyles = {
 
 // 各レイヤーの配置ルール定義
 const LAYER_RULES = {
-    'S': { label: '役員',         salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: 'OPEN/CLOSE担当・配置制限なし', minHoliday: 0 },
+    'S': { label: '役員',         salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: 'フレキシブル配置（穴埋め・開閉店補助）・配置制限なし', minHoliday: 0 },
     'A': { label: '日本人正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可',         minHoliday: 6 },
     'B': { label: '外国籍正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月8公休', note: '在留資格確認必須',             minHoliday: 8 },
     'C': { label: '熟練バイト',   salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',              minHoliday: 0 },
