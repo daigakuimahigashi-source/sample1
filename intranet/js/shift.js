@@ -41,10 +41,20 @@ let reqData = null;
 let reqActiveStore = 'matsuyama';
 
 const layerStyles = {
+    'S': 'bg-purple-100 text-purple-800 border-purple-200',
     'A': 'bg-red-100 text-red-800 border-red-200',
     'B': 'bg-blue-100 text-blue-800 border-blue-200',
     'C': 'bg-green-100 text-green-800 border-green-200',
     'D': 'bg-gray-100 text-gray-700 border-gray-200'
+};
+
+// 各レイヤーの配置ルール定義
+const LAYER_RULES = {
+    'S': { label: '役員',         salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: '配置制限なし' },
+    'A': { label: '日本人正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可' },
+    'B': { label: '外国籍正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '在留資格確認必須' },
+    'C': { label: '熟練バイト',   salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで' },
+    'D': { label: '未熟バイト',   salaryType: '時給 ¥1000〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで' },
 };
 
 // ===== Staff Storage =====
@@ -697,6 +707,18 @@ function validateShifts() {
         });
     });
 
+    // ===== 学生 22時制限チェック =====
+    placedStaff.forEach((slot, staffId) => {
+        const staff = initialStaff.find(s => s.id === staffId);
+        if (!staff || !(staff.notes || '').includes('学生')) return;
+        if (slot === 'late') {
+            alerts.push({ type:'error', msg:`【22時制限】${staff.name}（学生）は遅番に配置不可です。学生の勤務は22:00まで。` });
+        } else {
+            alerts.push({ type:'warn', msg:`【22時制限】${staff.name}（学生）は22:00退勤となります。フルシフト分の人員補充を確認してください。` });
+        }
+    });
+
+    // ===== 三六協定チェック（月間残業） =====
     placedStaff.forEach((slot, staffId) => {
         const staff = initialStaff.find(s => s.id === staffId);
         if (!staff) return;
@@ -906,7 +928,7 @@ function renderSettingsTable() {
     initialStaff.forEach((staff, idx) => {
         const age     = getAge(staff.birthdate);
         const under18 = isUnder18(staff.birthdate);
-        const isManagerLayer = staff.layer === 'A' || staff.layer === 'B';
+        const isManagerLayer = staff.layer === 'S' || staff.layer === 'A' || staff.layer === 'B';
 
         const tr = document.createElement('tr');
         tr.className = 'border-b border-gray-100 hover:bg-gray-50';
@@ -932,7 +954,7 @@ function renderSettingsTable() {
             </td>
             <td class="px-2 py-2">
                 <select onchange="updateStaff(${idx},'layer',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                    ${['A','B','C','D'].map(l => `<option value="${l}" ${staff.layer===l?'selected':''}>${l}</option>`).join('')}
+                    ${['S','A','B','C','D'].map(l => `<option value="${l}" ${staff.layer===l?'selected':''}>${l}${l==='S'?' (役員)':l==='A'?' (正社員)':l==='B'?' (外国籍社員)':l==='C'?' (熟練バイト)':' (未熟バイト)'}</option>`).join('')}
                 </select>
             </td>
             <td class="px-2 py-2">
