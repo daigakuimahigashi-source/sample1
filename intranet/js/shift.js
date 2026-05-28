@@ -767,7 +767,6 @@ function renderTimeline() {
     const T_END   = 30;              // 終了 30:00（翌6:00）
     const T_SPAN  = T_END - T_START; // 13 時間
     const SLOTS   = T_SPAN * 2;      // 26 スロット（30分刻み）
-    const LABEL_W = '80px';          // 店舗名ラベル幅
 
     // "HH:MM" → 時刻軸上の left%（T_STARTを0%とする）
     function toPct(timeStr) {
@@ -786,19 +785,24 @@ function renderTimeline() {
         return h + m / 60;
     }
 
-    // ── 時刻ヘッダー ──────────────────────────────────────
-    let html = `<div class="flex items-end border-b-2 border-gray-300 pb-1 mb-2" style="overflow:visible;">
-        <div style="width:${LABEL_W};flex-shrink:0;"></div>
-        <div class="relative flex-1" style="height:20px;overflow:visible;">`;
+    // table-layout:fixed で全行の列幅を厳密に統一し、
+    // 時刻ラベルとバーの % 位置が必ず一致するようにする
+    let html = `<table style="width:100%;table-layout:fixed;border-collapse:collapse;">
+        <colgroup><col style="width:80px;"><col></colgroup>
+        <tbody>`;
 
+    // ── 時刻ヘッダー行 ────────────────────────────────────
+    html += `<tr>
+        <td class="border-b-2 border-gray-300 pb-1" style="width:80px;"></td>
+        <td class="border-b-2 border-gray-300 pb-1" style="position:relative;height:22px;">`;
     for (let i = T_START; i <= T_END; i++) {
         const left = ((i - T_START) / T_SPAN * 100).toFixed(3);
-        html += `<div class="absolute text-[10px] font-bold text-gray-500 border-l border-gray-300 pl-0.5 leading-none whitespace-nowrap"
-            style="left:${left}%;top:0;">${i}:00</div>`;
+        html += `<div style="position:absolute;left:${left}%;top:2px;transform:none;"
+            class="text-[10px] font-bold text-gray-500 border-l border-gray-300 pl-0.5 whitespace-nowrap leading-none">${i}:00</div>`;
     }
-    html += `</div></div>`;
+    html += `</td></tr>`;
 
-    // ── 店舗別バー ────────────────────────────────────────
+    // ── 店舗別バー行 ──────────────────────────────────────
     const requirements = loadRequirements();
     const stores = [
         { id: 'matsuyama', name: '松山店' },
@@ -839,27 +843,28 @@ function renderTimeline() {
         }
 
         const rowH = allBars.length * 22 + 6;
-        html += `<div class="flex border-b border-gray-200 py-1">
-            <div class="font-bold text-[11px] text-slate-700 truncate pr-2 self-start pt-0.5" style="width:${LABEL_W};flex-shrink:0;">${store.name}</div>
-            <div class="relative flex-1" style="height:${rowH}px;">`;
+        html += `<tr class="border-b border-gray-200">
+            <td class="text-[11px] font-bold text-slate-700 pr-2 align-top" style="width:80px;padding-top:4px;">${store.name}</td>
+            <td style="position:relative;height:${rowH}px;">`;
 
         allBars.forEach(({ staff, slot }, idx) => {
             const c    = layerStyles[staff.layer];
             const left = toPct(slot.start);
             const w    = durPct(slot.start, slot.end);
             const top  = idx * 22;
-            html += `<div class="${c} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm border absolute truncate"
-                style="left:${left}%;width:${w}%;top:${top}px;box-sizing:border-box;">
-                <span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
+            html += `<div class="${c} text-[10px] leading-tight rounded px-1 shadow-sm border"
+                style="position:absolute;left:${left}%;width:${w}%;top:${top}px;height:20px;
+                       box-sizing:border-box;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+                <span class="font-bold opacity-70">${staff.layer}</span> ${staff.name}</div>`;
         });
 
-        html += `</div></div>`;
+        html += `</td></tr>`;
     });
 
     // ── 松山店 総稼働バーチャート ─────────────────────────
-    html += `<div class="flex items-end border-t border-gray-300 mt-2 pt-2">
-        <div class="font-bold text-[10px] text-slate-600 leading-tight pr-2 self-end pb-0.5" style="width:${LABEL_W};flex-shrink:0;">松山店<br>総稼働</div>
-        <div class="relative flex-1 h-12">`;
+    html += `<tr class="border-t-2 border-gray-300">
+        <td class="text-[10px] font-bold text-slate-600 align-bottom leading-tight" style="width:80px;padding-bottom:4px;">松山店<br>総稼働</td>
+        <td style="position:relative;height:52px;">`;
 
     for (let i = 0; i < SLOTS; i++) {
         const cnt  = matsuyamaCounts[i];
@@ -867,13 +872,14 @@ function renderTimeline() {
         const w    = (1 / SLOTS * 100).toFixed(3);
         const hPct = cnt === 0 ? 0 : Math.min(cnt * 20, 100);
         const bg   = cnt >= 4 ? 'bg-emerald-400' : cnt >= 2 ? 'bg-amber-400' : cnt === 1 ? 'bg-red-400' : 'bg-gray-100';
-        html += `<div class="absolute bottom-0 flex flex-col justify-end" style="left:${left}%;width:calc(${w}% - 1px);height:100%;">
-            <div class="text-center text-[9px] font-bold text-gray-500 leading-none mb-0.5 ${cnt === 0 ? 'opacity-0' : ''}">${cnt}</div>
-            <div class="w-full rounded-t ${bg} transition-all duration-300" style="height:${hPct}%;"></div>
+        html += `<div style="position:absolute;left:${left}%;width:calc(${w}% - 1px);height:100%;
+                            display:flex;flex-direction:column;justify-content:flex-end;">
+            <div class="text-center text-[9px] font-bold text-gray-500 leading-none ${cnt===0?'opacity-0':''}" style="margin-bottom:2px;">${cnt}</div>
+            <div class="w-full rounded-t ${bg}" style="height:${hPct}%;"></div>
         </div>`;
     }
 
-    html += `</div></div>`;
+    html += `</td></tr></tbody></table>`;
 
     if (!hasAny) {
         html = `<div class="text-center text-gray-400 py-10 text-sm"><i class="fa-solid fa-box-open mb-2 text-2xl"></i><br>スタッフを配置するとタイムラインが表示されます</div>`;
