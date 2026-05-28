@@ -58,8 +58,15 @@
                 <p class="text-xs text-slate-400 mt-1">日次配置・週間シフト・月間労務の統合プロトタイプ</p>
             </div>
         </div>
-        <div class="flex gap-2" id="header-actions">
-            <!-- JSでビューに応じたボタンが挿入されます -->
+        <div class="flex items-center gap-3">
+            <button onclick="toggleAdminMode()" id="admin-toggle-btn"
+                class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-lock text-gray-400" id="admin-icon"></i>
+                <span id="admin-label">経営者モード</span>
+            </button>
+            <div class="flex gap-2" id="header-actions">
+                <!-- JSでビューに応じたボタンが挿入されます -->
+            </div>
         </div>
     </header>
 
@@ -77,6 +84,73 @@
         <button onclick="switchView('settings')" id="tab-settings" class="py-3 border-b-2 border-transparent hover:text-slate-800 transition-colors">
             <i class="fa-solid fa-users-gear mr-1"></i> スタッフ設定
         </button>
+        <button onclick="switchView('requirements')" id="tab-requirements" class="py-3 border-b-2 border-transparent hover:text-slate-800 transition-colors">
+            <i class="fa-solid fa-clipboard-check mr-1"></i> 必須人員マスタ
+        </button>
+        <button onclick="openAIModal()" id="tab-ai" class="py-3 border-b-2 border-transparent hover:text-slate-800 transition-colors ml-auto text-purple-600 font-bold">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AIシフト生成
+        </button>
+    </div>
+
+    <!-- ===== AIシフト生成モーダル ===== -->
+    <div id="ai-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="bg-gradient-to-r from-purple-700 to-indigo-700 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AIシフト自動生成</h2>
+                    <p class="text-xs text-purple-200 mt-0.5">スタッフ設定・必須人員マスタを読み込んで最適なシフト案を作成します</p>
+                </div>
+                <button onclick="closeAIModal()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1">
+                <!-- 対象週 -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-calendar mr-1 text-purple-500"></i>対象週の開始日（月曜日）</label>
+                    <input type="date" id="ai-week-start" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 w-48">
+                </div>
+
+                <!-- 追加指示 -->
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-comment mr-1 text-purple-500"></i>追加メモ・特別指示（自由記述）</label>
+                    <textarea id="ai-prompt" rows="5" placeholder="例）田中さんは木曜休み。土日は松山店を優先的に厚くして。久茂地は今週人手不足気味なので多めに。"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 resize-none"></textarea>
+                </div>
+
+                <!-- 読み込み状態の確認 -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5 text-sm">
+                    <p class="font-bold text-slate-600 mb-2">AIに渡すデータ（自動読み込み）</p>
+                    <div class="space-y-1 text-gray-600">
+                        <div><i class="fa-solid fa-check text-green-500 mr-2"></i>スタッフ: <span id="ai-info-staff" class="font-mono">--</span>名</div>
+                        <div><i class="fa-solid fa-check text-green-500 mr-2"></i>必須人員ルール: <span id="ai-info-rules" class="font-mono">--</span>店舗分</div>
+                        <div><i class="fa-solid fa-check text-green-500 mr-2"></i>22時制限スタッフ: <span id="ai-info-under18" class="font-mono">--</span>名</div>
+                    </div>
+                </div>
+
+                <!-- 結果エリア -->
+                <div id="ai-result-area" class="hidden">
+                    <div class="border-t border-gray-200 pt-4">
+                        <p class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-list-check mr-1 text-purple-500"></i>生成されたシフト案</p>
+                        <div id="ai-warnings" class="hidden mb-3"></div>
+                        <div id="ai-summary" class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm text-purple-800 mb-3"></div>
+                        <div id="ai-shift-preview" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200 flex gap-3 items-center">
+                <button onclick="runAIShift()" id="ai-run-btn"
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-bold shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>シフト生成
+                </button>
+                <button onclick="applyAIShift()" id="ai-apply-btn"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-lg font-bold shadow transition hidden">
+                    <i class="fa-solid fa-check mr-1"></i>このシフト案を適用
+                </button>
+                <span id="ai-loading" class="hidden text-purple-600 text-sm"><i class="fa-solid fa-spinner fa-spin mr-1"></i>AIがシフトを考えています...</span>
+                <span id="ai-error" class="hidden text-red-600 text-sm font-bold"></span>
+            </div>
+        </div>
     </div>
 
     <!-- コンテンツエリア -->
@@ -87,8 +161,19 @@
             <!-- 左側：スタッフプール -->
             <div class="w-72 bg-white border-r border-gray-200 flex flex-col shadow-lg z-10">
                 <div class="p-4 border-b border-gray-100 bg-gray-50">
-                    <h2 class="font-bold text-gray-700"><i class="fa-solid fa-users mr-2"></i>待機スタッフ</h2>
-                    <p class="text-xs text-gray-500 mt-1">ドラッグ＆ドロップで右の枠に配置</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <button onclick="navigateDay(-1)" class="p-1.5 bg-gray-200 hover:bg-gray-300 rounded text-gray-600 transition text-xs"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="text-center">
+                            <div class="font-bold text-gray-800 text-sm" id="day-view-date">--/--</div>
+                            <div class="flex items-center justify-center gap-1 mt-0.5">
+                                <span id="day-today-badge" class="hidden text-[9px] bg-amber-500 text-white px-1.5 rounded font-bold">今日</span>
+                                <span id="day-confirmed-badge" class="hidden text-[9px] bg-emerald-500 text-white px-1.5 rounded font-bold"><i class="fa-solid fa-check mr-0.5"></i>確定済</span>
+                            </div>
+                        </div>
+                        <button onclick="navigateDay(1)" class="p-1.5 bg-gray-200 hover:bg-gray-300 rounded text-gray-600 transition text-xs"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <h2 class="font-bold text-gray-700 text-sm"><i class="fa-solid fa-users mr-2"></i>待機スタッフ</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">ドラッグ＆ドロップで右の枠に配置</p>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-4 space-y-3" id="staff-pool">
@@ -211,9 +296,9 @@
             <div class="max-w-6xl mx-auto">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-4">
-                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
-                        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-calendar-week mr-2 text-amber-500"></i>週間シフト表 (5/25 - 5/31)</h2>
-                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button onclick="navigateWeek(-1)" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 id="week-view-title" class="text-xl font-bold text-slate-800"><i class="fa-solid fa-calendar-week mr-2 text-amber-500"></i>週間シフト表</h2>
+                        <button onclick="navigateWeek(1)" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                     <p class="text-sm text-slate-500">※遅番Aが週1回に分散されているか、公休が取れているかを確認します。</p>
                 </div>
@@ -226,15 +311,15 @@
                 <div id="week-view-staff" class="bg-white border border-gray-200 rounded-b-lg rounded-tr-lg shadow-sm overflow-hidden block">
                     <table class="w-full schedule-table text-sm">
                         <thead>
-                            <tr>
+                            <tr id="week-staff-head">
                                 <th class="w-40 text-left pl-4">スタッフ</th>
-                                <th class="w-24">月</th>
-                                <th class="w-24">火</th>
-                                <th class="w-24">水</th>
-                                <th class="w-24">木</th>
-                                <th class="w-24">金</th>
-                                <th class="w-24 text-blue-600">土</th>
-                                <th class="w-24 text-red-600">日</th>
+                                <th class="w-24 week-day-header">月</th>
+                                <th class="w-24 week-day-header">火</th>
+                                <th class="w-24 week-day-header">水</th>
+                                <th class="w-24 week-day-header">木</th>
+                                <th class="w-24 week-day-header">金</th>
+                                <th class="w-24 week-day-header">土</th>
+                                <th class="w-24 week-day-header">日</th>
                             </tr>
                         </thead>
                         <tbody id="week-table-body"></tbody>
@@ -244,15 +329,15 @@
                 <div id="week-view-store" class="bg-white border border-gray-200 rounded-b-lg rounded-tr-lg shadow-sm overflow-hidden hidden">
                     <table class="w-full schedule-table text-sm">
                         <thead>
-                            <tr>
+                            <tr id="week-store-head">
                                 <th class="w-40 text-left pl-4">店舗・シフト</th>
-                                <th class="w-24">月</th>
-                                <th class="w-24">火</th>
-                                <th class="w-24">水</th>
-                                <th class="w-24">木</th>
-                                <th class="w-24">金</th>
-                                <th class="w-24 text-blue-600">土</th>
-                                <th class="w-24 text-red-600">日</th>
+                                <th class="w-24 week-day-header">月</th>
+                                <th class="w-24 week-day-header">火</th>
+                                <th class="w-24 week-day-header">水</th>
+                                <th class="w-24 week-day-header">木</th>
+                                <th class="w-24 week-day-header">金</th>
+                                <th class="w-24 week-day-header">土</th>
+                                <th class="w-24 week-day-header">日</th>
                             </tr>
                         </thead>
                         <tbody id="week-store-table-body"></tbody>
@@ -266,9 +351,9 @@
             <div class="max-w-6xl mx-auto">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-4">
-                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
-                        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-chart-line mr-2 text-amber-500"></i>月間労務・給与サマリー (5月度)</h2>
-                        <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button onclick="navigateMonth(-1)" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 id="month-view-title" class="text-xl font-bold text-slate-800"><i class="fa-solid fa-chart-line mr-2 text-amber-500"></i>月間労務・給与サマリー</h2>
+                        <button onclick="navigateMonth(1)" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                     <p class="text-sm text-slate-500">※「公休6日」の遵守状況と、時給設定に基づく想定給与を可視化します。</p>
                 </div>
@@ -322,9 +407,18 @@
             <div class="max-w-6xl mx-auto p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-users-gear mr-2 text-amber-500"></i>スタッフ設定</h2>
-                    <button onclick="addStaff()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold shadow transition">
-                        <i class="fa-solid fa-plus mr-1"></i> スタッフを追加
-                    </button>
+                    <div class="flex gap-2">
+                        <label class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold shadow transition cursor-pointer">
+                            <i class="fa-solid fa-file-csv mr-1"></i> CSVで一括インポート
+                            <input type="file" accept=".csv" class="hidden" onchange="importStaffCSV(this)">
+                        </label>
+                        <button onclick="exportStaffCSV()" class="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold shadow transition">
+                            <i class="fa-solid fa-download mr-1"></i> CSV出力
+                        </button>
+                        <button onclick="addStaff()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded text-sm font-bold shadow transition">
+                            <i class="fa-solid fa-plus mr-1"></i> スタッフを追加
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 凡例 -->
@@ -370,500 +464,38 @@
             </div>
         </div>
 
+        <!-- ==================== 【必須人員マスタ】 ==================== -->
+        <div id="view-requirements" class="w-full h-full absolute top-0 left-0 bg-gray-50 opacity-0 pointer-events-none transition-opacity duration-300 overflow-y-auto">
+            <div class="max-w-5xl mx-auto p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-clipboard-check mr-2 text-amber-500"></i>必須人員マスタ</h2>
+                    <button onclick="saveRequirements()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded font-bold shadow transition">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i>保存
+                    </button>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-sm text-amber-800">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    各店舗・時間帯ごとに「何層が何名必要か」を設定します。AIシフト生成と自動バリデーションに使われます。
+                </div>
+
+                <!-- 店舗タブ -->
+                <div class="flex gap-2 mb-4 flex-wrap" id="req-store-tabs"></div>
+
+                <!-- 店舗ごとの設定 -->
+                <div id="req-store-content"></div>
+
+                <div class="mt-4 flex gap-3">
+                    <button onclick="saveRequirements()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded font-bold shadow transition">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i>設定を保存
+                    </button>
+                    <span id="req-save-status" class="text-sm text-emerald-600 font-bold self-center hidden"><i class="fa-solid fa-check mr-1"></i>保存しました</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        // ===== デフォルトスタッフデータ =====
-        const DEFAULT_STAFF = [
-            { id: 'a1', name: '店長 佐藤', layer: 'A', salaryType: 'monthly', salary: 350000, birthdate: '1985-04-01', fixedStore: '', unavailableDays: [], notes: '' },
-            { id: 'a2', name: '鈴木',      layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '1990-06-15', fixedStore: '', unavailableDays: [], notes: '' },
-            { id: 'a3', name: '高橋',      layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '1992-09-20', fixedStore: '', unavailableDays: [], notes: '' },
-            { id: 'a4', name: '田中',      layer: 'A', salaryType: 'monthly', salary: 280000, birthdate: '1995-03-10', fixedStore: '', unavailableDays: [], notes: '' },
-            { id: 'b1', name: 'ジョン',    layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '1993-07-22', fixedStore: '', unavailableDays: [], notes: '在留資格確認済' },
-            { id: 'b2', name: 'ソン',      layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '1996-11-05', fixedStore: '', unavailableDays: [], notes: '在留資格確認済' },
-            { id: 'c1', name: '渡辺',      layer: 'C', salaryType: 'hourly',  salary: 1200,   birthdate: '2000-02-14', fixedStore: 'matsuyama', unavailableDays: [], notes: '' },
-            { id: 'c2', name: '伊藤',      layer: 'C', salaryType: 'hourly',  salary: 1200,   birthdate: '2001-08-30', fixedStore: 'kumoji',    unavailableDays: ['月'], notes: '' },
-            { id: 'c3', name: '山本',      layer: 'C', salaryType: 'hourly',  salary: 1100,   birthdate: '1999-05-18', fixedStore: '', unavailableDays: [], notes: '' },
-            { id: 'c4', name: '中村',      layer: 'C', salaryType: 'hourly',  salary: 1100,   birthdate: '2003-12-01', fixedStore: '', unavailableDays: ['土','日'], notes: '学生' },
-            { id: 'd1', name: '小林',      layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '2007-04-10', fixedStore: '', unavailableDays: [], notes: '' },
-            { id: 'd2', name: '加藤',      layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '2005-09-25', fixedStore: '', unavailableDays: ['水'], notes: '' },
-            { id: 'd3', name: '吉田',      layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '2006-01-15', fixedStore: 'misato',    unavailableDays: [], notes: '' },
-            { id: 'd4', name: '山田',      layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '2008-07-03', fixedStore: '', unavailableDays: ['月','火'], notes: '学生' },
-            { id: 'd5', name: '佐々木',    layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '2004-03-20', fixedStore: '', unavailableDays: [], notes: '' },
-        ];
-
-        const STORES_MAP = {
-            '': 'どこでも',
-            'matsuyama': '松山店',
-            'kumoji': '久茂地店',
-            'miebash': '美栄橋店',
-            'misato': '美里店'
-        };
-        const ALL_DAYS = ['月','火','水','木','金','土','日'];
-
-        // localStorageからスタッフデータを読み込む
-        function loadStaff() {
-            const saved = localStorage.getItem('okk_staff_data');
-            return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_STAFF));
-        }
-
-        // スタッフデータをlocalStorageに保存
-        function saveStaffData(staffArr) {
-            localStorage.setItem('okk_staff_data', JSON.stringify(staffArr));
-        }
-
-        // 年齢を計算し22時制限があるか判定
-        function isUnder18(birthdate) {
-            if (!birthdate) return false;
-            const birth = new Date(birthdate);
-            const today = new Date();
-            const age = today.getFullYear() - birth.getFullYear() - (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
-            return age < 18;
-        }
-
-        function getAge(birthdate) {
-            if (!birthdate) return '?';
-            const birth = new Date(birthdate);
-            const today = new Date();
-            return today.getFullYear() - birth.getFullYear() - (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
-        }
-
-        // initialStaff は動的にlocalStorageから読み込む
-        let initialStaff = loadStaff();
-
-        const layerStyles = {
-            'A': 'bg-red-100 text-red-800 border-red-200',
-            'B': 'bg-blue-100 text-blue-800 border-blue-200',
-            'C': 'bg-green-100 text-green-800 border-green-200',
-            'D': 'bg-gray-100 text-gray-700 border-gray-200'
-        };
-
-        const staffPoolEl = document.getElementById('staff-pool');
-        const alertContainer = document.getElementById('alert-container');
-        const dropZones = document.querySelectorAll('.drop-zone');
-        let currentView = 'day';
-
-        function init() {
-            renderStaffPool();
-            setupDragAndDrop();
-            updateHeaderActions();
-            generateWeekAndMonthMockData();
-            validateShifts();
-        }
-
-        function switchView(view) {
-            currentView = view;
-            ['day', 'week', 'month', 'settings'].forEach(v => {
-                const tab = document.getElementById(`tab-${v}`);
-                if (v === view) {
-                    tab.classList.replace('border-transparent', 'border-amber-500');
-                    tab.classList.replace('text-slate-500', 'text-amber-600');
-                    tab.classList.remove('hover:text-slate-800');
-                } else {
-                    tab.classList.replace('border-amber-500', 'border-transparent');
-                    tab.classList.replace('text-amber-600', 'text-slate-500');
-                    tab.classList.add('hover:text-slate-800');
-                }
-                const el = document.getElementById(`view-${v}`);
-                if (v === view) {
-                    el.classList.remove('opacity-0', 'pointer-events-none');
-                    el.classList.add('z-10');
-                } else {
-                    el.classList.add('opacity-0', 'pointer-events-none');
-                    el.classList.remove('z-10');
-                }
-            });
-            if (view === 'settings') renderSettingsTable();
-            updateHeaderActions();
-        }
-
-        function updateHeaderActions() {
-            const headerActions = document.getElementById('header-actions');
-            if (currentView === 'day') {
-                headerActions.innerHTML = `
-                    <button onclick="autoAssign()" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 自動おまかせ配置
-                    </button>
-                    <button onclick="resetBoard()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition font-medium">
-                        <i class="fa-solid fa-rotate-right mr-1"></i> リセット
-                    </button>
-                `;
-            } else if (currentView === 'week') {
-                headerActions.innerHTML = `<button class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm"><i class="fa-solid fa-robot mr-1"></i> 1週間分を自動生成</button>`;
-            } else {
-                headerActions.innerHTML = `<button class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm"><i class="fa-solid fa-file-export mr-1"></i> CSV出力</button>`;
-            }
-        }
-
-        function renderStaffPool() {
-            staffPoolEl.innerHTML = '';
-            initialStaff.forEach(staff => {
-                const div = document.createElement('div');
-                div.className = `staff-card px-3 py-2 rounded-lg border shadow-sm select-none ${layerStyles[staff.layer]}`;
-                div.draggable = true;
-                div.dataset.id = staff.id;
-                div.dataset.layer = staff.layer;
-                div.dataset.name = staff.name;
-                const under18 = isUnder18(staff.birthdate);
-                const fixedStoreName = staff.fixedStore ? STORES_MAP[staff.fixedStore] : '';
-                const badges = [];
-                if (under18) badges.push(`<span class="text-[9px] bg-orange-100 text-orange-700 border border-orange-300 rounded px-1">🔞22時不可</span>`);
-                if (fixedStoreName) badges.push(`<span class="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 rounded px-1"><i class="fa-solid fa-store" style="font-size:8px"></i> ${fixedStoreName}</span>`);
-                if (staff.unavailableDays && staff.unavailableDays.length > 0) badges.push(`<span class="text-[9px] bg-red-50 text-red-500 border border-red-200 rounded px-1">休:${staff.unavailableDays.join('・')}</span>`);
-
-                div.innerHTML = `
-                    <div class="flex items-center w-full">
-                        <div class="font-bold text-sm w-6 text-center opacity-70 border-r border-current mr-2 pr-2">${staff.layer}</div>
-                        <div class="flex-1 flex flex-col">
-                            <div class="font-medium text-sm">${staff.name}</div>
-                            ${badges.length > 0 ? `<div class="flex flex-wrap gap-1 mt-1">${badges.join('')}</div>` : ''}
-                            <div class="time-display text-[10px] opacity-80 mt-0.5 font-mono"></div>
-                        </div>
-                        <i class="fa-solid fa-grip-vertical opacity-30 text-sm ml-2"></i>
-                    </div>
-                `;
-                div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', staff.id); setTimeout(() => div.classList.add('opacity-50'), 0); });
-                div.addEventListener('dragend', () => { div.classList.remove('opacity-50'); });
-                staffPoolEl.appendChild(div);
-            });
-        }
-
-        function setupDragAndDrop() {
-            staffPoolEl.addEventListener('dragover', e => e.preventDefault());
-            staffPoolEl.addEventListener('drop', handleDrop);
-            dropZones.forEach(zone => {
-                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-                zone.addEventListener('dragleave', () => { zone.classList.remove('drag-over'); });
-                zone.addEventListener('drop', handleDrop);
-            });
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            const dropZone = e.target.closest('.drop-zone') || e.target.closest('#staff-pool');
-            if (dropZone) {
-                if (dropZone.classList.contains('drop-zone')) dropZone.classList.remove('drag-over');
-                const staffId = e.dataTransfer.getData('text/plain');
-                const staffEl = document.querySelector(`[data-id="${staffId}"]`);
-                if (staffEl) { dropZone.appendChild(staffEl); validateShifts(); }
-            }
-        }
-
-        function resetBoard() {
-            document.querySelectorAll('.staff-card').forEach(el => staffPoolEl.appendChild(el));
-            validateShifts();
-        }
-
-        function updateStaffTimeDisplays() {
-            document.querySelectorAll('.staff-card').forEach(card => {
-                let addedWork = 0, addedOvertime = 0;
-                const dropZone = card.closest('.drop-zone');
-                if (dropZone) { addedWork = 8; addedOvertime = dropZone.dataset.shift === 'late' ? 1 : 0; }
-                card.querySelector('.time-display').innerHTML = addedWork > 0 ? `本日の実働:${addedWork}h (+残業${addedOvertime}h)` : '';
-            });
-        }
-
-        function autoAssign() {
-            resetBoard();
-            const shuffle = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
-            const staffElements = Array.from(staffPoolEl.querySelectorAll('.staff-card'));
-            const aStaff = shuffle(staffElements.filter(el => el.dataset.layer === 'A'));
-            const bStaff = shuffle(staffElements.filter(el => el.dataset.layer === 'B'));
-            if (aStaff.length > 0) document.querySelector('.drop-zone[data-store="matsuyama"][data-shift="late"]').appendChild(aStaff.pop());
-            const earlyZones = ['matsuyama', 'kumoji', 'miebash', 'misato'].map(s => document.querySelector(`.drop-zone[data-store="${s}"][data-shift="early"]`));
-            let leaders = shuffle([...aStaff, ...bStaff]);
-            earlyZones.forEach(zone => { if (leaders.length > 0) zone.appendChild(leaders.pop()); });
-            shuffle(Array.from(staffPoolEl.querySelectorAll('.staff-card'))).forEach((staff, i) => earlyZones[i % earlyZones.length].appendChild(staff));
-            validateShifts();
-        }
-
-        function getStaffInZone(store, shift) {
-            const zone = document.querySelector(`.drop-zone[data-store="${store}"][data-shift="${shift}"]`);
-            return zone ? Array.from(zone.querySelectorAll('.staff-card')).map(el => ({ id: el.dataset.id, layer: el.dataset.layer, name: el.dataset.name })) : [];
-        }
-
-        function validateShifts() {
-            updateStaffTimeDisplays();
-            const alerts = [];
-            const matsuyamaLate = getStaffInZone('matsuyama', 'late');
-            if (matsuyamaLate.length === 0) alerts.push({ type: 'error', msg: '松山店の「遅番」にスタッフが配置されていません。' });
-            else if (!matsuyamaLate.some(s => s.layer === 'A')) alerts.push({ type: 'error', msg: '松山店の「遅番」には【A人材】が必要です。' });
-            ['matsuyama', 'kumoji', 'miebash', 'misato'].forEach(store => {
-                const earlyData = getStaffInZone(store, 'early');
-                if (earlyData.length > 0 && !earlyData.some(s => s.layer === 'A' || s.layer === 'B'))
-                    alerts.push({ type: 'error', msg: `早番に【責任者(AまたはB)】がいない店舗があります。` });
-            });
-            alertContainer.innerHTML = '';
-            if (alerts.length === 0) {
-                alertContainer.innerHTML = `<div class="bg-emerald-500 text-white px-4 py-3 rounded shadow-lg pointer-events-auto flex items-center w-full max-w-2xl mx-auto"><i class="fa-solid fa-circle-check mr-3 text-xl"></i><span class="font-bold">すべてのコンプライアンス要件をクリアしています！</span></div>`;
-            } else {
-                alerts.forEach(alert => {
-                    const bgClass = alert.type === 'error' ? 'bg-red-500' : 'bg-amber-500';
-                    const icon = alert.type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info';
-                    alertContainer.innerHTML += `<div class="${bgClass} text-white px-4 py-3 rounded shadow-lg pointer-events-auto flex items-center w-full max-w-2xl mx-auto mb-2"><i class="fa-solid ${icon} mr-3 text-xl"></i><span class="font-medium">${alert.msg}</span></div>`;
-                });
-            }
-            renderTimeline();
-        }
-
-        function switchDayView(viewType) {
-            const boardView = document.getElementById('day-view-board');
-            const ganttView = document.getElementById('day-view-gantt');
-            document.getElementById('subtab-day-board').className = viewType === 'board' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
-            document.getElementById('subtab-day-gantt').className = viewType === 'gantt' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
-            if (viewType === 'board') { boardView.classList.remove('hidden'); ganttView.classList.add('hidden'); }
-            else { ganttView.classList.remove('hidden'); boardView.classList.add('hidden'); renderTimeline(); }
-        }
-
-        function renderTimeline() {
-            const gridClass = "grid grid-cols-[80px_repeat(26,_minmax(24px,_1fr))] gap-y-1 items-center relative";
-            let html = `<div class="${gridClass} border-b border-gray-300 pb-1 mb-2"><div></div>`;
-            for(let i=17; i<=29; i++) html += `<div class="col-span-2 text-left text-[10px] font-bold text-gray-500 border-l border-gray-300 pl-1">${i}:00</div>`;
-            html += `</div>`;
-            const stores = [{ id: 'matsuyama', name: '松山店' }, { id: 'kumoji', name: '久茂地店' }, { id: 'miebash', name: '美栄橋店' }, { id: 'misato', name: '美里店' }];
-            let matsuyamaCounts = new Array(26).fill(0);
-            let hasAny = false;
-            stores.forEach(store => {
-                const earlyStaff = getStaffInZone(store.id, 'early');
-                const lateStaff = getStaffInZone(store.id, 'late');
-                if (earlyStaff.length === 0 && lateStaff.length === 0) return;
-                hasAny = true;
-                html += `<div class="${gridClass} py-2 border-b border-gray-200">`;
-                html += `<div class="font-bold text-[11px] text-slate-700 z-10 self-start mt-1 truncate pr-2">${store.name}</div>`;
-                html += `<div class="col-start-2 col-span-26 grid grid-cols-[repeat(26,_minmax(24px,_1fr))] gap-y-1 z-10">`;
-                earlyStaff.forEach(staff => {
-                    const colorClasses = layerStyles[staff.layer];
-                    if (store.id === 'matsuyama' || store.id === 'misato') {
-                        html += `<div class="${colorClasses} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm truncate border" style="grid-column: 2 / span 18;"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
-                        if (store.id === 'matsuyama') for(let i=1; i<19; i++) matsuyamaCounts[i]++;
-                    } else {
-                        html += `<div class="${colorClasses} text-[10px] leading-tight rounded-l px-1 py-0.5 shadow-sm truncate border border-r-0" style="grid-column: 2 / span 15;"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
-                        html += `<div class="bg-amber-100 text-amber-800 border border-amber-300 text-[9px] leading-tight rounded-r px-1 py-0.5 shadow-sm truncate flex items-center justify-center" style="grid-column: 17 / span 3;"><i class="fa-solid fa-person-running mr-1 text-[8px] opacity-70"></i>合流</div>`;
-                        for(let i=16; i<19; i++) matsuyamaCounts[i]++;
-                    }
-                });
-                lateStaff.forEach(staff => {
-                    const colorClasses = layerStyles[staff.layer];
-                    html += `<div class="${colorClasses} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm truncate border" style="grid-column: 7 / span 20;"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
-                    if (store.id === 'matsuyama') for(let i=6; i<26; i++) matsuyamaCounts[i]++;
-                });
-                html += `</div></div>`;
-            });
-            html += `<div class="grid grid-cols-[80px_repeat(26,_minmax(24px,_1fr))] pt-3 items-end border-t border-gray-300 mt-2"><div class="font-bold text-[10px] text-slate-600 self-end pb-1 pr-2 leading-tight">松山店<br>総稼働人数</div><div class="col-start-2 col-span-26 grid grid-cols-[repeat(26,_minmax(24px,_1fr))] gap-x-0.5 h-12">`;
-            for(let i=0; i<26; i++) {
-                const count = matsuyamaCounts[i];
-                const height = count === 0 ? '0%' : `${Math.min(count * 20, 100)}%`;
-                const bgColor = count >= 4 ? 'bg-emerald-400' : (count >= 2 ? 'bg-amber-400' : (count === 1 ? 'bg-red-400' : 'bg-gray-100'));
-                html += `<div class="flex flex-col justify-end h-full"><div class="text-center text-[9px] font-bold text-gray-500 mb-0.5 ${count === 0 ? 'opacity-0' : ''}">${count}</div><div class="w-full rounded-t ${bgColor} transition-all duration-300" style="height: ${height}"></div></div>`;
-            }
-            html += `</div></div>`;
-            if (!hasAny) html = `<div class="text-center text-gray-400 py-10 text-sm"><i class="fa-solid fa-box-open mb-2 text-2xl"></i><br>スタッフを配置すると、ここにタイムラインが表示されます</div>`;
-            document.getElementById('day-timeline-container').innerHTML = html;
-        }
-
-        function switchWeekView(viewType) {
-            document.getElementById('subtab-week-staff').className = viewType === 'staff' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
-            document.getElementById('subtab-week-store').className = viewType === 'store' ? 'bg-amber-100 text-amber-700 font-bold px-4 py-2 rounded-t-lg border-b-2 border-amber-500 transition-colors' : 'bg-gray-100 text-gray-500 font-bold px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:bg-gray-200 transition-colors';
-            if (viewType === 'staff') { document.getElementById('week-view-staff').classList.remove('hidden'); document.getElementById('week-view-store').classList.add('hidden'); }
-            else { document.getElementById('week-view-store').classList.remove('hidden'); document.getElementById('week-view-staff').classList.add('hidden'); }
-        }
-
-        function generateWeekAndMonthMockData() {
-            const shiftTypes = [
-                { label: '松(早)', class: 'bg-shift-early', key: 'matsuyama_early' },
-                { label: '松(遅)', class: 'bg-shift-late', key: 'matsuyama_late' },
-                { label: '久(早)', class: 'bg-shift-early', key: 'kumoji_early' },
-                { label: '美栄(早)', class: 'bg-shift-early', key: 'miebash_early' },
-                { label: '美里(早)', class: 'bg-shift-early', key: 'misato_early' },
-                { label: '休', class: 'bg-shift-off', key: 'off' }
-            ];
-            const weekBody = document.getElementById('week-table-body');
-            const monthBody = document.getElementById('month-table-body');
-            const storeBody = document.getElementById('week-store-table-body');
-            let overTimeUsersCount = 0, totalPayrollCalc = 0;
-            let storeSchedules = { matsuyama_early:[[],[],[],[],[],[],[]], matsuyama_late:[[],[],[],[],[],[],[]], kumoji_early:[[],[],[],[],[],[],[]], miebash_early:[[],[],[],[],[],[],[]], misato_early:[[],[],[],[],[],[],[]] };
-
-            initialStaff.forEach(staff => {
-                const trWeek = document.createElement('tr');
-                let rowHtml = `<td class="text-left pl-4 font-medium"><span class="text-xs font-bold w-4 inline-block text-center mr-1 ${staff.layer==='A'?'text-red-500':staff.layer==='B'?'text-blue-500':'text-gray-500'}">${staff.layer}</span> ${staff.name}</td>`;
-                let lateCount = 0;
-                for (let i = 0; i < 7; i++) {
-                    let shift;
-                    if (staff.layer === 'A' && lateCount < 1 && Math.random() > 0.7) { shift = shiftTypes[1]; lateCount++; }
-                    else if (Math.random() > 0.8) { shift = shiftTypes[5]; }
-                    else { shift = shiftTypes[Math.floor(Math.random() * 4) === 0 ? 0 : 2 + Math.floor(Math.random() * 3)]; }
-                    rowHtml += `<td><span class="badge-shift ${shift.class}">${shift.label}</span></td>`;
-                    if (shift.key !== 'off' && storeSchedules[shift.key]) storeSchedules[shift.key][i].push(staff);
-                }
-                trWeek.innerHTML = rowHtml;
-                weekBody.appendChild(trWeek);
-
-                const offDays = Math.floor(Math.random() * 3) + 5;
-                const workDays = 30 - offDays;
-                const totalWork = workDays * 8;
-                let totalOvertime = staff.layer === 'A' ? Math.floor(Math.random() * 15) + 12 : (staff.layer === 'B' ? Math.floor(Math.random() * 10) : 0);
-                const isOvertimeAlert = totalOvertime > 25;
-                const isOffDayAlert = offDays < 6;
-                if (isOvertimeAlert) overTimeUsersCount++;
-
-                let calcSalary = 0, salaryHtml = '';
-                if (staff.salaryType === 'fixed') {
-                    const extraPay = Math.max(0, totalOvertime - 25) * 2500;
-                    calcSalary = staff.baseSalary + extraPay;
-                    salaryHtml = `¥${calcSalary.toLocaleString()}` + (extraPay > 0 ? `<br><span class="text-[10px] text-red-500">(割増 +¥${extraPay.toLocaleString()})</span>` : '');
-                } else {
-                    calcSalary = (totalWork * staff.wage) + (totalOvertime * staff.wage * 1.25);
-                    salaryHtml = `¥${calcSalary.toLocaleString()}<br><span class="text-[10px] text-gray-400">(@${staff.wage})</span>`;
-                }
-                totalPayrollCalc += calcSalary;
-
-                let statusHtml = `<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> 適正</span>`;
-                if (isOvertimeAlert) statusHtml = `<span class="text-red-600 font-bold bg-red-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation"></i> みなし超過</span>`;
-                else if (isOffDayAlert) statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation"></i> 公休不足</span>`;
-
-                const trMonth = document.createElement('tr');
-                trMonth.innerHTML = `<td class="text-left pl-4 font-medium">${staff.name}</td><td><span class="px-2 py-1 rounded text-xs font-bold ${layerStyles[staff.layer].replace('border','')}">${staff.layer}</span></td><td>${workDays} 日</td><td class="${isOffDayAlert?'text-red-600 font-bold':''}">${offDays} 日</td><td>${totalWork} h</td><td class="${isOvertimeAlert?'text-red-600 font-bold':''}">${totalOvertime} h</td><td class="font-mono text-right pr-4">${salaryHtml}</td><td>${statusHtml}</td>`;
-                monthBody.appendChild(trMonth);
-            });
-
-            document.getElementById('overtime-count').innerHTML = `${overTimeUsersCount}<span class="text-sm font-normal text-amber-600 ml-1">名</span>`;
-            document.getElementById('total-payroll').innerText = `¥${totalPayrollCalc.toLocaleString()}`;
-
-            [
-                { title: '松山店 (遅番)', key: 'matsuyama_late', icon: 'fa-moon', color: 'text-red-800', bg: 'bg-red-50' },
-                { title: '松山店 (早番)', key: 'matsuyama_early', icon: 'fa-sun', color: 'text-slate-700', bg: 'bg-slate-50' },
-                { title: '久茂地店', key: 'kumoji_early', icon: 'fa-store', color: 'text-slate-700', bg: 'bg-slate-50' },
-                { title: '美栄橋店', key: 'miebash_early', icon: 'fa-store', color: 'text-slate-700', bg: 'bg-slate-50' },
-                { title: '美里店', key: 'misato_early', icon: 'fa-store', color: 'text-slate-700', bg: 'bg-slate-50' },
-            ].forEach(rowInfo => {
-                const tr = document.createElement('tr');
-                let rowHtml = `<td class="text-left pl-4 font-bold ${rowInfo.bg} border-b-2"><i class="fa-solid ${rowInfo.icon} mr-1 ${rowInfo.color}"></i><span class="${rowInfo.color}">${rowInfo.title}</span></td>`;
-                for (let i = 0; i < 7; i++) {
-                    const staffInShift = storeSchedules[rowInfo.key][i];
-                    rowHtml += `<td class="align-top p-1 bg-gray-50/50">${staffInShift.map(s => `<div class="text-[11px] mb-1 bg-white border border-gray-200 rounded px-1 py-0.5 text-left shadow-sm flex items-center"><span class="font-bold ${s.layer==='A'?'text-red-600':s.layer==='B'?'text-blue-600':'text-gray-700'} w-3 text-center mr-1">${s.layer}</span><span class="truncate text-gray-800">${s.name}</span></div>`).join('')}</td>`;
-                }
-                tr.innerHTML = rowHtml;
-                storeBody.appendChild(tr);
-            });
-        }
-
-        // ===== スタッフ設定 =====
-        function renderSettingsTable() {
-            const tbody = document.getElementById('settings-table-body');
-            tbody.innerHTML = '';
-            initialStaff.forEach((staff, idx) => {
-                const age = getAge(staff.birthdate);
-                const under18 = isUnder18(staff.birthdate);
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-100 hover:bg-gray-50';
-                tr.innerHTML = `
-                    <td class="px-2 py-2 text-center">
-                        <span class="inline-block w-3 h-3 rounded-full ${staff.layer==='A'?'bg-red-400':staff.layer==='B'?'bg-blue-400':staff.layer==='C'?'bg-green-400':'bg-gray-400'}"></span>
-                    </td>
-                    <td class="px-2 py-2">
-                        <input type="text" value="${staff.name}" onchange="updateStaff(${idx},'name',this.value)"
-                            class="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                    </td>
-                    <td class="px-2 py-2">
-                        <select onchange="updateStaff(${idx},'layer',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                            ${['A','B','C','D'].map(l => `<option value="${l}" ${staff.layer===l?'selected':''}>${l}</option>`).join('')}
-                        </select>
-                    </td>
-                    <td class="px-2 py-2">
-                        <select onchange="updateStaff(${idx},'salaryType',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                            <option value="monthly" ${staff.salaryType==='monthly'?'selected':''}>月給（正社員）</option>
-                            <option value="daily"   ${staff.salaryType==='daily'?'selected':''}>日給</option>
-                            <option value="hourly"  ${staff.salaryType==='hourly'?'selected':''}>時給（アルバイト）</option>
-                        </select>
-                    </td>
-                    <td class="px-2 py-2">
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs text-gray-400">${staff.salaryType==='hourly'?'¥/h':'¥/月'}</span>
-                            <input type="number" value="${staff.salary}" onchange="updateStaff(${idx},'salary',+this.value)"
-                                class="w-28 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                        </div>
-                    </td>
-                    <td class="px-2 py-2">
-                        <div class="flex items-center gap-1">
-                            <input type="date" value="${staff.birthdate||''}" onchange="updateStaff(${idx},'birthdate',this.value)"
-                                class="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400">
-                            ${under18 ? `<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded font-bold">🔞${age}歳</span>` : `<span class="text-[10px] text-gray-400">${age}歳</span>`}
-                        </div>
-                    </td>
-                    <td class="px-2 py-2">
-                        <select onchange="updateStaff(${idx},'fixedStore',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                            ${Object.entries(STORES_MAP).map(([k,v]) => `<option value="${k}" ${staff.fixedStore===k?'selected':''}>${v}</option>`).join('')}
-                        </select>
-                    </td>
-                    <td class="px-2 py-2">
-                        <div class="flex flex-wrap gap-1">
-                            ${ALL_DAYS.map(d => `
-                                <label class="flex items-center gap-0.5 cursor-pointer">
-                                    <input type="checkbox" ${(staff.unavailableDays||[]).includes(d)?'checked':''} onchange="toggleDay(${idx},'${d}',this.checked)"
-                                        class="w-3 h-3 accent-red-500">
-                                    <span class="text-[10px] ${d==='土'?'text-blue-600':d==='日'?'text-red-600':'text-gray-600'}">${d}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </td>
-                    <td class="px-2 py-2">
-                        <input type="text" value="${staff.notes||''}" placeholder="メモ" onchange="updateStaff(${idx},'notes',this.value)"
-                            class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400">
-                    </td>
-                    <td class="px-2 py-2 text-center">
-                        <button onclick="removeStaff(${idx})" class="text-red-400 hover:text-red-600 transition" title="削除">
-                            <i class="fa-solid fa-trash text-sm"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function updateStaff(idx, field, value) {
-            initialStaff[idx][field] = value;
-        }
-
-        function toggleDay(idx, day, checked) {
-            if (!initialStaff[idx].unavailableDays) initialStaff[idx].unavailableDays = [];
-            if (checked) {
-                if (!initialStaff[idx].unavailableDays.includes(day)) initialStaff[idx].unavailableDays.push(day);
-            } else {
-                initialStaff[idx].unavailableDays = initialStaff[idx].unavailableDays.filter(d => d !== day);
-            }
-        }
-
-        function addStaff() {
-            const newId = 'staff_' + Date.now();
-            initialStaff.push({ id: newId, name: '新スタッフ', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' });
-            renderSettingsTable();
-        }
-
-        function removeStaff(idx) {
-            if (confirm(`「${initialStaff[idx].name}」を削除しますか？`)) {
-                initialStaff.splice(idx, 1);
-                renderSettingsTable();
-            }
-        }
-
-        function saveSettings() {
-            saveStaffData(initialStaff);
-            renderStaffPool();
-            const status = document.getElementById('save-status');
-            status.classList.remove('hidden');
-            setTimeout(() => status.classList.add('hidden'), 2000);
-        }
-
-        function resetSettings() {
-            if (confirm('デフォルトのスタッフデータに戻しますか？')) {
-                initialStaff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
-                saveStaffData(initialStaff);
-                renderSettingsTable();
-                renderStaffPool();
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+    <script src="js/shift.js"></script>
 </body>
 </html>
