@@ -682,15 +682,27 @@ function validateShifts() {
     updateStaffTimeDisplays();
     const alerts = [];
     const matsuyamaLate = getStaffInZone('matsuyama', 'late');
-    if (matsuyamaLate.length === 0)
+    const _dow     = currentViewDate.getDay(); // 0=日,1=月,...,5=金,6=土
+    const _isFriSat = _dow === 5 || _dow === 6;
+    const _isSun    = _dow === 0;
+    const _minLate  = _isFriSat ? 4 : 3;
+
+    if (matsuyamaLate.length === 0) {
         alerts.push({ type:'error', msg:'松山店の「遅番」にスタッフが配置されていません。' });
-    else if (!matsuyamaLate.some(s => s.layer === 'A'))
-        alerts.push({ type:'error', msg:'松山店の「遅番」には【A層】が必要です。' });
+    } else {
+        if (!matsuyamaLate.some(s => ['S','A','B'].includes(s.layer)))
+            alerts.push({ type:'error', msg:`松山店「遅番」にはS / A / Bいずれかを最低1名配置してください。` });
+        if (matsuyamaLate.length < _minLate)
+            alerts.push({ type: matsuyamaLate.length < 2 ? 'error' : 'warn',
+                msg:`松山店「遅番」は${_isFriSat ? '金・土曜' : '平日・日曜'}最低${_minLate}名必要です（現在${matsuyamaLate.length}名）。` });
+        if (_isSun)
+            alerts.push({ type:'info', msg:'【日曜】松山店は25:00クローズです。遅番スタッフの退勤を25:00に設定してください。' });
+    }
 
     ['matsuyama','kumoji','miebash','misato'].forEach(store => {
         const early = getStaffInZone(store, 'early');
-        if (early.length > 0 && !early.some(s => s.layer === 'A' || s.layer === 'B'))
-            alerts.push({ type:'error', msg:`早番に【責任者(A or B)】がいない店舗があります。` });
+        if (early.length > 0 && !early.some(s => ['S','A','B'].includes(s.layer)))
+            alerts.push({ type:'error', msg:`早番に【責任者(S / A / B)】がいない店舗があります。` });
     });
 
     // ===== 三六協定チェック（月間残業） =====
@@ -753,9 +765,10 @@ function validateShifts() {
             <i class="fa-solid fa-circle-check mr-3 text-xl"></i><span class="font-bold">すべてのコンプライアンス要件をクリア！</span></div>`;
     } else {
         alerts.forEach(a => {
-            const bg = a.type === 'error' ? 'bg-red-500' : 'bg-amber-500';
+            const bg   = a.type === 'error' ? 'bg-red-500' : a.type === 'info' ? 'bg-blue-500' : 'bg-amber-500';
+            const icon = a.type === 'info' ? 'fa-circle-info' : 'fa-triangle-exclamation';
             alertContainer.innerHTML += `<div class="${bg} text-white px-4 py-3 rounded shadow-lg pointer-events-auto flex items-center w-full max-w-2xl mx-auto mb-2">
-                <i class="fa-solid fa-triangle-exclamation mr-3 text-xl"></i><span class="font-medium">${a.msg}</span></div>`;
+                <i class="fa-solid ${icon} mr-3 text-xl"></i><span class="font-medium">${a.msg}</span></div>`;
         });
     }
     renderTimeline();
@@ -843,9 +856,14 @@ function renderTimeline() {
         if (earlyStaff.length === 0 && lateStaff.length === 0) return;
         hasAny = true;
 
-        const storeSlots = requirements[store.id]?.slots || [];
-        const earlySlot  = storeSlots.find(s => s.name.includes('早')) || storeSlots[0];
-        const lateSlot   = storeSlots.find(s => s.name.includes('遅')) || storeSlots[1];
+        const storeSlots  = requirements[store.id]?.slots || [];
+        const _ganttDow   = currentViewDate.getDay();
+        const _ganttDay   = ['日','月','火','水','木','金','土'][_ganttDow];
+        const earlySlot   = storeSlots.find(s => s.name.includes('早')) || storeSlots[0];
+        // 曜日が一致する遅番スロットを優先的に選択（金土→遅番(金・土)、他→遅番(月〜木・日)）
+        const lateSlot    = storeSlots.filter(s => s.name.includes('遅')).find(s => (s.days||[]).includes(_ganttDay))
+                         || storeSlots.find(s => s.name.includes('遅'))
+                         || storeSlots[1];
 
         // バー一覧を構築（早番 → 遅番の順）
         const allBars = [];
@@ -1041,7 +1059,8 @@ const STORES_LIST = [
 const DEFAULT_REQUIREMENTS = {
     matsuyama: { slots: [
         { id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] },
-        { id:'s2', name:'遅番', start:'20:00', end:'30:00', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者(A層のみ)', layers:['A'], min:1 }] },
+        { id:'s2', name:'遅番（月〜木・日）', start:'20:00', end:'25:00', days:['月','火','水','木','日'], rules:[{ label:'管理職(S/A/B)', layers:['S','A','B'], min:1 },{ label:'総員', layers:['S','A','B','C','D'], min:3 }] },
+        { id:'s3', name:'遅番（金・土）',     start:'20:00', end:'30:00', days:['金','土'],               rules:[{ label:'管理職(S/A/B)', layers:['S','A','B'], min:1 },{ label:'総員', layers:['S','A','B','C','D'], min:4 }] },
     ]},
     kumoji:  { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] }] },
     miebash: { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] }] },
