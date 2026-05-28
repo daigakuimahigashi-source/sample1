@@ -762,28 +762,43 @@ function switchDayView(viewType) {
 
 // ===== Gantt Timeline =====
 function renderTimeline() {
-    const GRID_START = 17; // グリッド開始時刻（17:00）
-    const GRID_COLS  = 26; // 13時間 × 2（30分単位）
+    // ── 時間軸の定義 ──────────────────────────────────────
+    const T_START = 17;              // 開始 17:00
+    const T_END   = 30;              // 終了 30:00（翌6:00）
+    const T_SPAN  = T_END - T_START; // 13 時間
+    const SLOTS   = T_SPAN * 2;      // 26 スロット（30分刻み）
+    const LABEL_W = '80px';          // 店舗名ラベル幅
 
-    // 時刻文字列 "HH:MM" → 内側26列グリッドの1始まり列番号
-    function timeToInnerCol(timeStr) {
+    // "HH:MM" → 時刻軸上の left%（T_STARTを0%とする）
+    function toPct(timeStr) {
         const [h, m] = timeStr.split(':').map(Number);
-        return Math.max(1, Math.round((h + m / 60 - GRID_START) * 2) + 1);
+        return ((h + m / 60 - T_START) / T_SPAN * 100).toFixed(3);
     }
-    // 開始〜終了のスパン数（30分単位）
-    function timeToSpan(startStr, endStr) {
+    // 開始〜終了の幅%
+    function durPct(startStr, endStr) {
         const [sh, sm] = startStr.split(':').map(Number);
         const [eh, em] = endStr.split(':').map(Number);
-        return Math.max(1, Math.round(((eh + em / 60) - (sh + sm / 60)) * 2));
+        return (((eh + em / 60) - (sh + sm / 60)) / T_SPAN * 100).toFixed(3);
+    }
+    // "HH:MM" → 小数時間
+    function parseH(timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h + m / 60;
     }
 
-    const gridClass = 'grid grid-cols-[80px_repeat(26,_minmax(24px,_1fr))] gap-y-1 items-center relative';
-    let html = `<div class="${gridClass} border-b border-gray-300 pb-1 mb-2"><div></div>`;
-    for (let i = 17; i <= 29; i++) {
-        html += `<div class="col-span-2 text-left text-[10px] font-bold text-gray-500 border-l border-gray-300 pl-1">${i}:00</div>`;
-    }
-    html += '</div>';
+    // ── 時刻ヘッダー ──────────────────────────────────────
+    let html = `<div class="flex items-end border-b-2 border-gray-300 pb-1 mb-2" style="overflow:visible;">
+        <div style="width:${LABEL_W};flex-shrink:0;"></div>
+        <div class="relative flex-1" style="height:20px;overflow:visible;">`;
 
+    for (let i = T_START; i <= T_END; i++) {
+        const left = ((i - T_START) / T_SPAN * 100).toFixed(3);
+        html += `<div class="absolute text-[10px] font-bold text-gray-500 border-l border-gray-300 pl-0.5 leading-none whitespace-nowrap"
+            style="left:${left}%;top:0;">${i}:00</div>`;
+    }
+    html += `</div></div>`;
+
+    // ── 店舗別バー ────────────────────────────────────────
     const requirements = loadRequirements();
     const stores = [
         { id: 'matsuyama', name: '松山店' },
@@ -791,7 +806,7 @@ function renderTimeline() {
         { id: 'miebash',   name: '美栄橋店' },
         { id: 'misato',    name: '美里店' },
     ];
-    const matsuyamaCounts = new Array(GRID_COLS).fill(0);
+    const matsuyamaCounts = new Array(SLOTS).fill(0);
     let hasAny = false;
 
     stores.forEach(store => {
@@ -800,52 +815,65 @@ function renderTimeline() {
         if (earlyStaff.length === 0 && lateStaff.length === 0) return;
         hasAny = true;
 
-        // 要件マスタからスロット設定を取得
         const storeSlots = requirements[store.id]?.slots || [];
         const earlySlot  = storeSlots.find(s => s.name.includes('早')) || storeSlots[0];
         const lateSlot   = storeSlots.find(s => s.name.includes('遅')) || storeSlots[1];
 
-        html += `<div class="${gridClass} py-2 border-b border-gray-200">`;
-        html += `<div class="font-bold text-[11px] text-slate-700 z-10 self-start mt-1 truncate pr-2">${store.name}</div>`;
-        html += `<div class="col-start-2 col-span-26 grid grid-cols-[repeat(26,_minmax(24px,_1fr))] gap-y-1 z-10">`;
-
+        // バー一覧を構築（早番 → 遅番の順）
+        const allBars = [];
         if (earlyStaff.length > 0 && earlySlot) {
-            const col  = timeToInnerCol(earlySlot.start);
-            const span = timeToSpan(earlySlot.start, earlySlot.end);
-            earlyStaff.forEach(staff => {
-                const c = layerStyles[staff.layer];
-                html += `<div class="${c} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm truncate border" style="grid-column:${col}/span ${span}"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
-                if (store.id === 'matsuyama') {
-                    for (let i = col - 1; i < col - 1 + span && i < GRID_COLS; i++) matsuyamaCounts[i]++;
-                }
-            });
+            earlyStaff.forEach(staff => allBars.push({ staff, slot: earlySlot }));
+            if (store.id === 'matsuyama') {
+                const s = Math.max(0, Math.round((parseH(earlySlot.start) - T_START) * 2));
+                const e = Math.min(SLOTS, Math.round((parseH(earlySlot.end) - T_START) * 2));
+                earlyStaff.forEach(() => { for (let i = s; i < e; i++) matsuyamaCounts[i]++; });
+            }
         }
-
         if (lateStaff.length > 0 && lateSlot) {
-            const col  = timeToInnerCol(lateSlot.start);
-            const span = timeToSpan(lateSlot.start, lateSlot.end);
-            lateStaff.forEach(staff => {
-                const c = layerStyles[staff.layer];
-                html += `<div class="${c} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm truncate border" style="grid-column:${col}/span ${span}"><span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
-                if (store.id === 'matsuyama') {
-                    for (let i = col - 1; i < col - 1 + span && i < GRID_COLS; i++) matsuyamaCounts[i]++;
-                }
-            });
+            lateStaff.forEach(staff => allBars.push({ staff, slot: lateSlot }));
+            if (store.id === 'matsuyama') {
+                const s = Math.max(0, Math.round((parseH(lateSlot.start) - T_START) * 2));
+                const e = Math.min(SLOTS, Math.round((parseH(lateSlot.end) - T_START) * 2));
+                lateStaff.forEach(() => { for (let i = s; i < e; i++) matsuyamaCounts[i]++; });
+            }
         }
 
-        html += '</div></div>';
+        const rowH = allBars.length * 22 + 6;
+        html += `<div class="flex border-b border-gray-200 py-1">
+            <div class="font-bold text-[11px] text-slate-700 truncate pr-2 self-start pt-0.5" style="width:${LABEL_W};flex-shrink:0;">${store.name}</div>
+            <div class="relative flex-1" style="height:${rowH}px;">`;
+
+        allBars.forEach(({ staff, slot }, idx) => {
+            const c    = layerStyles[staff.layer];
+            const left = toPct(slot.start);
+            const w    = durPct(slot.start, slot.end);
+            const top  = idx * 22;
+            html += `<div class="${c} text-[10px] leading-tight rounded px-1 py-0.5 shadow-sm border absolute truncate"
+                style="left:${left}%;width:${w}%;top:${top}px;box-sizing:border-box;">
+                <span class="font-bold mr-1 opacity-70">${staff.layer}</span>${staff.name}</div>`;
+        });
+
+        html += `</div></div>`;
     });
 
-    html += `<div class="grid grid-cols-[80px_repeat(26,_minmax(24px,_1fr))] pt-3 items-end border-t border-gray-300 mt-2">
-        <div class="font-bold text-[10px] text-slate-600 self-end pb-1 pr-2 leading-tight">松山店<br>総稼働</div>
-        <div class="col-start-2 col-span-26 grid grid-cols-[repeat(26,_minmax(24px,_1fr))] gap-x-0.5 h-12">`;
-    for (let i = 0; i < GRID_COLS; i++) {
-        const cnt = matsuyamaCounts[i];
-        const h   = cnt === 0 ? '0%' : `${Math.min(cnt * 20, 100)}%`;
-        const bg  = cnt >= 4 ? 'bg-emerald-400' : cnt >= 2 ? 'bg-amber-400' : cnt === 1 ? 'bg-red-400' : 'bg-gray-100';
-        html += `<div class="flex flex-col justify-end h-full"><div class="text-center text-[9px] font-bold text-gray-500 mb-0.5 ${cnt === 0 ? 'opacity-0' : ''}">${cnt}</div><div class="w-full rounded-t ${bg} transition-all duration-300" style="height:${h}"></div></div>`;
+    // ── 松山店 総稼働バーチャート ─────────────────────────
+    html += `<div class="flex items-end border-t border-gray-300 mt-2 pt-2">
+        <div class="font-bold text-[10px] text-slate-600 leading-tight pr-2 self-end pb-0.5" style="width:${LABEL_W};flex-shrink:0;">松山店<br>総稼働</div>
+        <div class="relative flex-1 h-12">`;
+
+    for (let i = 0; i < SLOTS; i++) {
+        const cnt  = matsuyamaCounts[i];
+        const left = (i / SLOTS * 100).toFixed(3);
+        const w    = (1 / SLOTS * 100).toFixed(3);
+        const hPct = cnt === 0 ? 0 : Math.min(cnt * 20, 100);
+        const bg   = cnt >= 4 ? 'bg-emerald-400' : cnt >= 2 ? 'bg-amber-400' : cnt === 1 ? 'bg-red-400' : 'bg-gray-100';
+        html += `<div class="absolute bottom-0 flex flex-col justify-end" style="left:${left}%;width:calc(${w}% - 1px);height:100%;">
+            <div class="text-center text-[9px] font-bold text-gray-500 leading-none mb-0.5 ${cnt === 0 ? 'opacity-0' : ''}">${cnt}</div>
+            <div class="w-full rounded-t ${bg} transition-all duration-300" style="height:${hPct}%;"></div>
+        </div>`;
     }
-    html += '</div></div>';
+
+    html += `</div></div>`;
 
     if (!hasAny) {
         html = `<div class="text-center text-gray-400 py-10 text-sm"><i class="fa-solid fa-box-open mb-2 text-2xl"></i><br>スタッフを配置するとタイムラインが表示されます</div>`;
