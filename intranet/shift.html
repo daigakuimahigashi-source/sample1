@@ -34,6 +34,11 @@
         .drop-zone { min-height: 80px; transition: background-color 0.2s; }
         .drop-zone.drag-over { background-color: #f8fafc; border-color: #fbbf24; border-style: dashed; }
 
+        /* 確定ロック状態 */
+        .board-locked .drop-zone   { pointer-events: none; opacity: 0.82; background-color: #f8fafc !important; border-color: transparent !important; }
+        .board-locked .staff-card  { cursor: not-allowed !important; pointer-events: none; }
+        #staff-pool.pool-locked    { pointer-events: none; opacity: 0.72; }
+
         /* テーブル用のスタイル */
         .schedule-table th, .schedule-table td { border: 1px solid #e2e8f0; padding: 0.5rem; text-align: center; }
         .schedule-table th { background-color: #f8fafc; font-weight: bold; position: sticky; top: 0; z-index: 10; }
@@ -202,6 +207,11 @@
                 </div>
 
                 <div id="day-view-board" class="flex-1 overflow-y-auto p-6 pt-4 flex flex-col gap-6 block">
+                    <!-- 確定ロック通知バナー -->
+                    <div id="board-lock-notice" class="hidden sticky top-0 z-20 bg-emerald-50 border border-emerald-300 text-emerald-800 text-sm font-bold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-lock text-emerald-600"></i>
+                        このシフトは確定済みです。内容を変更する場合は右上の「修正」ボタンを押してください。
+                    </div>
                     <!-- 【上段】シフトボード (各店舗の配置枠) -->
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-shrink-0">
                         <!-- 【松山店】 -->

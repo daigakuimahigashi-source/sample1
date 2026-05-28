@@ -68,6 +68,7 @@ const SLOT_HOURS = { early: 9, late: 10 }; // 早番9h、遅番10h
 // ===== State =====
 let initialStaff = [];
 let allShiftsData = {};       // { "YYYY-MM-DD": { storeId: { slotKey: [staffId,...] } } }
+let lockedDates = new Set();  // 確定済み（ロック）日付
 let currentViewDate = new Date();
 let currentWeekStart = null;
 let currentMonthYear = { year: new Date().getFullYear(), month: new Date().getMonth() };
@@ -113,6 +114,40 @@ function saveShiftsData(data) {
     allShiftsData = data;
 }
 
+// ===== 確定ロック管理 =====
+function loadLockedDates() {
+    const saved = localStorage.getItem('okk_locked_dates');
+    lockedDates = saved ? new Set(JSON.parse(saved)) : new Set();
+}
+function saveLockedDates() {
+    localStorage.setItem('okk_locked_dates', JSON.stringify([...lockedDates]));
+}
+function isDateLocked(dateStr) {
+    return lockedDates.has(dateStr);
+}
+function applyDayLock() {
+    const locked  = isDateLocked(dateToStr(currentViewDate));
+    const boardEl = document.getElementById('day-view-board');
+    const notice  = document.getElementById('board-lock-notice');
+    const poolEl  = document.getElementById('staff-pool');
+    if (locked) {
+        boardEl?.classList.add('board-locked');
+        notice?.classList.remove('hidden');
+        poolEl?.classList.add('pool-locked');
+    } else {
+        boardEl?.classList.remove('board-locked');
+        notice?.classList.add('hidden');
+        poolEl?.classList.remove('pool-locked');
+    }
+    updateHeaderActions();
+}
+function unlockDayShift() {
+    const dateStr = dateToStr(currentViewDate);
+    lockedDates.delete(dateStr);
+    saveLockedDates();
+    applyDayLock();
+}
+
 // ===== Date Utilities =====
 function getMonday(date) {
     const d = new Date(date);
@@ -154,6 +189,7 @@ const dropZones = document.querySelectorAll('.drop-zone');
 function init() {
     initialStaff = loadStaff();
     allShiftsData = loadShifts();
+    loadLockedDates();
     currentWeekStart = getMonday(new Date());
     currentViewDate = new Date();
 
@@ -199,18 +235,31 @@ function updateHeaderActions() {
     const headerActions = document.getElementById('header-actions');
     if (!headerActions) return;
     if (currentView === 'day') {
-        headerActions.innerHTML = `
-            <button onclick="confirmDayShift()" id="confirm-day-btn"
-                class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
-                <i class="fa-solid fa-floppy-disk mr-1"></i> この日のシフトを確定
-            </button>
-            <button onclick="autoAssign()" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
-                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 自動配置
-            </button>
-            <button onclick="resetBoard()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition font-medium">
-                <i class="fa-solid fa-rotate-right mr-1"></i> リセット
-            </button>
-        `;
+        const locked = isDateLocked(dateToStr(currentViewDate));
+        if (locked) {
+            headerActions.innerHTML = `
+                <span class="text-emerald-300 text-xs font-bold flex items-center gap-1 mr-1">
+                    <i class="fa-solid fa-lock"></i> 確定済み
+                </span>
+                <button onclick="unlockDayShift()"
+                    class="bg-amber-500 hover:bg-amber-400 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i> 修正
+                </button>
+            `;
+        } else {
+            headerActions.innerHTML = `
+                <button onclick="confirmDayShift()" id="confirm-day-btn"
+                    class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> この日のシフトを確定
+                </button>
+                <button onclick="autoAssign()" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 自動配置
+                </button>
+                <button onclick="resetBoard()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition font-medium">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> リセット
+                </button>
+            `;
+        }
     } else if (currentView === 'week') {
         headerActions.innerHTML = `<button onclick="openAIModal()" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-sm transition font-bold shadow-sm"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AIシフト生成</button>`;
     } else if (currentView === 'month') {
@@ -255,7 +304,7 @@ function updateDayViewHeader() {
     const todayStr = dateToStr(new Date());
     const viewStr  = dateToStr(currentViewDate);
     document.getElementById('day-today-badge')?.classList.toggle('hidden', viewStr !== todayStr);
-    document.getElementById('day-confirmed-badge')?.classList.toggle('hidden', !allShiftsData[viewStr]);
+    document.getElementById('day-confirmed-badge')?.classList.toggle('hidden', !isDateLocked(viewStr));
 }
 
 function navigateDay(dir) {
@@ -270,7 +319,7 @@ function loadDayIntoBoard(dateStr) {
     document.querySelectorAll('.staff-card').forEach(el => staffPoolEl.appendChild(el));
 
     const dayData = allShiftsData[dateStr];
-    if (!dayData) { validateShifts(); return; }
+    if (!dayData) { validateShifts(); applyDayLock(); return; }
 
     ['matsuyama','kumoji','miebash','misato'].forEach(store => {
         ['early','late'].forEach(slot => {
@@ -284,6 +333,7 @@ function loadDayIntoBoard(dateStr) {
         });
     });
     validateShifts();
+    applyDayLock();
 }
 
 function confirmDayShift() {
@@ -302,15 +352,12 @@ function confirmDayShift() {
 
     allShiftsData[dateStr] = dayData;
     saveShiftsData(allShiftsData);
-    updateDayViewHeader();
 
-    const btn = document.getElementById('confirm-day-btn');
-    if (btn) {
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>確定しました！';
-        btn.classList.add('opacity-75');
-        setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('opacity-75'); }, 2000);
-    }
+    // 確定済みとしてロック
+    lockedDates.add(dateStr);
+    saveLockedDates();
+    updateDayViewHeader();
+    applyDayLock();
 }
 
 // ===== Week View =====
