@@ -50,11 +50,11 @@ const layerStyles = {
 
 // 各レイヤーの配置ルール定義
 const LAYER_RULES = {
-    'S': { label: '役員',         salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: '配置制限なし' },
-    'A': { label: '日本人正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可' },
-    'B': { label: '外国籍正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '在留資格確認必須' },
-    'C': { label: '熟練バイト',   salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで' },
-    'D': { label: '未熟バイト',   salaryType: '時給 ¥1000〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで' },
+    'S': { label: '役員',         salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: 'OPEN/CLOSE担当・配置制限なし', minHoliday: 0 },
+    'A': { label: '日本人正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可',         minHoliday: 6 },
+    'B': { label: '外国籍正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月8公休', note: '在留資格確認必須',             minHoliday: 8 },
+    'C': { label: '熟練バイト',   salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',              minHoliday: 0 },
+    'D': { label: '未熟バイト',   salaryType: '時給 ¥1000〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',              minHoliday: 0 },
 };
 
 // ===== Staff Storage =====
@@ -473,8 +473,8 @@ function renderMonthView() {
             totalPayroll += salaryCalc;
         }
 
-        // 経営者モードでない場合、A/B の給与は非表示
-        const salaryDisplay = (!adminMode && (s.layer === 'A' || s.layer === 'B'))
+        // 経営者モードでない場合、S/A/B の給与は非表示
+        const salaryDisplay = (!adminMode && (s.layer === 'S' || s.layer === 'A' || s.layer === 'B'))
             ? '<span class="text-gray-300 text-xs"><i class="fa-solid fa-lock text-gray-300 mr-1"></i>経営者のみ</span>'
             : salaryHtml;
 
@@ -485,8 +485,9 @@ function renderMonthView() {
             statusHtml = `<span class="text-red-600 font-bold bg-red-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i>三六超過(${actualOT}h)</span>`;
         } else if (actualOT >= OT_WARN) {
             statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-clock mr-1"></i>注意(${actualOT}h／上限${OT_LIMIT}h)</span>`;
-        } else if (offDays < 6 && checkedDays >= 20) {
-            statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i>公休不足</span>`;
+        } else if ((LAYER_RULES[s.layer]?.minHoliday || 0) > 0 && offDays < LAYER_RULES[s.layer].minHoliday && checkedDays >= 20) {
+            const req = LAYER_RULES[s.layer].minHoliday;
+            statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i>公休不足(${offDays}/${req}日)</span>`;
         } else {
             statusHtml = `<span class="text-green-600 font-bold"><i class="fa-solid fa-check mr-1"></i>適正</span>`;
         }
