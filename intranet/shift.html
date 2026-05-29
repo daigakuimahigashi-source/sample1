@@ -53,6 +53,13 @@
 </head>
 <body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
 
+    <!-- ===== ローディングオーバーレイ ===== -->
+    <div id="loading-overlay" class="fixed inset-0 bg-slate-900/80 z-[100] flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-white font-bold text-lg">シフトデータを読み込み中...</p>
+        <p class="text-slate-400 text-sm" id="loading-detail">サーバーに接続しています</p>
+    </div>
+
     <!-- ヘッダー -->
     <header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md z-20">
         <div class="flex items-center gap-4">

@@ -65,6 +65,10 @@ const STORE_NAMES_SHORT = { matsuyama: '松山', kumoji: '久茂地', miebash: '
 const ALL_DAYS = ['月','火','水','木','金','土','日'];
 const SLOT_HOURS = { early: 9, late: 10 }; // 早番9h、遅番10h
 
+// ===== GAS API設定 =====
+// デプロイ後にウェブアプリURLをここに貼り付ける
+const GAS_API_URL = '';  // 例: 'https://script.google.com/macros/s/XXXXXXX/exec'
+
 // ===== State =====
 let initialStaff = [];
 let allShiftsData = {};       // { "YYYY-MM-DD": { storeId: { slotKey: [staffId,...] } } }
@@ -102,6 +106,7 @@ function loadStaff() {
 }
 function saveStaffData(staffArr) {
     localStorage.setItem('okk_staff_data', JSON.stringify(staffArr));
+    gasPost('staff', staffArr); // GASにも非同期保存
 }
 
 // ===== Shift Storage =====
@@ -112,6 +117,49 @@ function loadShifts() {
 function saveShiftsData(data) {
     localStorage.setItem('okk_shifts', JSON.stringify(data));
     allShiftsData = data;
+    gasPost('shifts', data); // GASにも非同期保存
+}
+
+// ===== Locked Dates Storage =====
+function loadLockedDatesLocal() {
+    const saved = localStorage.getItem('okk_locked_dates');
+    lockedDates = saved ? new Set(JSON.parse(saved)) : new Set();
+}
+function saveLockedDates() {
+    const arr = [...lockedDates];
+    localStorage.setItem('okk_locked_dates', JSON.stringify(arr));
+    gasPost('lockedDates', arr); // GASにも非同期保存
+}
+
+// ===== GAS API通信 =====
+async function gasGet() {
+    if (!GAS_API_URL) return null;
+    const res = await fetch(GAS_API_URL, { cache: 'no-store' });
+    return res.json();
+}
+
+function gasPost(key, value) {
+    if (!GAS_API_URL) return;
+    // no-cors: レスポンスは読めないがサーバーには届く（CORS回避）
+    fetch(GAS_API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ key, value }),
+    }).catch(err => console.warn('GAS保存エラー:', err));
+}
+
+// ===== ローディング表示 =====
+function showLoading(show, detail = '') {
+    const el = document.getElementById('loading-overlay');
+    const dt = document.getElementById('loading-detail');
+    if (!el) return;
+    if (show) {
+        el.classList.remove('hidden');
+        if (dt && detail) dt.textContent = detail;
+    } else {
+        el.classList.add('hidden');
+    }
 }
 
 // ===== 確定ロック管理 =====
@@ -186,12 +234,43 @@ const alertContainer = document.getElementById('alert-container');
 const dropZones = document.querySelectorAll('.drop-zone');
 
 // ===== Init =====
-function init() {
-    initialStaff = loadStaff();
-    allShiftsData = loadShifts();
-    loadLockedDates();
+async function init() {
+    showLoading(true, 'サーバーに接続しています...');
+
+    if (GAS_API_URL) {
+        try {
+            showLoading(true, 'シフトデータを取得中...');
+            const data = await gasGet();
+            if (data && !data.error) {
+                // GASから取得したデータをstateとlocalStorageに反映
+                initialStaff  = data.staff       || JSON.parse(JSON.stringify(DEFAULT_STAFF));
+                allShiftsData = data.shifts      || {};
+                lockedDates   = new Set(data.lockedDates || []);
+                localStorage.setItem('okk_staff_data',   JSON.stringify(initialStaff));
+                localStorage.setItem('okk_shifts',       JSON.stringify(allShiftsData));
+                localStorage.setItem('okk_locked_dates', JSON.stringify([...lockedDates]));
+                localStorage.setItem('okk_requirements', data.requirements
+                    ? JSON.stringify(data.requirements) : (localStorage.getItem('okk_requirements') || ''));
+            } else {
+                throw new Error(data?.error || '不明なエラー');
+            }
+        } catch (err) {
+            console.warn('GAS取得失敗 → localStorageから復元:', err);
+            showLoading(true, 'オフライン：ローカルデータを使用します');
+            await new Promise(r => setTimeout(r, 800));
+            initialStaff  = loadStaff();
+            allShiftsData = loadShifts();
+            loadLockedDatesLocal();
+        }
+    } else {
+        // GAS未設定：localStorageのみ使用
+        initialStaff  = loadStaff();
+        allShiftsData = loadShifts();
+        loadLockedDatesLocal();
+    }
+
     currentWeekStart = getMonday(new Date());
-    currentViewDate = new Date();
+    currentViewDate  = new Date();
 
     renderStaffPool();
     setupDragAndDrop();
@@ -200,6 +279,8 @@ function init() {
     updateHeaderActions();
     updateAdminUI();
     validateShifts();
+
+    showLoading(false);
 }
 
 // ===== View Switcher =====
@@ -1156,6 +1237,7 @@ function loadRequirements() {
 }
 function saveRequirements() {
     localStorage.setItem('okk_requirements', JSON.stringify(reqData));
+    gasPost('requirements', reqData);
     const st = document.getElementById('req-save-status');
     st.classList.remove('hidden');
     setTimeout(() => st.classList.add('hidden'), 2000);
