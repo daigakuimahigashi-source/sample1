@@ -67,7 +67,7 @@ const SLOT_HOURS = { early: 9, late: 10 }; // 早番9h、遅番10h
 
 // ===== GAS API設定 =====
 // デプロイ後にウェブアプリURLをここに貼り付ける
-const GAS_API_URL = '';  // 例: 'https://script.google.com/macros/s/XXXXXXX/exec'
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby4N4V10YErqIAwOfrxBqr9uhie06xvHSPszug4mPdzohHPjLxXiJNDPfu_dgJKcOyG/exec';
 
 // ===== State =====
 let initialStaff = [];
