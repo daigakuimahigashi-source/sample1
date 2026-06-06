@@ -84,24 +84,6 @@
         </div>
         <div class="divide-y divide-gray-800/60">
 
-          <!-- s1 -->
-          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s1')" id="step-s1">
-            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-              <i class="fa-solid fa-check text-white text-[10px]"></i>
-            </div>
-            <span class="step-label text-sm flex-1">スマレジ → CSV → MF会計入力</span>
-            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
-          </div>
-
-          <!-- s2 -->
-          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s2')" id="step-s2">
-            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-              <i class="fa-solid fa-check text-white text-[10px]"></i>
-            </div>
-            <span class="step-label text-sm flex-1">売上計上 → 口座入金確認 → 消込</span>
-            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
-          </div>
-
           <!-- s3 -->
           <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s3')" id="step-s3">
             <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
@@ -418,7 +400,7 @@ function renderLog(type) {
 }
 
 // ===== ルーティン =====
-const STEP_IDS = ['s1','s2','s3','s4','s5','s6'];
+const STEP_IDS = ['s3','s4','s5','s6'];
 
 function getMonthData() {
   const k = monthKey();
