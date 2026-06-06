@@ -10,7 +10,7 @@ const DEFAULT_STAFF = [
 
     // ── B層：外国籍正社員 ───────────────────────────────────
     { id: 'okk10006', name: 'チャン フーダット',             layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10008', name: '安里 茜 マーティン',            layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10008', name: '安里 茜 マーティン',            layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
     { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
     { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
     { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
