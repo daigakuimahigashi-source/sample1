@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>経営ダッシュボード | 焼肉ここから</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans JP', sans-serif; }
+    .layer-S { background: #7c3aed; }
+    .layer-A { background: #dc2626; }
+    .layer-B { background: #2563eb; }
+    .kanban-col { min-height: 200px; }
+    .task-card { cursor: grab; }
+    .task-card:active { cursor: grabbing; }
+    .drag-over { outline: 2px dashed #facc15; outline-offset: 2px; }
+    #pw-screen { transition: opacity 0.3s; }
+  </style>
+</head>
+<body class="bg-gray-950 min-h-screen text-white">
+
+<!-- ===== パスワード画面 ===== -->
+<div id="pw-screen" class="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center gap-6">
+  <img src="img/logo.png" alt="logo" class="h-12 mb-2">
+  <h1 class="text-xl font-black text-yellow-400">経営ダッシュボード</h1>
+  <p class="text-gray-500 text-sm">このページは経営者専用です。パスワードを入力してください。</p>
+  <div class="flex gap-2">
+    <input id="pw-input" type="password" placeholder="パスワード"
+      class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-yellow-400 w-56"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-5 py-2 rounded-lg text-sm transition">
+      入室
+    </button>
+  </div>
+  <p id="pw-error" class="text-red-400 text-sm hidden">パスワードが違います</p>
+</div>
+
+<!-- ===== メインコンテンツ ===== -->
+<div id="main-content" class="hidden">
+
+  <!-- ヘッダー -->
+  <header class="flex justify-between items-center px-6 md:px-10 py-4 border-b border-gray-800">
+    <div class="flex items-center gap-3">
+      <img src="img/logo.png" alt="焼肉ここから" class="h-9">
+      <div>
+        <div class="font-black text-base text-yellow-400">経営ダッシュボード</div>
+        <div class="text-xs text-gray-500">Management Only</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="portal.html" class="text-gray-500 hover:text-white text-xs flex items-center gap-1 transition">
+        <i class="fa-solid fa-arrow-left"></i> ポータルへ
+      </a>
+      <button onclick="logout()"
+        class="border border-gray-700 hover:border-red-500/50 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-red-400 flex items-center gap-2 transition">
+        <i class="fa-solid fa-right-from-bracket"></i> ログアウト
+      </button>
+    </div>
+  </header>
+
+  <main class="px-6 md:px-10 py-8 max-w-7xl mx-auto space-y-10">
+
+    <!-- ===== 給与テーブル ===== -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-black flex items-center gap-2">
+          <i class="fa-solid fa-yen-sign text-yellow-400"></i> スタッフ給与一覧（正社員）
+        </h2>
+        <span class="text-xs text-gray-500">S / A / B 層のみ表示</span>
+      </div>
+
+      <div class="bg-gray-900 rounded-xl overflow-hidden border border-gray-800">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-800 text-gray-400 text-xs">
+              <th class="text-left px-4 py-3">層</th>
+              <th class="text-left px-4 py-3">氏名</th>
+              <th class="text-left px-4 py-3">雇用形態</th>
+              <th class="text-right px-4 py-3">月額</th>
+              <th class="text-left px-4 py-3">備考</th>
+            </tr>
+          </thead>
+          <tbody id="salary-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== タスク管理 ===== -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-black flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-yellow-400"></i> タスク進捗
+        </h2>
+        <button onclick="openAddTask()"
+          class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> タスク追加
+        </button>
+      </div>
+
+      <!-- カンバン -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- 未着手 -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+            <span class="font-bold text-gray-300 text-sm">未着手</span>
+            <span id="count-todo" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-todo" class="kanban-col space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'todo')"></div>
+        </div>
+
+        <!-- 進行中 -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+            <span class="font-bold text-yellow-300 text-sm">進行中</span>
+            <span id="count-inprogress" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-inprogress" class="kanban-col space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'inprogress')"></div>
+        </div>
+
+        <!-- 完了 -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="font-bold text-emerald-300 text-sm">完了</span>
+            <span id="count-done" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-done" class="kanban-col space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'done')"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== タスク追加/編集モーダル ===== -->
+<div id="task-modal" class="fixed inset-0 z-50 bg-black/70 hidden flex items-center justify-center p-4">
+  <div class="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-md p-6 space-y-4">
+    <h3 class="font-black text-lg" id="modal-title">タスク追加</h3>
+
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">タイトル <span class="text-red-400">*</span></label>
+      <input id="task-title" type="text" placeholder="例：美栄橋シフト調整"
+        class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+    </div>
+
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">担当</label>
+      <input id="task-assignee" type="text" placeholder="例：大学社長 / 又吉健太"
+        class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+    </div>
+
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">期限</label>
+      <input id="task-due" type="date"
+        class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+    </div>
+
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">優先度</label>
+      <select id="task-priority"
+        class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+        <option value="high">🔴 高</option>
+        <option value="mid" selected>🟡 中</option>
+        <option value="low">🟢 低</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">メモ</label>
+      <textarea id="task-note" rows="2" placeholder="補足があれば..."
+        class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400 resize-none"></textarea>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button onclick="saveTask()"
+        class="flex-1 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold py-2 rounded-lg text-sm transition">
+        保存
+      </button>
+      <button onclick="closeModal()"
+        class="flex-1 border border-gray-600 hover:border-gray-400 text-gray-400 py-2 rounded-lg text-sm transition">
+        キャンセル
+      </button>
+      <button id="delete-task-btn" onclick="deleteTask()" class="hidden border border-red-800 hover:border-red-500 text-red-400 px-3 py-2 rounded-lg text-sm transition">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 設定 =====
+const PASSWORD     = 'daigaku5678';
+const GAS_API_URL  = 'https://script.google.com/macros/s/AKfycby4N4V10YErqIAwOfrxBqr9uhie06xvHSPszug4mPdzohHPjLxXiJNDPfu_dgJKcOyG/exec';
+const SESSION_KEY  = 'mgmt_auth';
+
+// ===== 認証 =====
+function checkPw() {
+  const v = document.getElementById('pw-input').value;
+  if (v === PASSWORD) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('pw-screen').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('pw-screen').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      init();
+    }, 300);
+  } else {
+    document.getElementById('pw-error').classList.remove('hidden');
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+// 起動時にセッションチェック
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('pw-screen').classList.add('hidden');
+  document.getElementById('main-content').classList.remove('hidden');
+}
+
+// ===== スタッフデータ（shift.jsと同じ DEFAULT_STAFF を参照するため、ここに管理層のみ定義） =====
+// GASから取得した staff を使う
+let staffData = [];
+let tasksData = [];
+let editingTaskId = null;
+let draggedTaskId = null;
+
+// ===== GAS通信 =====
+async function gasGet() {
+  try {
+    const res = await fetch(GAS_API_URL, { cache: 'no-store' });
+    return res.json();
+  } catch { return null; }
+}
+function gasPost(key, value) {
+  if (!GAS_API_URL) return;
+  fetch(GAS_API_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ key, value }),
+  }).catch(err => console.warn('GAS保存エラー:', err));
+}
+
+// ===== 初期化 =====
+async function init() {
+  const data = await gasGet();
+  if (data && !data.error) {
+    staffData  = data.staff  || getDefaultStaff();
+    tasksData  = data.tasks  || [];
+  } else {
+    staffData  = getDefaultStaff();
+    tasksData  = JSON.parse(localStorage.getItem('mgmt_tasks') || '[]');
+  }
+  renderSalary();
+  renderKanban();
+}
+
+// ===== 給与テーブル =====
+const LAYER_LABEL = { S:'役員', A:'日本人正社員', B:'外国籍正社員' };
+const LAYER_COLOR = { S:'layer-S', A:'layer-A', B:'layer-B' };
+
+function renderSalary() {
+  const tbody = document.getElementById('salary-tbody');
+  const mgmt = staffData.filter(s => ['S','A','B'].includes(s.layer))
+    .sort((a,b) => ['S','A','B'].indexOf(a.layer) - ['S','A','B'].indexOf(b.layer));
+
+  if (!mgmt.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-600">データなし</td></tr>'; return; }
+
+  tbody.innerHTML = mgmt.map(s => {
+    const salary = s.salaryType === 'monthly'
+      ? `¥${Number(s.salary).toLocaleString()}`
+      : `¥${Number(s.salary).toLocaleString()}/h`;
+    return `
+      <tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+        <td class="px-4 py-3">
+          <span class="inline-block ${LAYER_COLOR[s.layer]} text-white text-[10px] font-black px-2 py-0.5 rounded">${s.layer}</span>
+        </td>
+        <td class="px-4 py-3 font-medium">${s.name}</td>
+        <td class="px-4 py-3 text-gray-400 text-xs">${LAYER_LABEL[s.layer] || ''}</td>
+        <td class="px-4 py-3 text-right font-bold text-yellow-300">${salary}</td>
+        <td class="px-4 py-3 text-gray-500 text-xs">${s.notes || '—'}</td>
+      </tr>`;
+  }).join('');
+
+  // 合計
+  const total = mgmt.reduce((acc, s) => acc + (s.salaryType === 'monthly' ? Number(s.salary) : 0), 0);
+  tbody.innerHTML += `
+    <tr class="bg-gray-800/50">
+      <td colspan="3" class="px-4 py-3 text-right text-xs text-gray-400">月額合計（月給制のみ）</td>
+      <td class="px-4 py-3 text-right font-black text-yellow-400">¥${total.toLocaleString()}</td>
+      <td></td>
+    </tr>`;
+}
+
+// ===== カンバン =====
+const PRIORITY_ICON = { high:'🔴', mid:'🟡', low:'🟢' };
+const STATUS_COLS   = ['todo','inprogress','done'];
+
+function renderKanban() {
+  STATUS_COLS.forEach(status => {
+    const col   = document.getElementById(`col-${status}`);
+    const count = document.getElementById(`count-${status}`);
+    const tasks = tasksData.filter(t => t.status === status);
+    count.textContent = tasks.length;
+    col.innerHTML = tasks.length === 0
+      ? '<div class="text-gray-700 text-xs text-center py-4">タスクなし</div>'
+      : tasks.map(t => taskCardHTML(t)).join('');
+  });
+}
+
+function taskCardHTML(t) {
+  const due     = t.due ? `<span class="text-gray-500 text-[10px]"><i class="fa-regular fa-calendar mr-1"></i>${t.due}</span>` : '';
+  const assignee= t.assignee ? `<span class="text-gray-400 text-[10px]"><i class="fa-solid fa-user mr-1"></i>${t.assignee}</span>` : '';
+  return `
+    <div class="task-card bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition"
+      draggable="true"
+      ondragstart="dragStart('${t.id}')"
+      ondragend="dragEnd()"
+      onclick="openEditTask('${t.id}')">
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <span class="font-bold text-sm leading-snug">${t.title}</span>
+        <span class="shrink-0 text-base">${PRIORITY_ICON[t.priority] || '🟡'}</span>
+      </div>
+      <div class="flex flex-wrap gap-x-3 gap-y-1">
+        ${assignee}${due}
+      </div>
+      ${t.note ? `<p class="text-gray-500 text-[11px] mt-2 border-t border-gray-700 pt-2">${t.note}</p>` : ''}
+    </div>`;
+}
+
+// ===== ドラッグ =====
+function dragStart(id) { draggedTaskId = id; }
+function dragEnd()     { draggedTaskId = null; document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); }
+function dragOver(e)   { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function drop(e, status) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!draggedTaskId) return;
+  const task = tasksData.find(t => t.id === draggedTaskId);
+  if (task) {
+    task.status = status;
+    saveTasks();
+    renderKanban();
+  }
+}
+
+// ===== タスクCRUD =====
+function openAddTask() {
+  editingTaskId = null;
+  document.getElementById('modal-title').textContent = 'タスク追加';
+  document.getElementById('task-title').value    = '';
+  document.getElementById('task-assignee').value = '';
+  document.getElementById('task-due').value      = '';
+  document.getElementById('task-priority').value = 'mid';
+  document.getElementById('task-note').value     = '';
+  document.getElementById('delete-task-btn').classList.add('hidden');
+  document.getElementById('task-modal').classList.remove('hidden');
+  document.getElementById('task-title').focus();
+}
+
+function openEditTask(id) {
+  const task = tasksData.find(t => t.id === id);
+  if (!task) return;
+  editingTaskId = id;
+  document.getElementById('modal-title').textContent    = 'タスク編集';
+  document.getElementById('task-title').value    = task.title;
+  document.getElementById('task-assignee').value = task.assignee || '';
+  document.getElementById('task-due').value      = task.due || '';
+  document.getElementById('task-priority').value = task.priority || 'mid';
+  document.getElementById('task-note').value     = task.note || '';
+  document.getElementById('delete-task-btn').classList.remove('hidden');
+  document.getElementById('task-modal').classList.remove('hidden');
+}
+
+function saveTask() {
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { document.getElementById('task-title').focus(); return; }
+
+  if (editingTaskId) {
+    const task = tasksData.find(t => t.id === editingTaskId);
+    if (task) {
+      task.title    = title;
+      task.assignee = document.getElementById('task-assignee').value.trim();
+      task.due      = document.getElementById('task-due').value;
+      task.priority = document.getElementById('task-priority').value;
+      task.note     = document.getElementById('task-note').value.trim();
+    }
+  } else {
+    tasksData.push({
+      id:       'task_' + Date.now(),
+      title,
+      assignee: document.getElementById('task-assignee').value.trim(),
+      due:      document.getElementById('task-due').value,
+      priority: document.getElementById('task-priority').value,
+      note:     document.getElementById('task-note').value.trim(),
+      status:   'todo',
+    });
+  }
+
+  saveTasks();
+  renderKanban();
+  closeModal();
+}
+
+function deleteTask() {
+  if (!editingTaskId) return;
+  tasksData = tasksData.filter(t => t.id !== editingTaskId);
+  saveTasks();
+  renderKanban();
+  closeModal();
+}
+
+function closeModal() {
+  document.getElementById('task-modal').classList.add('hidden');
+  editingTaskId = null;
+}
+
+function saveTasks() {
+  localStorage.setItem('mgmt_tasks', JSON.stringify(tasksData));
+  gasPost('tasks', tasksData);
+}
+
+// ===== フォールバック用デフォルトスタッフ（管理層のみ、shift.jsと同期） =====
+function getDefaultStaff() {
+  return [
+    { id:'okk10001', name:'又吉 達朗',   layer:'S', salaryType:'monthly', salary:500000, notes:'店舗管理者・フレキシブル配置' },
+    { id:'okk10003', name:'又吉 健太',   layer:'A', salaryType:'monthly', salary:300000, notes:'正社員' },
+    { id:'okk10004', name:'新城 優樹',   layer:'A', salaryType:'monthly', salary:300000, notes:'正社員' },
+    { id:'okk10005', name:'三澤 北斗',   layer:'A', salaryType:'monthly', salary:300000, notes:'正社員' },
+    { id:'okk10006', name:'チャン フーダット',                    layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10021', name:'アルス アーラツチゲーダヌカラクシヤ',  layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10022', name:'アマラシンガ ガンガナートアマラ',       layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10024', name:'ラナシンガ チャミルシャーニカラッタナ', layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10028', name:'アングルガハ ガマゲー インディカ',      layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10037', name:'ウェルガマ ラーララゲ ランドゥニ',      layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10038', name:'ウェラコーン ムディヤンセラーゲ ラヒル',layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+    { id:'okk10048', name:'アディカーリ ムディアンセラーゲ アヌーシャ',layer:'B', salaryType:'monthly', salary:250000, notes:'在留資格確認要' },
+  ];
+}
+
+// ===== 起動 =====
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPw();
+});
+
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  init();
+}
+</script>
+</body>
+</html>
