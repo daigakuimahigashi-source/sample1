@@ -57,305 +57,188 @@
     </div>
   </header>
 
-  <main class="px-4 md:px-10 py-8 max-w-5xl mx-auto space-y-10">
+  <main class="px-4 md:px-6 py-4 max-w-6xl mx-auto space-y-4">
 
-    <!-- 月セレクター -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-black" id="month-heading"></h2>
-        <p class="text-xs text-gray-500 mt-1">月が変わると未完了の項目は自動リセットされます</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button onclick="changeMonth(-1)" class="border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white transition">
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
-        <span id="month-label" class="text-sm font-bold text-white w-24 text-center"></span>
-        <button onclick="changeMonth(1)" class="border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white transition">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
+    <!-- 月セレクター + 進捗バー -->
+    <div class="bg-gray-900 rounded-xl border border-gray-800 px-4 py-3 flex items-center gap-4">
+      <button onclick="changeMonth(-1)" class="text-gray-500 hover:text-white transition px-1"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+      <span id="month-label" class="text-sm font-black text-white w-20 text-center"></span>
+      <button onclick="changeMonth(1)" class="text-gray-500 hover:text-white transition px-1"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+      <div class="flex-1 flex items-center gap-3">
+        <div class="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
+          <div id="progress-bar" class="h-2 rounded-full bg-gradient-to-r from-yellow-500 to-emerald-400 transition-all duration-500" style="width:0%"></div>
+        </div>
+        <span id="progress-label" class="text-xs font-black text-yellow-400 whitespace-nowrap">0 / 6</span>
       </div>
     </div>
 
-    <!-- 進捗バー -->
-    <div class="bg-gray-900 rounded-xl border border-gray-800 p-5">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-sm font-bold text-gray-300">今月の進捗</span>
-        <span id="progress-label" class="text-sm font-black text-yellow-400">0 / 6 完了</span>
-      </div>
-      <div class="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
-        <div id="progress-bar" class="h-3 rounded-full bg-gradient-to-r from-yellow-500 to-emerald-400 transition-all duration-500" style="width:0%"></div>
-      </div>
-    </div>
+    <!-- 2カラムレイアウト -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-    <!-- ===== セクション1：売上・入金 ===== -->
-    <section>
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-black">1</div>
-        <h3 class="font-black text-base text-blue-300">売上・入金フロー</h3>
-        <span class="text-[10px] bg-blue-900/50 text-blue-300 border border-blue-800 px-2 py-0.5 rounded-full">月次リセット</span>
-      </div>
+      <!-- ===== 月次ルーティン ===== -->
+      <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-rotate text-yellow-400 text-xs"></i>
+          <span class="font-black text-sm text-gray-200">月次ルーティン</span>
+          <span class="text-[10px] text-gray-500 ml-auto">クリックでチェック</span>
+        </div>
+        <div class="divide-y divide-gray-800/60">
 
-      <!-- フロー -->
-      <div class="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
-
-        <!-- ステップ1 -->
-        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s1')" id="step-s1">
-          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-            <i class="fa-solid fa-check text-white text-xs"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="step-icon bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded">スマレジ</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">CSV出力</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF会計入力</span>
+          <!-- s1 -->
+          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s1')" id="step-s1">
+            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+              <i class="fa-solid fa-check text-white text-[10px]"></i>
             </div>
-            <p class="step-label text-sm font-bold mt-1.5">売上データのMF会計取込</p>
-            <p class="text-xs text-gray-500 mt-0.5">スマレジからCSVを出力してMFクラウド会計にインポート</p>
-            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+            <span class="step-label text-sm flex-1">スマレジ → CSV → MF会計入力</span>
+            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
           </div>
-        </div>
 
-        <div class="ml-3 w-0.5 h-4 bg-gray-700 connector-s1"></div>
-
-        <!-- ステップ2 -->
-        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s2')" id="step-s2">
-          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-            <i class="fa-solid fa-check text-white text-xs"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">売上計上</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-blue-700 text-white text-[10px] font-black px-2 py-0.5 rounded">口座入金確認</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-purple-700 text-white text-[10px] font-black px-2 py-0.5 rounded">消込</span>
+          <!-- s2 -->
+          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s2')" id="step-s2">
+            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+              <i class="fa-solid fa-check text-white text-[10px]"></i>
             </div>
-            <p class="step-label text-sm font-bold mt-1.5">売上入金の消込作業</p>
-            <p class="text-xs text-gray-500 mt-0.5">口座への売上入金を確認し、MF会計で消込処理</p>
-            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+            <span class="step-label text-sm flex-1">売上計上 → 口座入金確認 → 消込</span>
+            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
           </div>
-        </div>
 
-      </div>
-    </section>
-
-    <!-- ===== セクション2：仕入・買掛 ===== -->
-    <section>
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-sm font-black">2</div>
-        <h3 class="font-black text-base text-orange-300">仕入・買掛フロー</h3>
-        <span class="text-[10px] bg-orange-900/50 text-orange-300 border border-orange-800 px-2 py-0.5 rounded-full">月次リセット</span>
-      </div>
-
-      <div class="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
-
-        <!-- ステップ3 -->
-        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s3')" id="step-s3">
-          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-            <i class="fa-solid fa-check text-white text-xs"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="step-icon bg-orange-700 text-white text-[10px] font-black px-2 py-0.5 rounded">仕入債務確定</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">CSV取込</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF会計入力</span>
+          <!-- s3 -->
+          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s3')" id="step-s3">
+            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+              <i class="fa-solid fa-check text-white text-[10px]"></i>
             </div>
-            <p class="step-label text-sm font-bold mt-1.5">買掛・未払のMF会計取込</p>
-            <p class="text-xs text-gray-500 mt-0.5">仕入請求書を確認し、買掛金・未払金をMF会計へ計上</p>
-            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+            <span class="step-label text-sm flex-1">仕入債務確定 → CSV → MF会計入力</span>
+            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
           </div>
-        </div>
 
-        <div class="ml-3 w-0.5 h-4 bg-gray-700 connector-s3"></div>
-
-        <!-- ステップ6（払い手続き） -->
-        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s6')" id="step-s6">
-          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-            <i class="fa-solid fa-check text-white text-xs"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="step-icon bg-red-700 text-white text-[10px] font-black px-2 py-0.5 rounded">銀行振込</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">買掛/未払 支払</span>
+          <!-- s4 -->
+          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s4')" id="step-s4">
+            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+              <i class="fa-solid fa-check text-white text-[10px]"></i>
             </div>
-            <p class="step-label text-sm font-bold mt-1.5">買掛・未払の支払手続き完了</p>
-            <p class="text-xs text-gray-500 mt-0.5">仕入先への振込処理が完了したらチェック</p>
-            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+            <span class="step-label text-sm flex-1">MF勤怠 → MF給与 → MF会計</span>
+            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
           </div>
-        </div>
 
-      </div>
-    </section>
-
-    <!-- ===== セクション3：給与 ===== -->
-    <section>
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-sm font-black">3</div>
-        <h3 class="font-black text-base text-purple-300">給与フロー</h3>
-        <span class="text-[10px] bg-purple-900/50 text-purple-300 border border-purple-800 px-2 py-0.5 rounded-full">月次リセット</span>
-      </div>
-
-      <div class="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
-
-        <!-- ステップ4 -->
-        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s4')" id="step-s4">
-          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-            <i class="fa-solid fa-check text-white text-xs"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="step-icon bg-teal-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF勤怠</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-violet-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF給与</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF会計</span>
+          <!-- s5 -->
+          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s5')" id="step-s5">
+            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+              <i class="fa-solid fa-check text-white text-[10px]"></i>
             </div>
-            <p class="step-label text-sm font-bold mt-1.5">勤怠→給与→会計の連携処理</p>
-            <p class="text-xs text-gray-500 mt-0.5">MF勤怠を締め、MF給与で計算、MF会計へ仕訳反映</p>
-            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+            <span class="step-label text-sm flex-1">給与振込手続き完了</span>
+            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
           </div>
-        </div>
 
-        <div class="ml-3 w-0.5 h-4 bg-gray-700 connector-s4"></div>
-
-        <!-- ステップ5（給与振込） -->
-        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s5')" id="step-s5">
-          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
-            <i class="fa-solid fa-check text-white text-xs"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="step-icon bg-pink-700 text-white text-[10px] font-black px-2 py-0.5 rounded">銀行振込</span>
-              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
-              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">給与支払</span>
+          <!-- s6 -->
+          <div class="flow-step flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 transition" onclick="toggleStep('s6')" id="step-s6">
+            <div class="step-check w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+              <i class="fa-solid fa-check text-white text-[10px]"></i>
             </div>
-            <p class="step-label text-sm font-bold mt-1.5">給与振込手続き完了</p>
-            <p class="text-xs text-gray-500 mt-0.5">スタッフへの給与振込が完了したらチェック</p>
-            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+            <span class="step-label text-sm flex-1">買掛・未払の支払手続き完了</span>
+            <p class="step-timestamp text-[10px] text-gray-500 hidden"></p>
           </div>
-        </div>
 
-      </div>
-    </section>
-
-    <!-- ===== 日次ログ ===== -->
-    <section>
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-8 h-8 rounded-lg bg-cyan-700 flex items-center justify-center text-sm">
-          <i class="fa-solid fa-calendar-check text-white text-xs"></i>
-        </div>
-        <div>
-          <h3 class="font-black text-base text-cyan-300">日次ログ</h3>
-          <p class="text-xs text-gray-500">毎日の処理完了を記録します</p>
         </div>
       </div>
 
-      <div class="space-y-4">
+      <!-- ===== 日次ログ ===== -->
+      <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-calendar-check text-cyan-400 text-xs"></i>
+          <span class="font-black text-sm text-gray-200">日次ログ</span>
+          <span class="text-[10px] text-gray-500 ml-auto">本日完了したらチェック</span>
+        </div>
 
         <!-- ① スマレジ→MF会計 -->
-        <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-              <span class="font-bold text-sm text-gray-200">スマレジ → MF会計　売上計上</span>
+        <div class="border-b border-gray-800/60">
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+              <span class="text-xs text-gray-300 truncate">スマレジ → MF会計　売上計上</span>
             </div>
-            <button onclick="logEntry('sales')"
-              class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-circle-check"></i> 本日完了
+            <button onclick="logEntry('sales')" class="shrink-0 ml-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1 rounded-lg text-[11px] flex items-center gap-1 transition">
+              <i class="fa-solid fa-circle-check text-[10px]"></i> 完了
             </button>
           </div>
-          <div id="today-banner-sales" class="hidden px-5 py-2 bg-emerald-900/30 border-b border-emerald-800/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
-            <i class="fa-solid fa-circle-check"></i><span id="today-label-sales"></span>
+          <div id="today-banner-sales" class="hidden px-4 pb-2 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check text-[10px]"></i><span id="today-label-sales"></span>
           </div>
-          <div id="log-list-sales" class="divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
-            <div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>
-          </div>
+          <div id="log-list-sales" class="px-4 pb-2 max-h-24 overflow-y-auto space-y-0.5"></div>
         </div>
 
         <!-- ② 普通預金への売上入金 -->
-        <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-              <span class="font-bold text-sm text-gray-200">普通預金への売上入金　確認</span>
+        <div class="border-b border-gray-800/60">
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+              <span class="text-xs text-gray-300 truncate">普通預金への売上入金　確認</span>
             </div>
-            <button onclick="logEntry('deposit')"
-              class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-circle-check"></i> 本日完了
+            <button onclick="logEntry('deposit')" class="shrink-0 ml-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1 rounded-lg text-[11px] flex items-center gap-1 transition">
+              <i class="fa-solid fa-circle-check text-[10px]"></i> 完了
             </button>
           </div>
-          <div id="today-banner-deposit" class="hidden px-5 py-2 bg-emerald-900/30 border-b border-emerald-800/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
-            <i class="fa-solid fa-circle-check"></i><span id="today-label-deposit"></span>
+          <div id="today-banner-deposit" class="hidden px-4 pb-2 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check text-[10px]"></i><span id="today-label-deposit"></span>
           </div>
-          <div id="log-list-deposit" class="divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
-            <div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>
-          </div>
+          <div id="log-list-deposit" class="px-4 pb-2 max-h-24 overflow-y-auto space-y-0.5"></div>
         </div>
 
         <!-- ③ 売上金の消込 -->
-        <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-purple-400"></span>
-              <span class="font-bold text-sm text-gray-200">売上金の消込</span>
+        <div>
+          <div class="flex items-center justify-between px-4 py-2.5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></span>
+              <span class="text-xs text-gray-300 truncate">売上金の消込</span>
             </div>
-            <button onclick="logEntry('reconcile')"
-              class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-circle-check"></i> 本日完了
+            <button onclick="logEntry('reconcile')" class="shrink-0 ml-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-1 rounded-lg text-[11px] flex items-center gap-1 transition">
+              <i class="fa-solid fa-circle-check text-[10px]"></i> 完了
             </button>
           </div>
-          <div id="today-banner-reconcile" class="hidden px-5 py-2 bg-emerald-900/30 border-b border-emerald-800/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
-            <i class="fa-solid fa-circle-check"></i><span id="today-label-reconcile"></span>
+          <div id="today-banner-reconcile" class="hidden px-4 pb-2 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check text-[10px]"></i><span id="today-label-reconcile"></span>
           </div>
-          <div id="log-list-reconcile" class="divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
-            <div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>
-          </div>
+          <div id="log-list-reconcile" class="px-4 pb-2 max-h-24 overflow-y-auto space-y-0.5"></div>
         </div>
-
       </div>
-    </section>
+
+    </div>
 
     <!-- ===== フリータスク（カンバン） ===== -->
     <section>
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center text-sm font-black">+</div>
-          <h3 class="font-black text-base text-gray-300">フリータスク</h3>
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-yellow-400 text-xs"></i>
+          <span class="font-black text-sm text-gray-200">フリータスク</span>
         </div>
-        <button onclick="openAddTask()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+        <button onclick="openAddTask()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
           <i class="fa-solid fa-plus"></i> 追加
         </button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-2 h-2 rounded-full bg-gray-500"></span>
-            <span class="font-bold text-gray-300 text-sm">未着手</span>
-            <span id="count-todo" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-3">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+            <span class="font-bold text-gray-300 text-xs">未着手</span>
+            <span id="count-todo" class="ml-auto text-[10px] bg-gray-800 text-gray-400 rounded-full px-1.5 py-0.5">0</span>
           </div>
-          <div id="col-todo" class="min-h-[100px] space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'todo')"></div>
+          <div id="col-todo" class="min-h-[60px] space-y-1.5" ondragover="dragOver(event)" ondrop="drop(event,'todo')"></div>
         </div>
-        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
-            <span class="font-bold text-yellow-300 text-sm">進行中</span>
-            <span id="count-inprogress" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-3">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+            <span class="font-bold text-yellow-300 text-xs">進行中</span>
+            <span id="count-inprogress" class="ml-auto text-[10px] bg-gray-800 text-gray-400 rounded-full px-1.5 py-0.5">0</span>
           </div>
-          <div id="col-inprogress" class="min-h-[100px] space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'inprogress')"></div>
+          <div id="col-inprogress" class="min-h-[60px] space-y-1.5" ondragover="dragOver(event)" ondrop="drop(event,'inprogress')"></div>
         </div>
-        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span class="font-bold text-emerald-300 text-sm">完了</span>
-            <span id="count-done" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-3">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span class="font-bold text-emerald-300 text-xs">完了</span>
+            <span id="count-done" class="ml-auto text-[10px] bg-gray-800 text-gray-400 rounded-full px-1.5 py-0.5">0</span>
           </div>
-          <div id="col-done" class="min-h-[100px] space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'done')"></div>
+          <div id="col-done" class="min-h-[60px] space-y-1.5" ondragover="dragOver(event)" ondrop="drop(event,'done')"></div>
         </div>
       </div>
     </section>
@@ -524,16 +407,12 @@ function renderLog(type) {
   }
 
   list.innerHTML = log.length === 0
-    ? '<div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>'
-    : log.map(e => {
+    ? ''
+    : log.slice(0, 10).map(e => {
         const isToday = e.dateKey === key;
-        return `<div class="flex items-center justify-between px-5 py-2.5 ${isToday ? 'bg-emerald-950/30' : 'hover:bg-gray-800/30'} transition">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-circle-check ${isToday ? 'text-emerald-400' : 'text-gray-600'} text-xs"></i>
-            <span class="text-sm ${isToday ? 'text-white font-bold' : 'text-gray-400'}">${e.label}</span>
-            ${isToday ? '<span class="text-[10px] bg-emerald-800 text-emerald-300 px-1.5 py-0.5 rounded-full">TODAY</span>' : ''}
-          </div>
-          <span class="text-xs text-gray-600">${e.ts}</span>
+        return `<div class="flex items-center justify-between py-0.5">
+          <span class="text-[11px] ${isToday ? 'text-emerald-400 font-bold' : 'text-gray-600'}">${e.label}</span>
+          <span class="text-[10px] text-gray-700">${e.ts}</span>
         </div>`;
       }).join('');
 }
