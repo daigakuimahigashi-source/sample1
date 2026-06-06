@@ -389,7 +389,7 @@ function renderLog(type) {
   }
 
   list.innerHTML = log.length === 0
-    ? ''
+    ? '<div class="py-1.5 text-[11px] text-gray-700">まだ記録がありません</div>'
     : log.slice(0, 4).map(e => {
         const isToday = e.dateKey === key;
         return `<div class="flex items-center justify-between py-0.5">
