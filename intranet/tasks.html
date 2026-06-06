@@ -133,16 +133,12 @@
 
         <!-- ① スマレジ→MF会計 -->
         <div class="border-b border-gray-800/60">
-          <div class="flex items-center justify-between px-4 py-2.5">
-            <div class="flex items-center gap-2 min-w-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
-              <span class="text-xs text-gray-300 truncate">スマレジ → MF会計　売上計上</span>
-            </div>
-            <button onclick="logEntry('sales')" class="shrink-0 ml-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1 rounded-lg text-[11px] flex items-center gap-1 transition">
-              <i class="fa-solid fa-circle-check text-[10px]"></i> 完了
-            </button>
+          <div class="flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 active:bg-gray-700/40 transition select-none" onclick="logEntry('sales')">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+            <span class="text-xs text-gray-300 flex-1">スマレジ → MF会計　売上計上</span>
+            <i class="fa-solid fa-circle-check text-[10px] text-gray-600"></i>
           </div>
-          <div id="today-banner-sales" class="hidden px-4 pb-2 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
+          <div id="today-banner-sales" class="hidden px-4 pb-1.5 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
             <i class="fa-solid fa-circle-check text-[10px]"></i><span id="today-label-sales"></span>
           </div>
           <div id="log-list-sales" class="px-4 pb-2 max-h-24 overflow-y-auto space-y-0.5"></div>
@@ -150,16 +146,12 @@
 
         <!-- ② 普通預金への売上入金 -->
         <div class="border-b border-gray-800/60">
-          <div class="flex items-center justify-between px-4 py-2.5">
-            <div class="flex items-center gap-2 min-w-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
-              <span class="text-xs text-gray-300 truncate">普通預金への売上入金　確認</span>
-            </div>
-            <button onclick="logEntry('deposit')" class="shrink-0 ml-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1 rounded-lg text-[11px] flex items-center gap-1 transition">
-              <i class="fa-solid fa-circle-check text-[10px]"></i> 完了
-            </button>
+          <div class="flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 active:bg-gray-700/40 transition select-none" onclick="logEntry('deposit')">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+            <span class="text-xs text-gray-300 flex-1">普通預金への売上入金　確認</span>
+            <i class="fa-solid fa-circle-check text-[10px] text-gray-600"></i>
           </div>
-          <div id="today-banner-deposit" class="hidden px-4 pb-2 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
+          <div id="today-banner-deposit" class="hidden px-4 pb-1.5 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
             <i class="fa-solid fa-circle-check text-[10px]"></i><span id="today-label-deposit"></span>
           </div>
           <div id="log-list-deposit" class="px-4 pb-2 max-h-24 overflow-y-auto space-y-0.5"></div>
@@ -167,14 +159,10 @@
 
         <!-- ③ 売上金の消込 -->
         <div>
-          <div class="flex items-center justify-between px-4 py-2.5">
-            <div class="flex items-center gap-2 min-w-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></span>
-              <span class="text-xs text-gray-300 truncate">売上金の消込</span>
-            </div>
-            <button onclick="logEntry('reconcile')" class="shrink-0 ml-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-1 rounded-lg text-[11px] flex items-center gap-1 transition">
-              <i class="fa-solid fa-circle-check text-[10px]"></i> 完了
-            </button>
+          <div class="flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-gray-800/40 active:bg-gray-700/40 transition select-none" onclick="logEntry('reconcile')">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0"></span>
+            <span class="text-xs text-gray-300 flex-1">売上金の消込</span>
+            <i class="fa-solid fa-circle-check text-[10px] text-gray-600"></i>
           </div>
           <div id="today-banner-reconcile" class="hidden px-4 pb-2 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
             <i class="fa-solid fa-circle-check text-[10px]"></i><span id="today-label-reconcile"></span>
