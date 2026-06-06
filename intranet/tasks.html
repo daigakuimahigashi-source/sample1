@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月次ルーティン | 焼肉ここから</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans JP', sans-serif; }
+    .step-done .step-icon    { background: #10b981 !important; }
+    .step-done .step-label   { text-decoration: line-through; color: #6b7280; }
+    .step-done .step-check   { border-color: #10b981; background: #10b981; }
+    .step-done .step-check i { display: block; }
+    .step-check i            { display: none; }
+    .connector-done          { background: #10b981 !important; }
+    .flow-step               { transition: all 0.2s; }
+    .flow-step:hover         { transform: translateY(-1px); }
+  </style>
+</head>
+<body class="bg-gray-950 min-h-screen text-white">
+
+<!-- ===== PW画面 ===== -->
+<div id="pw-screen" class="fixed inset-0 z-50 bg-gray-950 flex flex-col items-center justify-center gap-6" style="transition:opacity .3s">
+  <img src="img/logo.png" alt="logo" class="h-12 mb-2">
+  <h1 class="text-xl font-black text-yellow-400">月次ルーティン管理</h1>
+  <p class="text-gray-500 text-sm">経営者専用ページです。パスワードを入力してください。</p>
+  <div class="flex gap-2">
+    <input id="pw-input" type="password" placeholder="パスワード"
+      class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-yellow-400 w-56"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-5 py-2 rounded-lg text-sm transition">入室</button>
+  </div>
+  <p id="pw-error" class="text-red-400 text-sm hidden">パスワードが違います</p>
+</div>
+
+<!-- ===== メイン ===== -->
+<div id="main-content" class="hidden">
+
+  <!-- ヘッダー -->
+  <header class="flex justify-between items-center px-6 md:px-10 py-4 border-b border-gray-800">
+    <div class="flex items-center gap-3">
+      <img src="img/logo.png" alt="logo" class="h-9">
+      <div>
+        <div class="font-black text-base text-yellow-400">月次ルーティン</div>
+        <div class="text-xs text-gray-500">Management Only</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="management.html" class="text-gray-500 hover:text-white text-xs flex items-center gap-1 transition">
+        <i class="fa-solid fa-arrow-left"></i> 経営ダッシュボード
+      </a>
+      <button onclick="logout()" class="border border-gray-700 hover:border-red-500/50 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-red-400 flex items-center gap-2 transition">
+        <i class="fa-solid fa-right-from-bracket"></i> ログアウト
+      </button>
+    </div>
+  </header>
+
+  <main class="px-4 md:px-10 py-8 max-w-5xl mx-auto space-y-10">
+
+    <!-- 月セレクター -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-black" id="month-heading"></h2>
+        <p class="text-xs text-gray-500 mt-1">月が変わると未完了の項目は自動リセットされます</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="changeMonth(-1)" class="border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white transition">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <span id="month-label" class="text-sm font-bold text-white w-24 text-center"></span>
+        <button onclick="changeMonth(1)" class="border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white transition">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 進捗バー -->
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-5">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-sm font-bold text-gray-300">今月の進捗</span>
+        <span id="progress-label" class="text-sm font-black text-yellow-400">0 / 6 完了</span>
+      </div>
+      <div class="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+        <div id="progress-bar" class="h-3 rounded-full bg-gradient-to-r from-yellow-500 to-emerald-400 transition-all duration-500" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- ===== セクション1：売上・入金 ===== -->
+    <section>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-black">1</div>
+        <h3 class="font-black text-base text-blue-300">売上・入金フロー</h3>
+        <span class="text-[10px] bg-blue-900/50 text-blue-300 border border-blue-800 px-2 py-0.5 rounded-full">月次リセット</span>
+      </div>
+
+      <!-- フロー -->
+      <div class="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
+
+        <!-- ステップ1 -->
+        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s1')" id="step-s1">
+          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+            <i class="fa-solid fa-check text-white text-xs"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="step-icon bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded">スマレジ</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">CSV出力</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF会計入力</span>
+            </div>
+            <p class="step-label text-sm font-bold mt-1.5">売上データのMF会計取込</p>
+            <p class="text-xs text-gray-500 mt-0.5">スマレジからCSVを出力してMFクラウド会計にインポート</p>
+            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+          </div>
+        </div>
+
+        <div class="ml-3 w-0.5 h-4 bg-gray-700 connector-s1"></div>
+
+        <!-- ステップ2 -->
+        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s2')" id="step-s2">
+          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+            <i class="fa-solid fa-check text-white text-xs"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">売上計上</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-blue-700 text-white text-[10px] font-black px-2 py-0.5 rounded">口座入金確認</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-purple-700 text-white text-[10px] font-black px-2 py-0.5 rounded">消込</span>
+            </div>
+            <p class="step-label text-sm font-bold mt-1.5">売上入金の消込作業</p>
+            <p class="text-xs text-gray-500 mt-0.5">口座への売上入金を確認し、MF会計で消込処理</p>
+            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== セクション2：仕入・買掛 ===== -->
+    <section>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-sm font-black">2</div>
+        <h3 class="font-black text-base text-orange-300">仕入・買掛フロー</h3>
+        <span class="text-[10px] bg-orange-900/50 text-orange-300 border border-orange-800 px-2 py-0.5 rounded-full">月次リセット</span>
+      </div>
+
+      <div class="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
+
+        <!-- ステップ3 -->
+        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s3')" id="step-s3">
+          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+            <i class="fa-solid fa-check text-white text-xs"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="step-icon bg-orange-700 text-white text-[10px] font-black px-2 py-0.5 rounded">仕入債務確定</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">CSV取込</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF会計入力</span>
+            </div>
+            <p class="step-label text-sm font-bold mt-1.5">買掛・未払のMF会計取込</p>
+            <p class="text-xs text-gray-500 mt-0.5">仕入請求書を確認し、買掛金・未払金をMF会計へ計上</p>
+            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+          </div>
+        </div>
+
+        <div class="ml-3 w-0.5 h-4 bg-gray-700 connector-s3"></div>
+
+        <!-- ステップ6（払い手続き） -->
+        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s6')" id="step-s6">
+          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+            <i class="fa-solid fa-check text-white text-xs"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="step-icon bg-red-700 text-white text-[10px] font-black px-2 py-0.5 rounded">銀行振込</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">買掛/未払 支払</span>
+            </div>
+            <p class="step-label text-sm font-bold mt-1.5">買掛・未払の支払手続き完了</p>
+            <p class="text-xs text-gray-500 mt-0.5">仕入先への振込処理が完了したらチェック</p>
+            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== セクション3：給与 ===== -->
+    <section>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-sm font-black">3</div>
+        <h3 class="font-black text-base text-purple-300">給与フロー</h3>
+        <span class="text-[10px] bg-purple-900/50 text-purple-300 border border-purple-800 px-2 py-0.5 rounded-full">月次リセット</span>
+      </div>
+
+      <div class="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
+
+        <!-- ステップ4 -->
+        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s4')" id="step-s4">
+          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+            <i class="fa-solid fa-check text-white text-xs"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="step-icon bg-teal-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF勤怠</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-violet-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF給与</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded">MF会計</span>
+            </div>
+            <p class="step-label text-sm font-bold mt-1.5">勤怠→給与→会計の連携処理</p>
+            <p class="text-xs text-gray-500 mt-0.5">MF勤怠を締め、MF給与で計算、MF会計へ仕訳反映</p>
+            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+          </div>
+        </div>
+
+        <div class="ml-3 w-0.5 h-4 bg-gray-700 connector-s4"></div>
+
+        <!-- ステップ5（給与振込） -->
+        <div class="flow-step flex items-start gap-4 cursor-pointer" onclick="toggleStep('s5')" id="step-s5">
+          <div class="step-check mt-0.5 w-6 h-6 rounded-full border-2 border-gray-600 flex items-center justify-center shrink-0 transition-all">
+            <i class="fa-solid fa-check text-white text-xs"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="step-icon bg-pink-700 text-white text-[10px] font-black px-2 py-0.5 rounded">銀行振込</span>
+              <i class="fa-solid fa-arrow-right text-gray-600 text-xs"></i>
+              <span class="step-icon bg-gray-700 text-white text-[10px] font-black px-2 py-0.5 rounded">給与支払</span>
+            </div>
+            <p class="step-label text-sm font-bold mt-1.5">給与振込手続き完了</p>
+            <p class="text-xs text-gray-500 mt-0.5">スタッフへの給与振込が完了したらチェック</p>
+            <p class="step-timestamp text-[10px] text-gray-600 mt-1 hidden"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== フリータスク（カンバン） ===== -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center text-sm font-black">+</div>
+          <h3 class="font-black text-base text-gray-300">フリータスク</h3>
+        </div>
+        <button onclick="openAddTask()" class="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> 追加
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+            <span class="font-bold text-gray-300 text-sm">未着手</span>
+            <span id="count-todo" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-todo" class="min-h-[100px] space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'todo')"></div>
+        </div>
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+            <span class="font-bold text-yellow-300 text-sm">進行中</span>
+            <span id="count-inprogress" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-inprogress" class="min-h-[100px] space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'inprogress')"></div>
+        </div>
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="font-bold text-emerald-300 text-sm">完了</span>
+            <span id="count-done" class="ml-auto text-xs bg-gray-800 text-gray-400 rounded-full px-2 py-0.5">0</span>
+          </div>
+          <div id="col-done" class="min-h-[100px] space-y-2" ondragover="dragOver(event)" ondrop="drop(event,'done')"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- タスクモーダル -->
+<div id="task-modal" class="fixed inset-0 z-50 bg-black/70 hidden flex items-center justify-center p-4">
+  <div class="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-md p-6 space-y-4">
+    <h3 class="font-black text-lg" id="modal-title">タスク追加</h3>
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">タイトル <span class="text-red-400">*</span></label>
+      <input id="task-title" type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+    </div>
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">担当</label>
+      <input id="task-assignee" type="text" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+    </div>
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">期限</label>
+      <input id="task-due" type="date" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+    </div>
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">優先度</label>
+      <select id="task-priority" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400">
+        <option value="high">🔴 高</option>
+        <option value="mid" selected>🟡 中</option>
+        <option value="low">🟢 低</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-xs text-gray-400 mb-1 block">メモ</label>
+      <textarea id="task-note" rows="2" class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-400 resize-none"></textarea>
+    </div>
+    <div class="flex gap-3 pt-2">
+      <button onclick="saveTask()" class="flex-1 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold py-2 rounded-lg text-sm transition">保存</button>
+      <button onclick="closeModal()" class="flex-1 border border-gray-600 text-gray-400 py-2 rounded-lg text-sm transition">キャンセル</button>
+      <button id="delete-task-btn" onclick="deleteTask()" class="hidden border border-red-800 hover:border-red-500 text-red-400 px-3 py-2 rounded-lg text-sm transition"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASSWORD    = 'daigaku5678';
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby4N4V10YErqIAwOfrxBqr9uhie06xvHSPszug4mPdzohHPjLxXiJNDPfu_dgJKcOyG/exec';
+const SESSION_KEY = 'mgmt_auth';
+
+// ===== 認証 =====
+function checkPw() {
+  if (document.getElementById('pw-input').value === PASSWORD) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    const s = document.getElementById('pw-screen');
+    s.style.opacity = '0';
+    setTimeout(() => { s.classList.add('hidden'); document.getElementById('main-content').classList.remove('hidden'); init(); }, 300);
+  } else {
+    document.getElementById('pw-error').classList.remove('hidden');
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPw(); });
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('pw-screen').classList.add('hidden');
+  document.getElementById('main-content').classList.remove('hidden');
+}
+
+// ===== 月管理 =====
+const today  = new Date();
+let viewYear = today.getFullYear();
+let viewMonth= today.getMonth() + 1; // 1-12
+
+function monthKey() { return `${viewYear}-${String(viewMonth).padStart(2,'0')}`; }
+function isCurrentMonth() { return viewYear === today.getFullYear() && viewMonth === today.getMonth() + 1; }
+
+function changeMonth(delta) {
+  viewMonth += delta;
+  if (viewMonth > 12) { viewMonth = 1; viewYear++; }
+  if (viewMonth < 1)  { viewMonth = 12; viewYear--; }
+  updateMonthUI();
+  renderRoutine();
+}
+
+function updateMonthUI() {
+  const label = `${viewYear}年${viewMonth}月`;
+  document.getElementById('month-label').textContent   = label;
+  document.getElementById('month-heading').textContent = `${label} 月次チェックリスト`;
+}
+
+// ===== GAS =====
+async function gasGet() {
+  try { const r = await fetch(GAS_API_URL, { cache:'no-store' }); return r.json(); } catch { return null; }
+}
+function gasPost(key, value) {
+  fetch(GAS_API_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({key, value}) }).catch(()=>{});
+}
+
+// ===== データ =====
+let routineData = {}; // { 'YYYY-MM': { s1: {done, ts}, s2:... } }
+let tasksData   = [];
+
+async function init() {
+  updateMonthUI();
+  const data = await gasGet();
+  if (data && !data.error) {
+    routineData = data.routine || {};
+    tasksData   = data.tasks   || [];
+  } else {
+    routineData = JSON.parse(localStorage.getItem('routine_data') || '{}');
+    tasksData   = JSON.parse(localStorage.getItem('mgmt_tasks')   || '[]');
+  }
+  renderRoutine();
+  renderKanban();
+}
+
+// ===== ルーティン =====
+const STEP_IDS = ['s1','s2','s3','s4','s5','s6'];
+
+function getMonthData() {
+  const k = monthKey();
+  if (!routineData[k]) routineData[k] = {};
+  return routineData[k];
+}
+
+function renderRoutine() {
+  const md = getMonthData();
+  let doneCount = 0;
+  STEP_IDS.forEach(id => {
+    const el  = document.getElementById(`step-${id}`);
+    const ts  = el.querySelector('.step-timestamp');
+    const info = md[id] || { done: false, ts: null };
+    if (info.done) {
+      el.classList.add('step-done');
+      ts.classList.remove('hidden');
+      ts.textContent = `✓ ${info.ts}`;
+      doneCount++;
+    } else {
+      el.classList.remove('step-done');
+      ts.classList.add('hidden');
+    }
+    // コネクター
+    const conn = document.querySelector(`.connector-${id}`);
+    if (conn) conn.classList.toggle('connector-done', info.done);
+  });
+  // 進捗
+  const pct = Math.round(doneCount / STEP_IDS.length * 100);
+  document.getElementById('progress-bar').style.width   = pct + '%';
+  document.getElementById('progress-label').textContent = `${doneCount} / ${STEP_IDS.length} 完了`;
+}
+
+function toggleStep(id) {
+  const md   = getMonthData();
+  const cur  = md[id] || { done: false, ts: null };
+  const now  = new Date().toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  md[id]     = cur.done ? { done: false, ts: null } : { done: true, ts: now };
+  saveRoutine();
+  renderRoutine();
+}
+
+function saveRoutine() {
+  localStorage.setItem('routine_data', JSON.stringify(routineData));
+  gasPost('routine', routineData);
+}
+
+// ===== カンバン =====
+let editingTaskId = null, draggedTaskId = null;
+const PRIORITY_ICON = { high:'🔴', mid:'🟡', low:'🟢' };
+
+function renderKanban() {
+  ['todo','inprogress','done'].forEach(status => {
+    const col   = document.getElementById(`col-${status}`);
+    const count = document.getElementById(`count-${status}`);
+    const tasks = tasksData.filter(t => t.status === status);
+    count.textContent = tasks.length;
+    col.innerHTML = tasks.length === 0
+      ? '<div class="text-gray-700 text-xs text-center py-4">なし</div>'
+      : tasks.map(t => `
+        <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition cursor-grab"
+          draggable="true" ondragstart="dragStart('${t.id}')" ondragend="dragEnd()" onclick="openEditTask('${t.id}')">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <span class="font-bold text-sm leading-snug">${t.title}</span>
+            <span class="shrink-0">${PRIORITY_ICON[t.priority]||'🟡'}</span>
+          </div>
+          ${t.assignee ? `<div class="text-gray-400 text-[10px]"><i class="fa-solid fa-user mr-1"></i>${t.assignee}</div>` : ''}
+          ${t.due ? `<div class="text-gray-500 text-[10px]"><i class="fa-regular fa-calendar mr-1"></i>${t.due}</div>` : ''}
+        </div>`).join('');
+  });
+}
+
+function dragStart(id) { draggedTaskId = id; }
+function dragEnd()     { draggedTaskId = null; document.querySelectorAll('[ondragover]').forEach(e => e.style.outline = ''); }
+function dragOver(e)   { e.preventDefault(); e.currentTarget.style.outline = '2px dashed #facc15'; }
+function drop(e, status) {
+  e.preventDefault(); e.currentTarget.style.outline = '';
+  if (!draggedTaskId) return;
+  const t = tasksData.find(t => t.id === draggedTaskId);
+  if (t) { t.status = status; saveTasks(); renderKanban(); }
+}
+
+function openAddTask() {
+  editingTaskId = null;
+  document.getElementById('modal-title').textContent = 'タスク追加';
+  ['task-title','task-assignee','task-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('task-due').value = '';
+  document.getElementById('task-priority').value = 'mid';
+  document.getElementById('delete-task-btn').classList.add('hidden');
+  document.getElementById('task-modal').classList.remove('hidden');
+  document.getElementById('task-title').focus();
+}
+function openEditTask(id) {
+  const t = tasksData.find(t => t.id === id); if (!t) return;
+  editingTaskId = id;
+  document.getElementById('modal-title').textContent = 'タスク編集';
+  document.getElementById('task-title').value    = t.title;
+  document.getElementById('task-assignee').value = t.assignee||'';
+  document.getElementById('task-due').value      = t.due||'';
+  document.getElementById('task-priority').value = t.priority||'mid';
+  document.getElementById('task-note').value     = t.note||'';
+  document.getElementById('delete-task-btn').classList.remove('hidden');
+  document.getElementById('task-modal').classList.remove('hidden');
+}
+function saveTask() {
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { document.getElementById('task-title').focus(); return; }
+  if (editingTaskId) {
+    const t = tasksData.find(t => t.id === editingTaskId);
+    if (t) { t.title = title; t.assignee = document.getElementById('task-assignee').value.trim(); t.due = document.getElementById('task-due').value; t.priority = document.getElementById('task-priority').value; t.note = document.getElementById('task-note').value.trim(); }
+  } else {
+    tasksData.push({ id:'task_'+Date.now(), title, assignee: document.getElementById('task-assignee').value.trim(), due: document.getElementById('task-due').value, priority: document.getElementById('task-priority').value, note: document.getElementById('task-note').value.trim(), status:'todo' });
+  }
+  saveTasks(); renderKanban(); closeModal();
+}
+function deleteTask() {
+  if (!editingTaskId) return;
+  tasksData = tasksData.filter(t => t.id !== editingTaskId);
+  saveTasks(); renderKanban(); closeModal();
+}
+function closeModal() { document.getElementById('task-modal').classList.add('hidden'); editingTaskId = null; }
+function saveTasks() { localStorage.setItem('mgmt_tasks', JSON.stringify(tasksData)); gasPost('tasks', tasksData); }
+</script>
+</body>
+</html>
