@@ -243,35 +243,80 @@
       </div>
     </section>
 
-    <!-- ===== 日次ログ：スマレジ→MF会計 ===== -->
+    <!-- ===== 日次ログ ===== -->
     <section>
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-cyan-700 flex items-center justify-center text-sm">
-            <i class="fa-solid fa-receipt text-white text-xs"></i>
-          </div>
-          <div>
-            <h3 class="font-black text-base text-cyan-300">日次ログ：スマレジ → MF会計</h3>
-            <p class="text-xs text-gray-500">売上計上完了を記録します</p>
-          </div>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-cyan-700 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-calendar-check text-white text-xs"></i>
         </div>
-        <button onclick="logSalesEntry()"
-          class="bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-black px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 transition shadow-lg shadow-cyan-900/40">
-          <i class="fa-solid fa-circle-check"></i> 本日の売上計上完了
-        </button>
+        <div>
+          <h3 class="font-black text-base text-cyan-300">日次ログ</h3>
+          <p class="text-xs text-gray-500">毎日の処理完了を記録します</p>
+        </div>
       </div>
 
-      <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-        <!-- 今日の状態バナー -->
-        <div id="today-sales-banner" class="hidden px-5 py-3 bg-emerald-900/40 border-b border-emerald-800 flex items-center gap-2 text-emerald-300 text-sm font-bold">
-          <i class="fa-solid fa-circle-check"></i>
-          <span id="today-sales-label"></span>
+      <div class="space-y-4">
+
+        <!-- ① スマレジ→MF会計 -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+              <span class="font-bold text-sm text-gray-200">スマレジ → MF会計　売上計上</span>
+            </div>
+            <button onclick="logEntry('sales')"
+              class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-circle-check"></i> 本日完了
+            </button>
+          </div>
+          <div id="today-banner-sales" class="hidden px-5 py-2 bg-emerald-900/30 border-b border-emerald-800/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i><span id="today-label-sales"></span>
+          </div>
+          <div id="log-list-sales" class="divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
+            <div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>
+          </div>
         </div>
 
-        <!-- ログリスト -->
-        <div id="sales-log-list" class="divide-y divide-gray-800/60 max-h-72 overflow-y-auto">
-          <div class="text-center text-gray-600 text-sm py-8">まだ記録がありません</div>
+        <!-- ② 普通預金への売上入金 -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+              <span class="font-bold text-sm text-gray-200">普通預金への売上入金　確認</span>
+            </div>
+            <button onclick="logEntry('deposit')"
+              class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-circle-check"></i> 本日完了
+            </button>
+          </div>
+          <div id="today-banner-deposit" class="hidden px-5 py-2 bg-emerald-900/30 border-b border-emerald-800/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i><span id="today-label-deposit"></span>
+          </div>
+          <div id="log-list-deposit" class="divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
+            <div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>
+          </div>
         </div>
+
+        <!-- ③ 売上金の消込 -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+              <span class="font-bold text-sm text-gray-200">売上金の消込</span>
+            </div>
+            <button onclick="logEntry('reconcile')"
+              class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-circle-check"></i> 本日完了
+            </button>
+          </div>
+          <div id="today-banner-reconcile" class="hidden px-5 py-2 bg-emerald-900/30 border-b border-emerald-800/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i><span id="today-label-reconcile"></span>
+          </div>
+          <div id="log-list-reconcile" class="divide-y divide-gray-800/60 max-h-48 overflow-y-auto">
+            <div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -412,79 +457,85 @@ function gasPost(key, value) {
 // ===== データ =====
 let routineData = {};
 let tasksData   = [];
-let salesLog    = []; // [{ dateKey:'20260813', label:'20260813 売上計上完了', ts:'HH:MM' }, ...]
+const LOG_TYPES = {
+  sales:      { label: '売上計上完了',       lsKey: 'log_sales' },
+  deposit:    { label: '売上入金確認完了',   lsKey: 'log_deposit' },
+  reconcile:  { label: '売上金消込完了',     lsKey: 'log_reconcile' },
+};
+let dailyLogs = { sales: [], deposit: [], reconcile: [] };
 
 async function init() {
   updateMonthUI();
   const data = await gasGet();
   if (data && !data.error) {
-    routineData = data.routine  || {};
-    tasksData   = data.tasks    || [];
-    salesLog    = data.salesLog || [];
+    routineData          = data.routine       || {};
+    tasksData            = data.tasks         || [];
+    dailyLogs.sales      = data.log_sales     || [];
+    dailyLogs.deposit    = data.log_deposit   || [];
+    dailyLogs.reconcile  = data.log_reconcile || [];
   } else {
-    routineData = JSON.parse(localStorage.getItem('routine_data') || '{}');
-    tasksData   = JSON.parse(localStorage.getItem('mgmt_tasks')   || '[]');
-    salesLog    = JSON.parse(localStorage.getItem('sales_log')    || '[]');
+    routineData         = JSON.parse(localStorage.getItem('routine_data')    || '{}');
+    tasksData           = JSON.parse(localStorage.getItem('mgmt_tasks')      || '[]');
+    dailyLogs.sales     = JSON.parse(localStorage.getItem('log_sales')       || '[]');
+    dailyLogs.deposit   = JSON.parse(localStorage.getItem('log_deposit')     || '[]');
+    dailyLogs.reconcile = JSON.parse(localStorage.getItem('log_reconcile')   || '[]');
   }
   renderRoutine();
   renderKanban();
-  renderSalesLog();
+  Object.keys(LOG_TYPES).forEach(renderLog);
 }
 
-// ===== 日次ログ：スマレジ→MF会計 =====
-function logSalesEntry() {
-  const now      = new Date();
-  const dateKey  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-  const timeStr  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+// ===== 日次ログ =====
+function todayKey() {
+  const n = new Date();
+  return `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}`;
+}
 
-  // 同日の二重登録を防ぐ
-  if (salesLog.some(e => e.dateKey === dateKey)) {
-    if (!confirm(`${dateKey} の売上計上は既に記録済みです。再登録しますか？`)) return;
-    salesLog = salesLog.filter(e => e.dateKey !== dateKey);
+function logEntry(type) {
+  const key     = todayKey();
+  const timeStr = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+  const log     = dailyLogs[type];
+  const cfg     = LOG_TYPES[type];
+
+  if (log.some(e => e.dateKey === key)) {
+    if (!confirm(`${key} の${cfg.label}は既に記録済みです。再登録しますか？`)) return;
+    dailyLogs[type] = log.filter(e => e.dateKey !== key);
   }
 
-  salesLog.unshift({ dateKey, label: `${dateKey} 売上計上完了`, ts: timeStr });
-  saveSalesLog();
-  renderSalesLog();
+  dailyLogs[type].unshift({ dateKey: key, label: `${key} ${cfg.label}`, ts: timeStr });
+  localStorage.setItem(cfg.lsKey, JSON.stringify(dailyLogs[type]));
+  gasPost(cfg.lsKey, dailyLogs[type]);
+  renderLog(type);
 }
 
-function renderSalesLog() {
-  const list   = document.getElementById('sales-log-list');
-  const banner = document.getElementById('today-sales-banner');
-  const now    = new Date();
-  const todayKey = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-  const todayEntry = salesLog.find(e => e.dateKey === todayKey);
+function renderLog(type) {
+  const log     = dailyLogs[type];
+  const key     = todayKey();
+  const today   = log.find(e => e.dateKey === key);
+  const banner  = document.getElementById(`today-banner-${type}`);
+  const label   = document.getElementById(`today-label-${type}`);
+  const list    = document.getElementById(`log-list-${type}`);
 
-  // 今日バナー
-  if (todayEntry) {
+  if (today) {
     banner.classList.remove('hidden');
-    document.getElementById('today-sales-label').textContent = `${todayEntry.label}　${todayEntry.ts}記録`;
+    label.textContent = `${today.label}　${today.ts}記録`;
   } else {
     banner.classList.add('hidden');
   }
 
-  if (!salesLog.length) {
-    list.innerHTML = '<div class="text-center text-gray-600 text-sm py-8">まだ記録がありません</div>';
-    return;
-  }
-
-  list.innerHTML = salesLog.map(e => {
-    const isToday = e.dateKey === todayKey;
-    return `
-      <div class="flex items-center justify-between px-5 py-3 ${isToday ? 'bg-emerald-950/30' : 'hover:bg-gray-800/30'} transition">
-        <div class="flex items-center gap-3">
-          <i class="fa-solid fa-circle-check ${isToday ? 'text-emerald-400' : 'text-gray-600'} text-sm"></i>
-          <span class="font-bold text-sm ${isToday ? 'text-white' : 'text-gray-400'}">${e.label}</span>
-          ${isToday ? '<span class="text-[10px] bg-emerald-800 text-emerald-300 px-2 py-0.5 rounded-full">TODAY</span>' : ''}
-        </div>
-        <span class="text-xs text-gray-600">${e.ts}</span>
-      </div>`;
-  }).join('');
-}
-
-function saveSalesLog() {
-  localStorage.setItem('sales_log', JSON.stringify(salesLog));
-  gasPost('salesLog', salesLog);
+  list.innerHTML = log.length === 0
+    ? '<div class="text-center text-gray-600 text-xs py-4">まだ記録がありません</div>'
+    : log.map(e => {
+        const isToday = e.dateKey === key;
+        return `<div class="flex items-center justify-between px-5 py-2.5 ${isToday ? 'bg-emerald-950/30' : 'hover:bg-gray-800/30'} transition">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-check ${isToday ? 'text-emerald-400' : 'text-gray-600'} text-xs"></i>
+            <span class="text-sm ${isToday ? 'text-white font-bold' : 'text-gray-400'}">${e.label}</span>
+            ${isToday ? '<span class="text-[10px] bg-emerald-800 text-emerald-300 px-1.5 py-0.5 rounded-full">TODAY</span>' : ''}
+          </div>
+          <span class="text-xs text-gray-600">${e.ts}</span>
+        </div>`;
+      }).join('');
 }
 
 // ===== ルーティン =====
