@@ -243,6 +243,38 @@
       </div>
     </section>
 
+    <!-- ===== 日次ログ：スマレジ→MF会計 ===== -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-cyan-700 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-receipt text-white text-xs"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-cyan-300">日次ログ：スマレジ → MF会計</h3>
+            <p class="text-xs text-gray-500">売上計上完了を記録します</p>
+          </div>
+        </div>
+        <button onclick="logSalesEntry()"
+          class="bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-black px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 transition shadow-lg shadow-cyan-900/40">
+          <i class="fa-solid fa-circle-check"></i> 本日の売上計上完了
+        </button>
+      </div>
+
+      <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <!-- 今日の状態バナー -->
+        <div id="today-sales-banner" class="hidden px-5 py-3 bg-emerald-900/40 border-b border-emerald-800 flex items-center gap-2 text-emerald-300 text-sm font-bold">
+          <i class="fa-solid fa-circle-check"></i>
+          <span id="today-sales-label"></span>
+        </div>
+
+        <!-- ログリスト -->
+        <div id="sales-log-list" class="divide-y divide-gray-800/60 max-h-72 overflow-y-auto">
+          <div class="text-center text-gray-600 text-sm py-8">まだ記録がありません</div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== フリータスク（カンバン） ===== -->
     <section>
       <div class="flex items-center justify-between mb-4">
@@ -378,21 +410,81 @@ function gasPost(key, value) {
 }
 
 // ===== データ =====
-let routineData = {}; // { 'YYYY-MM': { s1: {done, ts}, s2:... } }
+let routineData = {};
 let tasksData   = [];
+let salesLog    = []; // [{ dateKey:'20260813', label:'20260813 売上計上完了', ts:'HH:MM' }, ...]
 
 async function init() {
   updateMonthUI();
   const data = await gasGet();
   if (data && !data.error) {
-    routineData = data.routine || {};
-    tasksData   = data.tasks   || [];
+    routineData = data.routine  || {};
+    tasksData   = data.tasks    || [];
+    salesLog    = data.salesLog || [];
   } else {
     routineData = JSON.parse(localStorage.getItem('routine_data') || '{}');
     tasksData   = JSON.parse(localStorage.getItem('mgmt_tasks')   || '[]');
+    salesLog    = JSON.parse(localStorage.getItem('sales_log')    || '[]');
   }
   renderRoutine();
   renderKanban();
+  renderSalesLog();
+}
+
+// ===== 日次ログ：スマレジ→MF会計 =====
+function logSalesEntry() {
+  const now      = new Date();
+  const dateKey  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const timeStr  = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  // 同日の二重登録を防ぐ
+  if (salesLog.some(e => e.dateKey === dateKey)) {
+    if (!confirm(`${dateKey} の売上計上は既に記録済みです。再登録しますか？`)) return;
+    salesLog = salesLog.filter(e => e.dateKey !== dateKey);
+  }
+
+  salesLog.unshift({ dateKey, label: `${dateKey} 売上計上完了`, ts: timeStr });
+  saveSalesLog();
+  renderSalesLog();
+}
+
+function renderSalesLog() {
+  const list   = document.getElementById('sales-log-list');
+  const banner = document.getElementById('today-sales-banner');
+  const now    = new Date();
+  const todayKey = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const todayEntry = salesLog.find(e => e.dateKey === todayKey);
+
+  // 今日バナー
+  if (todayEntry) {
+    banner.classList.remove('hidden');
+    document.getElementById('today-sales-label').textContent = `${todayEntry.label}　${todayEntry.ts}記録`;
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  if (!salesLog.length) {
+    list.innerHTML = '<div class="text-center text-gray-600 text-sm py-8">まだ記録がありません</div>';
+    return;
+  }
+
+  list.innerHTML = salesLog.map(e => {
+    const isToday = e.dateKey === todayKey;
+    return `
+      <div class="flex items-center justify-between px-5 py-3 ${isToday ? 'bg-emerald-950/30' : 'hover:bg-gray-800/30'} transition">
+        <div class="flex items-center gap-3">
+          <i class="fa-solid fa-circle-check ${isToday ? 'text-emerald-400' : 'text-gray-600'} text-sm"></i>
+          <span class="font-bold text-sm ${isToday ? 'text-white' : 'text-gray-400'}">${e.label}</span>
+          ${isToday ? '<span class="text-[10px] bg-emerald-800 text-emerald-300 px-2 py-0.5 rounded-full">TODAY</span>' : ''}
+        </div>
+        <span class="text-xs text-gray-600">${e.ts}</span>
+      </div>`;
+  }).join('');
+}
+
+function saveSalesLog() {
+  localStorage.setItem('sales_log', JSON.stringify(salesLog));
+  gasPost('salesLog', salesLog);
 }
 
 // ===== ルーティン =====
