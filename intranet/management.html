@@ -205,7 +205,7 @@ const SESSION_KEY  = 'mgmt_auth';
 
 // ===== 認証 =====
 function checkPw() {
-  const v = document.getElementById('pw-input').value;
+  const v = document.getElementById('pw-input').value.trim().toLowerCase();
   if (v === PASSWORD) {
     sessionStorage.setItem(SESSION_KEY, '1');
     document.getElementById('pw-screen').style.opacity = '0';

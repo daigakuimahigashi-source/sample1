@@ -329,7 +329,7 @@ const SESSION_KEY = 'mgmt_auth';
 
 // ===== 認証 =====
 function checkPw() {
-  if (document.getElementById('pw-input').value === PASSWORD) {
+  if (document.getElementById('pw-input').value.trim().toLowerCase() === PASSWORD) {
     sessionStorage.setItem(SESSION_KEY, '1');
     const s = document.getElementById('pw-screen');
     s.style.opacity = '0';
