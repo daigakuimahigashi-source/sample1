@@ -408,7 +408,7 @@ function renderLog(type) {
 
   list.innerHTML = log.length === 0
     ? ''
-    : log.slice(0, 10).map(e => {
+    : log.slice(0, 4).map(e => {
         const isToday = e.dateKey === key;
         return `<div class="flex items-center justify-between py-0.5">
           <span class="text-[11px] ${isToday ? 'text-emerald-400 font-bold' : 'text-gray-600'}">${e.label}</span>
