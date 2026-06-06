@@ -500,18 +500,32 @@ function renderRoutine() {
   const md = getMonthData();
   let doneCount = 0;
   STEP_IDS.forEach(id => {
-    const el  = document.getElementById(`step-${id}`);
-    const ts  = el.querySelector('.step-timestamp');
+    const el   = document.getElementById(`step-${id}`);
+    const ts   = el.querySelector('.step-timestamp');
     const info = md[id] || { done: false, ts: null };
+
+    // TODO バッジの管理
+    let badge = el.querySelector('.todo-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'todo-badge text-[10px] font-black px-2 py-0.5 rounded border ml-2 align-middle';
+      el.querySelector('.step-label').after(badge);
+    }
+
     if (info.done) {
       el.classList.add('step-done');
       ts.classList.remove('hidden');
       ts.textContent = `✓ ${info.ts}`;
+      badge.textContent  = '完了';
+      badge.className    = 'todo-badge text-[10px] font-black px-2 py-0.5 rounded border ml-2 align-middle bg-emerald-900/50 text-emerald-400 border-emerald-700';
       doneCount++;
     } else {
       el.classList.remove('step-done');
       ts.classList.add('hidden');
+      badge.textContent = 'TODO';
+      badge.className   = 'todo-badge text-[10px] font-black px-2 py-0.5 rounded border ml-2 align-middle bg-yellow-900/40 text-yellow-400 border-yellow-700';
     }
+
     // コネクター
     const conn = document.querySelector(`.connector-${id}`);
     if (conn) conn.classList.toggle('connector-done', info.done);
