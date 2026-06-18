@@ -345,16 +345,16 @@ function render(){
       ${STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
-          <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+          <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
         </div></td>`).join('')}
       <td><div class="stage-cell">
         <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="${DOT_TITLE[c.stages.offer||'pending']}" onclick="cycleDot('${c.id}','offer',this)"></span>
-        <span contenteditable data-id="${c.id}" data-field="date_offer" data-ph="日付" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
+        <span contenteditable data-id="${c.id}" data-field="date_offer" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
       </div></td>
       ${STAGES.filter(s=>s.id.startsWith('o')).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
-          <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+          <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
         </div></td>`).join('')}
       <td><button class="lost-btn${c.lost?' active':''}" onclick="toggleLost('${c.id}')">${c.lost?'失注済':'失注'}</button></td>
     `;
@@ -387,6 +387,16 @@ window.saveField = function(el){
   c[field]=el.textContent.trim();
   if(field==='score') c.score=parseInt(el.textContent)||0;
   saveToFirebase();
+};
+
+window.focusDate = function(el){
+  if(!el.textContent.trim()){
+    const now=new Date();
+    el.textContent=`${now.getMonth()+1}/${now.getDate()}`;
+    const range=document.createRange(), sel=window.getSelection();
+    range.selectNodeContents(el); sel.removeAllRanges(); sel.addRange(range);
+    saveDate(el);
+  }
 };
 
 window.saveDate = function(el){
