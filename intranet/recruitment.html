@@ -286,8 +286,8 @@ function render(){
   const ghdr = document.getElementById('group-header');
   const hdr = document.getElementById('main-header');
   if(!hdr.children.length){
-    const selCount = STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).length + 1;
-    const onCount = STAGES.filter(s=>s.id.startsWith('o')).length;
+    const selCount = STAGES.filter(s=>!s.isOffer && !s.id.match(/^o\d/)).length + 1;
+    const onCount = STAGES.filter(s=>s.id.match(/^o\d/)).length;
     const metaCols = ['候補者名','入社<br>予定月','確度','評価','備考'];
 
     metaCols.forEach((label,i)=>{
@@ -300,9 +300,9 @@ function render(){
     const g1=document.createElement('th');
     g1.colSpan=selCount; g1.className='group-header';
     g1.style.background='#fef9e7'; g1.style.color='#856404';
-    g1.textContent='採用フェーズ'; ghdr.appendChild(g1);
+    g1.textContent='採用'; ghdr.appendChild(g1);
 
-    STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).forEach(st=>{
+    STAGES.filter(s=>!s.isOffer && !s.id.match(/^o\d/)).forEach(st=>{
       const th=document.createElement('th');
       th.style.background='#fef9e7';
       th.innerHTML=st.label+(st.itOnly?'<br><span class="it-only">IT専用</span>':'');
@@ -315,9 +315,9 @@ function render(){
     const g2=document.createElement('th');
     g2.colSpan=onCount; g2.className='group-header';
     g2.style.background='#eafaf1'; g2.style.color='#137333';
-    g2.textContent='入社手続きフェーズ'; ghdr.appendChild(g2);
+    g2.textContent='入社手続'; ghdr.appendChild(g2);
 
-    STAGES.filter(s=>s.id.startsWith('o')).forEach(st=>{
+    STAGES.filter(s=>s.id.match(/^o\d/)).forEach(st=>{
       const th=document.createElement('th');
       th.style.background='#eafaf1'; th.innerHTML=st.label;
       hdr.appendChild(th);
@@ -346,7 +346,7 @@ function render(){
       </select></td>
       <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="score" onblur="saveField(this)">${c.score||''}</span></td>
       <td><button class="memo-btn" onclick="openNotes('${c.id}')">📝${c.notes&&c.notes.length?c.notes.length:''}</button></td>
-      ${STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).map(st=>`
+      ${STAGES.filter(s=>!s.isOffer && !s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
           <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
@@ -355,7 +355,7 @@ function render(){
         <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="${DOT_TITLE[c.stages.offer||'pending']}" onclick="cycleDot('${c.id}','offer',this)"></span>
         <span contenteditable data-id="${c.id}" data-field="date_offer" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
       </div></td>
-      ${STAGES.filter(s=>s.id.startsWith('o')).map(st=>`
+      ${STAGES.filter(s=>s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
           <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
