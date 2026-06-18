@@ -113,6 +113,7 @@ span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-c
 <div class="table-wrap">
 <table id="main-table">
 <thead>
+<tr id="group-header"></tr>
 <tr id="main-header"></tr>
 </thead>
 <tbody id="tbody"></tbody>
@@ -181,7 +182,7 @@ const STAGES = [
   {id:'s6',label:'⑦二次面談<br>通知'},
   {id:'s7',label:'⑧二次<br>面談'},
   {id:'offer',label:'内定通知<br>・承諾',isOffer:true},
-  {id:'o1',label:'メール<br>確認'},
+  {id:'o1',label:'メールアドレス<br>確認'},
   {id:'o2',label:'Slack<br>追加'},
   {id:'o3',label:'奨学金<br>確認'},
   {id:'o4',label:'人事管理<br>入力依頼'},
@@ -278,21 +279,25 @@ function render(){
     list.sort((a,b)=>(a.joinMonth||'9999')>(b.joinMonth||'9999')?1:-1);
   }
 
+  const ghdr = document.getElementById('group-header');
   const hdr = document.getElementById('main-header');
   if(!hdr.children.length){
-    const cols = [
-      {label:'候補者名',cls:'name-col'},
-      {label:'入社<br>予定月'},
-      {label:'確度'},
-      {label:'評価'},
-      {label:'備考'},
-    ];
-    cols.forEach(c=>{
-      const th=document.createElement('th');
-      th.innerHTML=c.label;
-      if(c.cls) th.className=c.cls;
+    const selCount = STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).length + 1;
+    const onCount = STAGES.filter(s=>s.id.startsWith('o')).length;
+    const metaCols = ['候補者名','入社<br>予定月','確度','評価','備考'];
+
+    metaCols.forEach((label,i)=>{
+      const g=document.createElement('th'); g.innerHTML=''; ghdr.appendChild(g);
+      const th=document.createElement('th'); th.innerHTML=label;
+      if(i===0) th.className='name-col';
       hdr.appendChild(th);
     });
+
+    const g1=document.createElement('th');
+    g1.colSpan=selCount; g1.className='group-header';
+    g1.style.background='#fef9e7'; g1.style.color='#856404';
+    g1.textContent='採用フェーズ'; ghdr.appendChild(g1);
+
     STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).forEach(st=>{
       const th=document.createElement('th');
       th.style.background='#fef9e7';
@@ -300,17 +305,22 @@ function render(){
       hdr.appendChild(th);
     });
     const offerTh=document.createElement('th');
-    offerTh.innerHTML='内定通知<br>・承諾';
-    offerTh.style.background='#fef9e7';
+    offerTh.innerHTML='内定通知<br>・承諾'; offerTh.style.background='#fef9e7';
     hdr.appendChild(offerTh);
+
+    const g2=document.createElement('th');
+    g2.colSpan=onCount; g2.className='group-header';
+    g2.style.background='#eafaf1'; g2.style.color='#137333';
+    g2.textContent='入社手続きフェーズ'; ghdr.appendChild(g2);
+
     STAGES.filter(s=>s.id.startsWith('o')).forEach(st=>{
       const th=document.createElement('th');
-      th.style.background='#eafaf1';
-      th.innerHTML=st.label;
+      th.style.background='#eafaf1'; th.innerHTML=st.label;
       hdr.appendChild(th);
     });
-    const lostTh=document.createElement('th');
-    lostTh.textContent='失注';
+
+    const g3=document.createElement('th'); g3.innerHTML=''; ghdr.appendChild(g3);
+    const lostTh=document.createElement('th'); lostTh.textContent='失注';
     hdr.appendChild(lostTh);
   }
 
