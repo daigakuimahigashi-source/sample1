@@ -14,10 +14,13 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background:#f5
 .dot.offline{background:#f44336}
 .dot.syncing{background:#ff9800;animation:blink .8s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.stats{display:flex;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #e0e0e0}
-.stat{background:#f8f9fa;border-radius:8px;padding:8px 16px;min-width:120px}
-.stat-label{font-size:10px;color:#666}
-.stat-value{font-size:20px;font-weight:700;color:#1a73e8}
+.stats{display:flex;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #e0e0e0;align-items:center}
+.stat{background:#f8f9fa;border-radius:8px;padding:10px 20px;min-width:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.stat-label{font-size:11px;color:#666;font-weight:500}
+.stat-value{font-size:26px;font-weight:700;color:#1a73e8}
+.today-box{margin-left:auto;text-align:center;padding:10px 20px;background:#f8f9fa;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.today-date{font-size:20px;font-weight:700;color:#202124}
+.today-day{font-size:11px;color:#666;font-weight:500}
 .controls{display:flex;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid #e0e0e0;align-items:center;flex-wrap:wrap}
 .controls select,.controls input{font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;height:28px}
 .controls label{font-size:12px;color:#555}
@@ -80,9 +83,10 @@ span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-c
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-label">候補者合計</div><div class="stat-value" id="s-total">0</div></div>
+  <div class="stat"><div class="stat-label">候補者</div><div class="stat-value" id="s-total">0</div></div>
   <div class="stat"><div class="stat-label">選考中</div><div class="stat-value" id="s-active">0</div></div>
-  <div class="stat"><div class="stat-label">内定〜手続き中</div><div class="stat-value" id="s-offer">0</div></div>
+  <div class="stat"><div class="stat-label">手続中</div><div class="stat-value" id="s-offer">0</div></div>
+  <div class="today-box"><div class="today-date" id="today-date"></div><div class="today-day" id="today-day"></div></div>
 </div>
 
 <div class="controls">
@@ -507,6 +511,11 @@ window.confirmAdd = function(){
 };
 
 window.render = render;
+
+const days=['日','月','火','水','木','金','土'];
+const now=new Date();
+document.getElementById('today-date').textContent=`${now.getMonth()+1}/${now.getDate()}`;
+document.getElementById('today-day').textContent=`（${days[now.getDay()]}）`;
 
 document.getElementById('add-modal').addEventListener('click',function(e){
   if(e.target===this) closeAddModal();
