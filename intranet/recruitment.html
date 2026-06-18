@@ -32,13 +32,12 @@ td.name-col{text-align:left;padding-left:8px;font-weight:500}
 tr:nth-child(even){background:#fafafa}
 tr.lost td{color:#aaa;text-decoration:line-through;background:#f5f5f5}
 tr.lost td.name-col{color:#bbb}
-.stage-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;border:1.5px solid #aaa;transition:transform .1s;vertical-align:middle}
-.stage-dot:hover{transform:scale(1.3)}
+.stage-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;border:1.5px solid #bbb;transition:transform .1s;vertical-align:middle;position:relative}
+.stage-dot:hover{transform:scale(1.15)}
 .s-pending{background:#fff;border-color:#bbb}
-.s-active{background:#333;border-color:#333}
-.s-done{background:#333;border-color:#333}
-.s-ng{background:#333;border-color:#333}
-.s-skip{background:#d0d0d0;border-color:#bbb}
+.s-done{background:#1a73e8;border-color:#1a73e8}
+.s-skip{background:#d0d0d0;border-color:#aaa}
+.s-skip::after{content:'';position:absolute;top:50%;left:50%;width:120%;height:1.5px;background:#888;transform:translate(-50%,-50%) rotate(-45deg)}
 .stage-cell{display:flex;flex-direction:column;align-items:center;gap:1px}
 span[contenteditable]{outline:none;min-width:24px;display:inline-block;cursor:text;font-size:9px;color:#555;text-align:center;border-bottom:1px dotted #ccc;line-height:1.4}
 span[contenteditable]:empty:before{content:attr(data-ph);color:#ccc}
@@ -193,9 +192,9 @@ const STAGES = [
   {id:'o12',label:'入社<br>誓約書'},
 ];
 
-const CYCLE = ['pending','active','done','ng','skip'];
-const DOT_CLASS = {pending:'s-pending',active:'s-active',done:'s-done',ng:'s-ng',skip:'s-skip'};
-const DOT_TITLE = {pending:'未着手',active:'進行中',done:'完了',ng:'NG',skip:'スキップ'};
+const CYCLE = ['pending','done','skip'];
+const DOT_CLASS = {pending:'s-pending',active:'s-done',done:'s-done',ng:'s-done',skip:'s-skip'};
+const DOT_TITLE = {pending:'未着手',active:'完了',done:'完了',ng:'完了',skip:'スキップ'};
 
 function mkStages(){
   const s={};
