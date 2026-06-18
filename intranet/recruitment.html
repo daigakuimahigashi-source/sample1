@@ -150,6 +150,20 @@ span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-c
   </div>
 </div>
 
+<div class="modal" id="edit-modal">
+  <div class="modal-box">
+    <h3 id="edit-modal-title">候補者を編集</h3>
+    <input id="edit-name" placeholder="氏名">
+    <div class="row" style="justify-content:space-between">
+      <button onclick="confirmDelete()" style="color:#c5221f;border-color:#f5c6c2">削除</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeEditModal()">キャンセル</button>
+        <button class="ok" onclick="confirmEdit()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -292,7 +306,7 @@ function render(){
     if(c.lost) tr.className='lost';
 
     tr.innerHTML = `
-      <td class="name-col">${esc(c.name)}</td>
+      <td class="name-col" style="cursor:pointer" onclick="openEditModal('${c.id}')" title="クリックで編集・削除">${esc(c.name)} <span style="font-size:9px;color:#bbb">✎</span></td>
       <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="joinMonth" onblur="saveField(this)">${esc(c.joinMonth||'')}</span></td>
       <td><select class="grade-sel g-${c.grade}" data-id="${c.id}" onchange="saveGrade(this)">
         <option ${c.grade==='A'?'selected':''}>A</option>
@@ -408,6 +422,36 @@ window.addNote = function(){
   saveToFirebase();
 };
 
+let editTargetId = null;
+window.openEditModal = function(id){
+  editTargetId = id;
+  const c = candidates.find(x=>x.id===id);
+  document.getElementById('edit-name').value = c ? c.name : '';
+  document.getElementById('edit-modal').className = 'modal open';
+  document.getElementById('edit-name').focus();
+};
+window.closeEditModal = function(){
+  document.getElementById('edit-modal').className = 'modal';
+  editTargetId = null;
+};
+window.confirmEdit = function(){
+  const name = document.getElementById('edit-name').value.trim();
+  if(!name || !editTargetId) return;
+  const c = candidates.find(x=>x.id===editTargetId);
+  if(c) c.name = name;
+  saveToFirebase();
+  render();
+  closeEditModal();
+};
+window.confirmDelete = function(){
+  if(!editTargetId) return;
+  if(!confirm('この候補者を削除しますか？')) return;
+  candidates = candidates.filter(x=>x.id!==editTargetId);
+  saveToFirebase();
+  render();
+  closeEditModal();
+};
+
 window.openAddModal = function(){
   document.getElementById('add-modal').className='modal open';
   document.getElementById('new-name').focus();
@@ -430,6 +474,9 @@ window.render = render;
 
 document.getElementById('add-modal').addEventListener('click',function(e){
   if(e.target===this) closeAddModal();
+});
+document.getElementById('edit-modal').addEventListener('click',function(e){
+  if(e.target===this) closeEditModal();
 });
 </script>
 </body>
