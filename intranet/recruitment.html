@@ -32,15 +32,17 @@ td.name-col{text-align:left;padding-left:8px;font-weight:500}
 tr:nth-child(even){background:#fafafa}
 tr.lost td{color:#aaa;text-decoration:line-through;background:#f5f5f5}
 tr.lost td.name-col{color:#bbb}
-.stage-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;border:1.5px solid transparent;transition:transform .1s}
+.stage-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;border:1.5px solid #aaa;transition:transform .1s;vertical-align:middle}
 .stage-dot:hover{transform:scale(1.3)}
-.s-pending{background:#e0e0e0;border-color:#bbb}
-.s-active{background:#1a73e8;border-color:#1557b0}
-.s-done{background:#34a853;border-color:#137333}
-.s-ng{background:#ea4335;border-color:#c5221f}
-.s-skip{background:#fff;border-color:#ccc}
-span[contenteditable]{outline:none;min-width:20px;display:inline-block;cursor:text;font-size:8px;color:#555}
-span[contenteditable]:focus{background:#e8f0fe;border-radius:2px}
+.s-pending{background:#fff;border-color:#bbb}
+.s-active{background:#333;border-color:#333}
+.s-done{background:#333;border-color:#333}
+.s-ng{background:#333;border-color:#333}
+.s-skip{background:#d0d0d0;border-color:#bbb}
+.stage-cell{display:flex;flex-direction:column;align-items:center;gap:1px}
+span[contenteditable]{outline:none;min-width:24px;display:inline-block;cursor:text;font-size:9px;color:#555;text-align:center;border-bottom:1px dotted #ccc;line-height:1.4}
+span[contenteditable]:empty:before{content:attr(data-ph);color:#ccc}
+span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-color:#1a73e8}
 .grade-sel{font-size:9px;padding:1px 2px;border:1px solid #ddd;border-radius:3px;zoom:.85;cursor:pointer}
 .g-A{background:#d9ead3;color:#137333;font-weight:700}
 .g-B{background:#e8f0fe;color:#1a73e8;font-weight:700}
@@ -193,6 +195,7 @@ const STAGES = [
 
 const CYCLE = ['pending','active','done','ng','skip'];
 const DOT_CLASS = {pending:'s-pending',active:'s-active',done:'s-done',ng:'s-ng',skip:'s-skip'};
+const DOT_TITLE = {pending:'未着手',active:'進行中',done:'完了',ng:'NG',skip:'スキップ'};
 
 function mkStages(){
   const s={};
@@ -301,19 +304,19 @@ function render(){
       <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="score" onblur="saveField(this)">${c.score||''}</span></td>
       <td><button class="memo-btn" onclick="openNotes('${c.id}')">📝${c.notes&&c.notes.length?c.notes.length:''}</button></td>
       ${STAGES.filter(s=>!s.isOffer).map(st=>`
-        <td>
-          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${st.id}" onclick="cycleDot('${c.id}','${st.id}',this)"></span><br>
-          <span contenteditable style="font-size:8px" data-id="${c.id}" data-field="date_${st.id}" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
-        </td>`).join('')}
-      <td>
-        <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="offer" onclick="cycleDot('${c.id}','offer',this)"></span><br>
-        <span contenteditable style="font-size:8px" data-id="${c.id}" data-field="date_offer" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
-      </td>
+        <td><div class="stage-cell">
+          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
+          <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+        </div></td>`).join('')}
+      <td><div class="stage-cell">
+        <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="${DOT_TITLE[c.stages.offer||'pending']}" onclick="cycleDot('${c.id}','offer',this)"></span>
+        <span contenteditable data-id="${c.id}" data-field="date_offer" data-ph="日付" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
+      </div></td>
       ${STAGES.filter(s=>s.id.startsWith('o')).map(st=>`
-        <td>
-          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${st.id}" onclick="cycleDot('${c.id}','${st.id}',this)"></span><br>
-          <span contenteditable style="font-size:8px" data-id="${c.id}" data-field="date_${st.id}" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
-        </td>`).join('')}
+        <td><div class="stage-cell">
+          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
+          <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+        </div></td>`).join('')}
       <td><button class="lost-btn${c.lost?' active':''}" onclick="toggleLost('${c.id}')">${c.lost?'失注済':'失注'}</button></td>
     `;
     tbody.appendChild(tr);
