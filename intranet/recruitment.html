@@ -16,7 +16,7 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background:#f5
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .stats{display:flex;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #e0e0e0;align-items:center}
 .stat{background:#f8f9fa;border-radius:8px;padding:10px 20px;min-width:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.stat-label{font-size:11px;color:#666;font-weight:500}
+.stat-label{font-size:12px;color:#444;font-weight:700}
 .stat-value{font-size:26px;font-weight:700;color:#1a73e8}
 .today-box{margin-left:auto;text-align:center;padding:10px 20px;background:#f8f9fa;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .today-date{font-size:20px;font-weight:700;color:#202124}
@@ -49,9 +49,9 @@ tr.lost .stage-dot::after{background:#aaa!important}
 span[contenteditable]{outline:none;min-width:24px;display:inline-block;cursor:text;font-size:9px;color:#555;text-align:center;border-bottom:1px dotted #ccc;line-height:1.4}
 span[contenteditable]:empty:before{content:attr(data-ph);color:#ccc}
 span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-color:#1a73e8}
-input.date-input{font-size:9px;border:none;border-bottom:1px dotted #ccc;background:transparent;width:58px;cursor:pointer;color:#555;padding:0;text-align:center}
-input.date-input:focus{outline:none;border-bottom-color:#1a73e8}
-input.date-input::-webkit-calendar-picker-indicator{font-size:8px;padding:0;margin:0;cursor:pointer;opacity:.5}
+span.date-span{outline:none;min-width:28px;display:inline-block;cursor:text;font-size:9px;color:#555;text-align:center;border-bottom:1px dotted #ccc;line-height:1.6}
+span.date-span:empty:before{content:attr(data-ph);color:#ccc}
+span.date-span:focus{background:#e8f0fe;border-radius:2px;border-bottom-color:#1a73e8}
 .grade-sel{font-size:9px;padding:1px 2px;border:1px solid #ddd;border-radius:3px;zoom:.85;cursor:pointer}
 .g-A{background:#d9ead3;color:#137333;font-weight:700}
 .g-B{background:#e8f0fe;color:#1a73e8;font-weight:700}
@@ -366,7 +366,7 @@ function render(){
 
     tr.innerHTML = `
       <td class="name-col" style="cursor:pointer" onclick="openEditModal('${c.id}')" title="クリックで編集・削除">${esc(c.name)} <span style="font-size:9px;color:#bbb">✎</span></td>
-      <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="joinMonth" onblur="saveField(this)">${esc(c.joinMonth||'')}</span></td>
+      <td><span class="date-span" contenteditable data-id="${c.id}" data-ph="yyyy/mm" onblur="saveJoinMonth(this)">${esc(c.joinMonth||'')}</span></td>
       <td><select class="grade-sel g-${c.grade}" data-id="${c.id}" onchange="saveGrade(this)">
         <option ${c.grade==='A'?'selected':''}>A</option>
         <option ${c.grade==='B'?'selected':''}>B</option>
@@ -378,16 +378,16 @@ function render(){
       ${STAGES.filter(s=>!s.isOffer && !s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
-          <input class="date-input" type="date" data-id="${c.id}" data-field="date_${st.id}" value="${mmddToInput(c.dates[st.id]||'')}" onchange="saveDate(this)">
+          <span class="date-span" contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
         </div></td>`).join('')}
       <td><div class="stage-cell">
         <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="${DOT_TITLE[c.stages.offer||'pending']}" onclick="cycleDot('${c.id}','offer',this)"></span>
-        <input class="date-input" type="date" data-id="${c.id}" data-field="date_offer" value="${mmddToInput(c.dates.offer||'')}" onchange="saveDate(this)">
+        <span class="date-span" contenteditable data-id="${c.id}" data-field="date_offer" data-ph="日付" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
       </div></td>
       ${STAGES.filter(s=>s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}${hiringDone?'':' locked'}" title="${hiringDone?DOT_TITLE[c.stages[st.id]||'pending']:'採用フェーズ完了後に入力可'}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
-          <input class="date-input" type="date" data-id="${c.id}" data-field="date_${st.id}" value="${mmddToInput(c.dates[st.id]||'')}" onchange="saveDate(this)">
+          <span class="date-span" contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
         </div></td>`).join('')}
       <td><button class="lost-btn${c.lost?' active':''}" onclick="toggleLost('${c.id}')">${c.lost?'失注済':'失注'}</button></td>
     `;
@@ -438,8 +438,27 @@ window.saveDate = function(el){
   const id=el.dataset.id, field=el.dataset.field;
   const c=candidates.find(x=>x.id===id);
   if(!c) return;
+  const raw=el.textContent.trim();
+  if(raw && !/^\d{1,2}\/\d{1,2}$/.test(raw)){
+    el.textContent=c.dates[field.replace('date_','')]||'';
+    el.style.color='';
+    return;
+  }
   const stageId=field.replace('date_','');
-  c.dates[stageId]=inputToMmdd(el.value);
+  c.dates[stageId]=raw;
+  saveToFirebase();
+};
+
+window.saveJoinMonth = function(el){
+  const id=el.dataset.id;
+  const c=candidates.find(x=>x.id===id);
+  if(!c) return;
+  const raw=el.textContent.trim();
+  if(raw && !/^\d{4}\/\d{1,2}$/.test(raw)){
+    el.textContent=c.joinMonth||'';
+    return;
+  }
+  c.joinMonth=raw;
   saveToFirebase();
 };
 
