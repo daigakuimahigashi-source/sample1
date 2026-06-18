@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ミライト 採用ダッシュボード</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;background:#f5f6fa;color:#202124}
+.header{background:#1a73e8;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px}
+.header h1{font-size:16px;font-weight:600}
+.sync-status{margin-left:auto;font-size:11px;opacity:.85;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block}
+.dot.offline{background:#f44336}
+.dot.syncing{background:#ff9800;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.stats{display:flex;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #e0e0e0}
+.stat{background:#f8f9fa;border-radius:8px;padding:8px 16px;min-width:120px}
+.stat-label{font-size:10px;color:#666}
+.stat-value{font-size:20px;font-weight:700;color:#1a73e8}
+.controls{display:flex;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid #e0e0e0;align-items:center;flex-wrap:wrap}
+.controls select,.controls input{font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;height:28px}
+.controls label{font-size:12px;color:#555}
+.add-btn{margin-left:auto;background:#1a73e8;color:#fff;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:12px}
+.add-btn:hover{background:#1557b0}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:1400px;font-size:11px}
+th{background:#f1f3f4;border:1px solid #e0e0e0;padding:4px 5px;white-space:nowrap;text-align:center;position:sticky;top:0;z-index:10}
+th.name-col{text-align:left;min-width:100px}
+td{border:1px solid #e8eaed;padding:3px 4px;text-align:center;vertical-align:middle}
+td.name-col{text-align:left;padding-left:8px;font-weight:500}
+tr:nth-child(even){background:#fafafa}
+tr.lost td{color:#aaa;text-decoration:line-through;background:#f5f5f5}
+tr.lost td.name-col{color:#bbb}
+.stage-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;border:1.5px solid transparent;transition:transform .1s}
+.stage-dot:hover{transform:scale(1.3)}
+.s-pending{background:#e0e0e0;border-color:#bbb}
+.s-active{background:#1a73e8;border-color:#1557b0}
+.s-done{background:#34a853;border-color:#137333}
+.s-ng{background:#ea4335;border-color:#c5221f}
+.s-skip{background:#fff;border-color:#ccc}
+span[contenteditable]{outline:none;min-width:20px;display:inline-block;cursor:text;font-size:8px;color:#555}
+span[contenteditable]:focus{background:#e8f0fe;border-radius:2px}
+.grade-sel{font-size:9px;padding:1px 2px;border:1px solid #ddd;border-radius:3px;zoom:.85;cursor:pointer}
+.g-A{background:#d9ead3;color:#137333;font-weight:700}
+.g-B{background:#e8f0fe;color:#1a73e8;font-weight:700}
+.g-C{background:#fce8b2;color:#b45309;font-weight:700}
+.g-D{background:#fce8e6;color:#c5221f;font-weight:700}
+.memo-btn{background:none;border:none;cursor:pointer;font-size:10px;color:#1a73e8;padding:1px 4px}
+.memo-btn:hover{text-decoration:underline}
+.lost-btn{background:#fce8e6;border:1px solid #f5c6c2;color:#c5221f;font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;white-space:nowrap}
+.lost-btn.active{background:#c5221f;color:#fff}
+.notes-panel{display:none;background:#fff;border-top:2px solid #1a73e8;padding:12px 16px}
+.notes-panel.open{display:block}
+.notes-header{font-size:13px;font-weight:600;margin-bottom:8px;color:#1a73e8}
+.notes-list{max-height:180px;overflow-y:auto;margin-bottom:8px}
+.note-item{padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:11px}
+.note-ts{color:#888;font-size:10px;margin-right:6px}
+.notes-input-row{display:flex;gap:6px}
+.notes-input-row input{flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px}
+.notes-input-row button{background:#1a73e8;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px}
+.group-header{background:#e8eaed;font-size:10px;font-weight:600;color:#555}
+.it-only{font-size:9px;color:#8e44ad}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:8px;padding:20px;min-width:320px;max-width:90vw}
+.modal-box h3{margin-bottom:12px;font-size:15px}
+.modal-box input{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;margin-bottom:10px}
+.modal-box .row{display:flex;gap:8px;justify-content:flex-end}
+.modal-box button{padding:6px 16px;border-radius:4px;border:1px solid #ddd;cursor:pointer;font-size:13px}
+.modal-box .ok{background:#1a73e8;color:#fff;border-color:#1a73e8}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ミライト 採用ダッシュボード</h1>
+  <div class="sync-status"><span class="dot" id="sync-dot"></span><span id="sync-label">接続中...</span></div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">候補者合計</div><div class="stat-value" id="s-total">0</div></div>
+  <div class="stat"><div class="stat-label">選考中</div><div class="stat-value" id="s-active">0</div></div>
+  <div class="stat"><div class="stat-label">内定〜手続き中</div><div class="stat-value" id="s-offer">0</div></div>
+</div>
+
+<div class="controls">
+  <label>絞り込み：
+    <select id="filter-grade" onchange="render()">
+      <option value="">確度 全て</option>
+      <option value="A">A</option><option value="B">B</option>
+      <option value="C">C</option><option value="D">D</option>
+    </select>
+  </label>
+  <label>
+    <select id="filter-lost" onchange="render()">
+      <option value="">失注含む</option>
+      <option value="hide">失注除く</option>
+    </select>
+  </label>
+  <label>ソート：
+    <select id="sort-key" onchange="render()">
+      <option value="">デフォルト</option>
+      <option value="grade">確度順</option>
+      <option value="score">評価順</option>
+      <option value="joinMonth">入社予定月順</option>
+    </select>
+  </label>
+  <button class="add-btn" onclick="openAddModal()">＋ 候補者追加</button>
+</div>
+
+<div class="table-wrap">
+<table id="main-table">
+<thead>
+<tr>
+  <th class="name-col" rowspan="2">候補者名</th>
+  <th rowspan="2">入社<br>予定月</th>
+  <th rowspan="2">確度</th>
+  <th rowspan="2">評価</th>
+  <th rowspan="2">備考</th>
+  <th colspan="8" class="group-header">選考フロー</th>
+  <th rowspan="2">内定</th>
+  <th colspan="12" class="group-header">入社手続き</th>
+  <th rowspan="2">失注</th>
+</tr>
+<tr id="sub-header"></tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+
+<div class="notes-panel" id="notes-panel">
+  <div class="notes-header" id="notes-title">備考</div>
+  <div class="notes-list" id="notes-list"></div>
+  <div class="notes-input-row">
+    <input id="note-input" placeholder="コメントを入力..." onkeydown="if(event.key==='Enter')addNote()">
+    <button onclick="addNote()">送信</button>
+  </div>
+</div>
+
+<div class="modal" id="add-modal">
+  <div class="modal-box">
+    <h3>候補者を追加</h3>
+    <input id="new-name" placeholder="氏名">
+    <div class="row">
+      <button onclick="closeAddModal()">キャンセル</button>
+      <button class="ok" onclick="confirmAdd()">追加</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC849vt6ia6qSK-9vEfMXP8hP6R6G2N27E",
+  authDomain: "miraito-saiyou.firebaseapp.com",
+  databaseURL: "https://miraito-saiyou-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "miraito-saiyou",
+  storageBucket: "miraito-saiyou.firebasestorage.app",
+  messagingSenderId: "979218386068",
+  appId: "1:979218386068:web:69f763f395ce1291cf7881"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const dbRef = ref(db, 'candidates');
+
+const STAGES = [
+  {id:'s1',label:'①採用ツール<br>連絡'},
+  {id:'s2',label:'②面談<br>アポ'},
+  {id:'s3',label:'③初回<br>面談'},
+  {id:'s4',label:'④審査'},
+  {id:'s4_5',label:'⑤IT事務<br>面談',itOnly:true},
+  {id:'s5',label:'⑥1.5次<br>面談'},
+  {id:'s6',label:'⑦二次面談<br>通知'},
+  {id:'s7',label:'⑧二次<br>面談'},
+  {id:'offer',label:'内定通知<br>・承諾',isOffer:true},
+  {id:'o1',label:'メール<br>確認'},
+  {id:'o2',label:'Slack<br>追加'},
+  {id:'o3',label:'奨学金<br>確認'},
+  {id:'o4',label:'人事管理<br>入力依頼'},
+  {id:'o5',label:'人事管理<br>入力'},
+  {id:'o6',label:'給与<br>設定'},
+  {id:'o7',label:'雇用<br>契約書'},
+  {id:'o8',label:'社保<br>加入'},
+  {id:'o9',label:'雇用保険<br>加入'},
+  {id:'o10',label:'市府民税<br>特別徴収'},
+  {id:'o11',label:'市府民税<br>納付書'},
+  {id:'o12',label:'入社<br>誓約書'},
+];
+
+const CYCLE = ['pending','active','done','ng','skip'];
+const DOT_CLASS = {pending:'s-pending',active:'s-active',done:'s-done',ng:'s-ng',skip:'s-skip'};
+
+function mkStages(){
+  const s={};
+  STAGES.forEach(st=>{ s[st.id]='pending'; });
+  return s;
+}
+function mkDates(){
+  const d={};
+  STAGES.forEach(st=>{ d[st.id]=''; });
+  return d;
+}
+
+const DEFAULT_CANDIDATES = [
+  {id:'c1',name:'田中 優子',joinMonth:'2026/10',grade:'A',score:82,lost:false,notes:[{ts:'6/12 10:30',text:'初回面談の印象良好。SESへの理解も早い。'}],stages:Object.assign(mkStages(),{s1:'done',s2:'done',s3:'done',s4:'done',s4_5:'skip',s5:'active'}),dates:mkDates()},
+  {id:'c2',name:'鈴木 健太',joinMonth:'2026/08',grade:'B',score:70,lost:false,notes:[],stages:Object.assign(mkStages(),{s1:'done',s2:'done',s3:'done',s4:'done',s4_5:'skip',s5:'done',s6:'done',s7:'done',offer:'done',o1:'done',o2:'done',o3:'done',o4:'done',o5:'done',o6:'active'}),dates:mkDates()},
+  {id:'c3',name:'山田 花奈 (IT)',joinMonth:'2026/09',grade:'B',score:65,lost:false,notes:[{ts:'6/10 14:00',text:'IT事務志望。PCスキル高い。'}],stages:Object.assign(mkStages(),{s1:'done',s2:'done',s3:'done',s4:'done',s4_5:'active'}),dates:mkDates()},
+  {id:'c4',name:'佐藤 拓海',joinMonth:'',grade:'D',score:30,lost:true,notes:[{ts:'6/5 09:00',text:'スキル・意欲ともにミスマッチ'}],stages:Object.assign(mkStages(),{s1:'done',s2:'done',s3:'done',s4:'ng'}),dates:mkDates()},
+  {id:'c5',name:'伊藤 さくら',joinMonth:'2026/06',grade:'A',score:95,lost:false,notes:[],stages:Object.assign(mkStages(),{s1:'done',s2:'done',s3:'done',s4:'done',s4_5:'skip',s5:'skip',s6:'done',s7:'done',offer:'done',o1:'done',o2:'done',o3:'done',o4:'done',o5:'done',o6:'done',o7:'done',o8:'done',o9:'done',o10:'done',o11:'done',o12:'done'}),dates:mkDates()},
+  {id:'c6',name:'渡辺 隼人 (IT)',joinMonth:'2026/11',grade:'C',score:55,lost:false,notes:[{ts:'6/15 11:00',text:'IT事務志望'}],stages:Object.assign(mkStages(),{s1:'active'}),dates:mkDates()},
+];
+
+let candidates = [];
+let activeNoteId = null;
+let saveTimer = null;
+let isRemoteUpdate = false;
+
+const syncDot = document.getElementById('sync-dot');
+const syncLabel = document.getElementById('sync-label');
+
+function setSyncStatus(state){
+  syncDot.className = 'dot ' + (state==='online'?'':state==='syncing'?'syncing':'offline');
+  syncLabel.textContent = state==='online'?'同期済み':state==='syncing'?'同期中...':'オフライン';
+}
+
+onValue(dbRef, snap => {
+  const data = snap.val();
+  if(data){
+    isRemoteUpdate = true;
+    candidates = Array.isArray(data) ? data : Object.values(data);
+    candidates.forEach(c=>{
+      if(!c.stages) c.stages = mkStages();
+      if(!c.dates) c.dates = mkDates();
+      if(!c.notes) c.notes = [];
+    });
+    isRemoteUpdate = false;
+    setSyncStatus('online');
+    render();
+  } else {
+    set(dbRef, DEFAULT_CANDIDATES).then(()=>setSyncStatus('online'));
+  }
+}, err => {
+  setSyncStatus('offline');
+});
+
+function saveToFirebase(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    setSyncStatus('syncing');
+    set(dbRef, candidates).then(()=>setSyncStatus('online')).catch(()=>setSyncStatus('offline'));
+  }, 800);
+}
+
+function render(){
+  const grade = document.getElementById('filter-grade').value;
+  const lostFilter = document.getElementById('filter-lost').value;
+  const sortKey = document.getElementById('sort-key').value;
+
+  let list = candidates.slice();
+  if(grade) list = list.filter(c=>c.grade===grade);
+  if(lostFilter==='hide') list = list.filter(c=>!c.lost);
+
+  if(sortKey==='grade'){
+    const order={A:0,B:1,C:2,D:3};
+    list.sort((a,b)=>(order[a.grade]??9)-(order[b.grade]??9));
+  } else if(sortKey==='score'){
+    list.sort((a,b)=>(b.score||0)-(a.score||0));
+  } else if(sortKey==='joinMonth'){
+    list.sort((a,b)=>(a.joinMonth||'9999')>(b.joinMonth||'9999')?1:-1);
+  }
+
+  const sub = document.getElementById('sub-header');
+  if(!sub.children.length){
+    STAGES.filter(s=>!s.isOffer).forEach(st=>{
+      const th = document.createElement('th');
+      th.innerHTML = st.label + (st.itOnly?'<br><span class="it-only">IT専用</span>':'');
+      sub.appendChild(th);
+    });
+  }
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  list.forEach(c=>{
+    const tr = document.createElement('tr');
+    if(c.lost) tr.className='lost';
+
+    tr.innerHTML = `
+      <td class="name-col">${esc(c.name)}</td>
+      <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="joinMonth" onblur="saveField(this)">${esc(c.joinMonth||'')}</span></td>
+      <td><select class="grade-sel g-${c.grade}" data-id="${c.id}" onchange="saveGrade(this)">
+        <option ${c.grade==='A'?'selected':''}>A</option>
+        <option ${c.grade==='B'?'selected':''}>B</option>
+        <option ${c.grade==='C'?'selected':''}>C</option>
+        <option ${c.grade==='D'?'selected':''}>D</option>
+      </select></td>
+      <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="score" onblur="saveField(this)">${c.score||''}</span></td>
+      <td><button class="memo-btn" onclick="openNotes('${c.id}')">📝${c.notes&&c.notes.length?c.notes.length:''}</button></td>
+      ${STAGES.filter(s=>!s.isOffer).map(st=>`
+        <td>
+          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${st.id}" onclick="cycleDot('${c.id}','${st.id}',this)"></span><br>
+          <span contenteditable style="font-size:8px" data-id="${c.id}" data-field="date_${st.id}" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+        </td>`).join('')}
+      <td>
+        <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="offer" onclick="cycleDot('${c.id}','offer',this)"></span><br>
+        <span contenteditable style="font-size:8px" data-id="${c.id}" data-field="date_offer" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
+      </td>
+      ${STAGES.filter(s=>s.id.startsWith('o')).map(st=>`
+        <td>
+          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${st.id}" onclick="cycleDot('${c.id}','${st.id}',this)"></span><br>
+          <span contenteditable style="font-size:8px" data-id="${c.id}" data-field="date_${st.id}" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+        </td>`).join('')}
+      <td><button class="lost-btn${c.lost?' active':''}" onclick="toggleLost('${c.id}')">${c.lost?'失注済':'失注'}</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const total = candidates.length;
+  const active = candidates.filter(c=>!c.lost&&Object.values(c.stages||{}).some(v=>v==='active')).length;
+  const offer = candidates.filter(c=>!c.lost&&(c.stages.offer==='done'||Object.entries(c.stages||{}).filter(([k])=>k.startsWith('o')).some(([,v])=>v==='active'||v==='done'))).length;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-active').textContent=active;
+  document.getElementById('s-offer').textContent=offer;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+window.cycleDot = function(id,stageId,el){
+  const c = candidates.find(x=>x.id===id);
+  if(!c||c.lost) return;
+  const cur = c.stages[stageId]||'pending';
+  c.stages[stageId] = CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
+  el.className = 'stage-dot ' + DOT_CLASS[c.stages[stageId]];
+  saveToFirebase();
+};
+
+window.saveField = function(el){
+  const id=el.dataset.id, field=el.dataset.field;
+  const c=candidates.find(x=>x.id===id);
+  if(!c) return;
+  c[field]=el.textContent.trim();
+  if(field==='score') c.score=parseInt(el.textContent)||0;
+  saveToFirebase();
+};
+
+window.saveDate = function(el){
+  const id=el.dataset.id, field=el.dataset.field;
+  const c=candidates.find(x=>x.id===id);
+  if(!c) return;
+  const stageId=field.replace('date_','');
+  c.dates[stageId]=el.textContent.trim();
+  saveToFirebase();
+};
+
+window.saveGrade = function(sel){
+  const id=sel.dataset.id;
+  const c=candidates.find(x=>x.id===id);
+  if(!c) return;
+  c.grade=sel.value;
+  sel.className='grade-sel g-'+sel.value;
+  saveToFirebase();
+};
+
+window.toggleLost = function(id){
+  const c=candidates.find(x=>x.id===id);
+  if(!c) return;
+  c.lost=!c.lost;
+  saveToFirebase();
+  render();
+};
+
+window.openNotes = function(id){
+  activeNoteId=id;
+  const c=candidates.find(x=>x.id===id);
+  const panel=document.getElementById('notes-panel');
+  document.getElementById('notes-title').textContent=(c?c.name:'')+'の備考';
+  renderNotes(c);
+  panel.className='notes-panel open';
+  document.getElementById('note-input').focus();
+};
+
+function renderNotes(c){
+  const list=document.getElementById('notes-list');
+  list.innerHTML=(c&&c.notes&&c.notes.length)
+    ? c.notes.map(n=>`<div class="note-item"><span class="note-ts">${esc(n.ts)}</span>${esc(n.text)}</div>`).join('')
+    : '<div style="color:#aaa;font-size:11px">まだコメントはありません</div>';
+  list.scrollTop=list.scrollHeight;
+}
+
+window.addNote = function(){
+  const input=document.getElementById('note-input');
+  const text=input.value.trim();
+  if(!text||!activeNoteId) return;
+  const c=candidates.find(x=>x.id===activeNoteId);
+  if(!c) return;
+  if(!c.notes) c.notes=[];
+  const now=new Date();
+  const ts=`${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  c.notes.push({ts,text});
+  input.value='';
+  renderNotes(c);
+  saveToFirebase();
+};
+
+window.openAddModal = function(){
+  document.getElementById('add-modal').className='modal open';
+  document.getElementById('new-name').focus();
+};
+window.closeAddModal = function(){
+  document.getElementById('add-modal').className='modal';
+  document.getElementById('new-name').value='';
+};
+window.confirmAdd = function(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name) return;
+  const id='c'+Date.now();
+  candidates.push({id,name,joinMonth:'',grade:'B',score:0,lost:false,notes:[],stages:mkStages(),dates:mkDates()});
+  saveToFirebase();
+  render();
+  closeAddModal();
+};
+
+window.render = render;
+
+document.getElementById('add-modal').addEventListener('click',function(e){
+  if(e.target===this) closeAddModal();
+});
+</script>
+</body>
+</html>
