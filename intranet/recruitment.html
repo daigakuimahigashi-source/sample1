@@ -37,6 +37,8 @@ tr.lost td{color:#aaa;text-decoration:line-through;background:#f5f5f5}
 tr.lost td.name-col{color:#bbb}
 .stage-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;border:1.5px solid #bbb;transition:transform .1s;vertical-align:middle;position:relative}
 .stage-dot:hover{transform:scale(1.15)}
+.stage-dot.locked{opacity:.3;cursor:not-allowed}
+.stage-dot.locked:hover{transform:none}
 .s-pending{background:#fff;border-color:#bbb}
 .s-done{background:#1a73e8;border-color:#1a73e8}
 .s-skip{background:#d0d0d0;border-color:#aaa}
@@ -200,6 +202,11 @@ const STAGES = [
   {id:'o12',label:'入社<br>誓約書'},
 ];
 
+const HIRING_STAGES = ['s1','s2','s3','s4','s4_5','s5','s6','s7','offer'];
+function isHiringComplete(c){
+  return HIRING_STAGES.every(id=>c.stages[id]==='done'||c.stages[id]==='skip');
+}
+
 const CYCLE = ['pending','done','skip'];
 const DOT_CLASS = {pending:'s-pending',active:'s-done',done:'s-done',ng:'s-done',skip:'s-skip'};
 const DOT_TITLE = {pending:'未着手',active:'完了',done:'完了',ng:'完了',skip:'スキップ'};
@@ -332,6 +339,7 @@ function render(){
   tbody.innerHTML = '';
 
   list.forEach(c=>{
+    const hiringDone = isHiringComplete(c);
     const tr = document.createElement('tr');
     if(c.lost) tr.className='lost';
 
@@ -357,7 +365,7 @@ function render(){
       </div></td>
       ${STAGES.filter(s=>s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
-          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
+          <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}${hiringDone?'':' locked'}" title="${hiringDone?DOT_TITLE[c.stages[st.id]||'pending']:'採用フェーズ完了後に入力可'}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
           <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onfocus="focusDate(this)" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
         </div></td>`).join('')}
       <td><button class="lost-btn${c.lost?' active':''}" onclick="toggleLost('${c.id}')">${c.lost?'失注済':'失注'}</button></td>
@@ -365,12 +373,7 @@ function render(){
     tbody.appendChild(tr);
   });
 
-  const total = candidates.length;
-  const active = candidates.filter(c=>!c.lost&&Object.values(c.stages||{}).some(v=>v==='active')).length;
-  const offer = candidates.filter(c=>!c.lost&&(c.stages.offer==='done'||Object.entries(c.stages||{}).filter(([k])=>k.startsWith('o')).some(([,v])=>v==='active'||v==='done'))).length;
-  document.getElementById('s-total').textContent=total;
-  document.getElementById('s-active').textContent=active;
-  document.getElementById('s-offer').textContent=offer;
+  updateStats();
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -378,10 +381,12 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 window.cycleDot = function(id,stageId,el){
   const c = candidates.find(x=>x.id===id);
   if(!c||c.lost) return;
+  if(stageId.match(/^o\d/)&&!isHiringComplete(c)) return;
   const cur = c.stages[stageId]||'pending';
   c.stages[stageId] = CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
   el.className = 'stage-dot ' + DOT_CLASS[c.stages[stageId]];
   saveToFirebase();
+  updateStats();
 };
 
 window.saveField = function(el){
@@ -509,6 +514,16 @@ window.confirmAdd = function(){
   render();
   closeAddModal();
 };
+
+function updateStats(){
+  const active = candidates.filter(c=>!c.lost);
+  const total = active.length;
+  const inProcess = active.filter(c=>!isHiringComplete(c)).length;
+  const inOnboard = active.filter(c=>isHiringComplete(c)).length;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-active').textContent=inProcess;
+  document.getElementById('s-offer').textContent=inOnboard;
+}
 
 window.render = render;
 
