@@ -8,50 +8,51 @@ const DEFAULT_STAFF = [
     { id: 'okk10004', name: '新城 優樹',   layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員' },
     { id: 'okk10005', name: '三澤 北斗',   layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員' },
 
-    // ── B層：外国籍正社員 ───────────────────────────────────
-    { id: 'okk10006', name: 'チャン フーダット',             layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10008', name: '安里 茜 マーティン',            layer: 'D', salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10028', name: 'アングルガハ ガマゲー インディカ',   layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10037', name: 'ウェルガマ ラーララゲ ランドゥニ',   layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10038', name: 'ウェラコーン ムディヤンセラーゲ ラヒル', layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10048', name: 'アディカーリ ムディアンセラーゲ アヌーシャ', layer: 'B', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    // ── B層：未熟正社員（締め不可）─────────────────────────
+    // ── C層：外国籍正社員 ───────────────────────────────────
+    { id: 'okk10006', name: 'チャン フーダット',             layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10008', name: '安里 茜 マーティン',            layer: 'E', salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10028', name: 'アングルガハ ガマゲー インディカ',   layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10037', name: 'ウェルガマ ラーララゲ ランドゥニ',   layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10038', name: 'ウェラコーン ムディヤンセラーゲ ラヒル', layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
+    { id: 'okk10048', name: 'アディカーリ ムディアンセラーゲ アヌーシャ', layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
 
-    // ── C層：熟練バイト（入社1年以上）──────────────────────
-    { id: 'okk10002', name: '又吉 未愉',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10007', name: '大城 未琴',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10009', name: '平田 明久',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10010', name: '宮城 文弥',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10011', name: '大嶺 華笑',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10012', name: '栄野比 あいみ', layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10013', name: '金城 心渚',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10014', name: '阿波根 啓',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10015', name: '桑江 旭',     layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10016', name: '又吉 茉紀',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10017', name: '岸本 海利',   layer: 'C', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10018', name: '渡口 来夢',   layer: 'C', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10019', name: '仲地 海斗',   layer: 'C', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10020', name: '平川 翔',     layer: 'C', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10023', name: '具志堅 詩苑', layer: 'C', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10026', name: '久場 百花',   layer: 'C', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    // ── D層：熟練バイト（入社1年以上）──────────────────────
+    { id: 'okk10002', name: '又吉 未愉',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10007', name: '大城 未琴',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10009', name: '平田 明久',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10010', name: '宮城 文弥',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10011', name: '大嶺 華笑',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10012', name: '栄野比 あいみ', layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10013', name: '金城 心渚',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10014', name: '阿波根 啓',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10015', name: '桑江 旭',     layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10016', name: '又吉 茉紀',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10017', name: '岸本 海利',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10018', name: '渡口 来夢',   layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10019', name: '仲地 海斗',   layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10020', name: '平川 翔',     layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10023', name: '具志堅 詩苑', layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10026', name: '久場 百花',   layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
 
-    // ── D層：未熟バイト（入社1年未満）──────────────────────
-    { id: 'okk10030', name: '宮城 碧子',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10031', name: '新里 紫緒那', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10032', name: '村田 悠華',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10033', name: '糸満 苺莉愛', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10034', name: '知念 あおい', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10036', name: '當山 健人',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10040', name: '金城 綾華',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10041', name: '下地 美弥',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10042', name: '池原 幸輝',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10043', name: '譜久里 光流', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10044', name: '知念 稚奈',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10045', name: 'サリバン 莉愛', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '※外国籍の場合はB層に変更要' },
-    { id: 'okk10046', name: '安仁屋 匠冴', layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10047', name: '川満 航希',   layer: 'D', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    // ── E層：未熟バイト（入社1年未満）──────────────────────
+    { id: 'okk10030', name: '宮城 碧子',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10031', name: '新里 紫緒那', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10032', name: '村田 悠華',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10033', name: '糸満 苺莉愛', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10034', name: '知念 あおい', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10036', name: '當山 健人',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10040', name: '金城 綾華',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10041', name: '下地 美弥',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10042', name: '池原 幸輝',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10043', name: '譜久里 光流', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10044', name: '知念 稚奈',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10045', name: 'サリバン 莉愛', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '※外国籍の場合はB層に変更要' },
+    { id: 'okk10046', name: '安仁屋 匠冴', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10047', name: '川満 航希',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
 ];
 
 const STORES_MAP = {
@@ -85,18 +86,20 @@ let reqActiveStore = 'matsuyama';
 const layerStyles = {
     'S': 'bg-purple-100 text-purple-800 border-purple-200',
     'A': 'bg-red-100 text-red-800 border-red-200',
-    'B': 'bg-blue-100 text-blue-800 border-blue-200',
-    'C': 'bg-green-100 text-green-800 border-green-200',
-    'D': 'bg-gray-100 text-gray-700 border-gray-200'
+    'B': 'bg-orange-100 text-orange-800 border-orange-200',
+    'C': 'bg-blue-100 text-blue-800 border-blue-200',
+    'D': 'bg-green-100 text-green-800 border-green-200',
+    'E': 'bg-gray-100 text-gray-700 border-gray-200'
 };
 
 // 各レイヤーの配置ルール定義
 const LAYER_RULES = {
-    'S': { label: '役員',         salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: 'フレキシブル配置（穴埋め・開閉店補助）・配置制限なし', minHoliday: 0 },
-    'A': { label: '日本人正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可',         minHoliday: 6 },
-    'B': { label: '外国籍正社員', salaryType: '月給固定',       nightOK: true,  holiday: '月8公休', note: '在留資格確認必須',             minHoliday: 8 },
-    'C': { label: '熟練バイト',   salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',              minHoliday: 0 },
-    'D': { label: '未熟バイト',   salaryType: '時給 ¥1000〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',              minHoliday: 0 },
+    'S': { label: '役員',           salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: 'フレキシブル配置（穴埋め・開閉店補助）・配置制限なし', minHoliday: 0 },
+    'A': { label: '日本人正社員',   salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可',                                 minHoliday: 6 },
+    'B': { label: '未熟正社員',     salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '一人での締め作業不可・要サポート',                     minHoliday: 6 },
+    'C': { label: '外国籍正社員',   salaryType: '月給固定',       nightOK: true,  holiday: '月8公休', note: '在留資格確認必須',                                     minHoliday: 8 },
+    'D': { label: '熟練バイト',     salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',                                      minHoliday: 0 },
+    'E': { label: '未熟バイト',     salaryType: '時給 ¥1000〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',                                      minHoliday: 0 },
 };
 
 // ===== Staff Storage =====
