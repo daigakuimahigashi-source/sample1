@@ -113,18 +113,7 @@ span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-c
 <div class="table-wrap">
 <table id="main-table">
 <thead>
-<tr>
-  <th class="name-col" rowspan="2">候補者名</th>
-  <th rowspan="2">入社<br>予定月</th>
-  <th rowspan="2">確度</th>
-  <th rowspan="2">評価</th>
-  <th rowspan="2">備考</th>
-  <th colspan="8" class="group-header">選考フロー</th>
-  <th rowspan="2">内定</th>
-  <th colspan="12" class="group-header">入社手続き</th>
-  <th rowspan="2">失注</th>
-</tr>
-<tr id="sub-header"></tr>
+<tr id="main-header"></tr>
 </thead>
 <tbody id="tbody"></tbody>
 </table>
@@ -289,18 +278,40 @@ function render(){
     list.sort((a,b)=>(a.joinMonth||'9999')>(b.joinMonth||'9999')?1:-1);
   }
 
-  const sub = document.getElementById('sub-header');
-  if(!sub.children.length){
+  const hdr = document.getElementById('main-header');
+  if(!hdr.children.length){
+    const cols = [
+      {label:'候補者名',cls:'name-col'},
+      {label:'入社<br>予定月'},
+      {label:'確度'},
+      {label:'評価'},
+      {label:'備考'},
+    ];
+    cols.forEach(c=>{
+      const th=document.createElement('th');
+      th.innerHTML=c.label;
+      if(c.cls) th.className=c.cls;
+      hdr.appendChild(th);
+    });
     STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).forEach(st=>{
-      const th = document.createElement('th');
-      th.innerHTML = st.label + (st.itOnly?'<br><span class="it-only">IT専用</span>':'');
-      sub.appendChild(th);
+      const th=document.createElement('th');
+      th.style.background='#fef9e7';
+      th.innerHTML=st.label+(st.itOnly?'<br><span class="it-only">IT専用</span>':'');
+      hdr.appendChild(th);
     });
+    const offerTh=document.createElement('th');
+    offerTh.innerHTML='内定通知<br>・承諾';
+    offerTh.style.background='#fef9e7';
+    hdr.appendChild(offerTh);
     STAGES.filter(s=>s.id.startsWith('o')).forEach(st=>{
-      const th = document.createElement('th');
-      th.innerHTML = st.label;
-      sub.appendChild(th);
+      const th=document.createElement('th');
+      th.style.background='#eafaf1';
+      th.innerHTML=st.label;
+      hdr.appendChild(th);
     });
+    const lostTh=document.createElement('th');
+    lostTh.textContent='失注';
+    hdr.appendChild(lostTh);
   }
 
   const tbody = document.getElementById('tbody');
