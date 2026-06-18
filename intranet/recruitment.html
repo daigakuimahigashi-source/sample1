@@ -49,9 +49,11 @@ tr.lost .stage-dot::after{background:#aaa!important}
 span[contenteditable]{outline:none;min-width:24px;display:inline-block;cursor:text;font-size:9px;color:#555;text-align:center;border-bottom:1px dotted #ccc;line-height:1.4}
 span[contenteditable]:empty:before{content:attr(data-ph);color:#ccc}
 span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-color:#1a73e8}
-span.date-span{outline:none;min-width:28px;display:inline-block;cursor:text;font-size:9px;color:#555;text-align:center;border-bottom:1px dotted #ccc;line-height:1.6}
-span.date-span:empty:before{content:attr(data-ph);color:#ccc}
-span.date-span:focus{background:#e8f0fe;border-radius:2px;border-bottom-color:#1a73e8}
+.date-wrap{position:relative;display:inline-block}
+.date-lbl{font-size:9px;color:#555;border-bottom:1px dotted #ccc;min-width:28px;text-align:center;cursor:pointer;line-height:1.6;display:inline-block}
+.date-lbl:empty:before{content:attr(data-ph);color:#ccc}
+.date-lbl:hover{border-bottom-color:#1a73e8}
+.date-hidden{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0}
 .grade-sel{font-size:9px;padding:1px 2px;border:1px solid #ddd;border-radius:3px;zoom:.85;cursor:pointer}
 .g-A{background:#d9ead3;color:#137333;font-weight:700}
 .g-B{background:#e8f0fe;color:#1a73e8;font-weight:700}
@@ -366,7 +368,7 @@ function render(){
 
     tr.innerHTML = `
       <td class="name-col" style="cursor:pointer" onclick="openEditModal('${c.id}')" title="クリックで編集・削除">${esc(c.name)} <span style="font-size:9px;color:#bbb">✎</span></td>
-      <td><span class="date-span" contenteditable data-id="${c.id}" data-ph="yyyy/mm" onblur="saveJoinMonth(this)">${esc(c.joinMonth||'')}</span></td>
+      <td><div class="date-wrap"><span class="date-lbl" data-ph="yyyy/mm">${esc(c.joinMonth||'')}</span><input class="date-hidden" type="month" data-id="${c.id}" onchange="saveJoinMonth(this)"></div></td>
       <td><select class="grade-sel g-${c.grade}" data-id="${c.id}" onchange="saveGrade(this)">
         <option ${c.grade==='A'?'selected':''}>A</option>
         <option ${c.grade==='B'?'selected':''}>B</option>
@@ -378,16 +380,16 @@ function render(){
       ${STAGES.filter(s=>!s.isOffer && !s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
-          <span class="date-span" contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+          <div class="date-wrap"><span class="date-lbl" data-ph="日付">${esc(c.dates[st.id]||'')}</span><input class="date-hidden" type="date" data-id="${c.id}" data-stage="${st.id}" onchange="saveDate(this)"></div>
         </div></td>`).join('')}
       <td><div class="stage-cell">
         <span class="stage-dot ${DOT_CLASS[c.stages.offer||'pending']}" title="${DOT_TITLE[c.stages.offer||'pending']}" onclick="cycleDot('${c.id}','offer',this)"></span>
-        <span class="date-span" contenteditable data-id="${c.id}" data-field="date_offer" data-ph="日付" onblur="saveDate(this)">${esc(c.dates.offer||'')}</span>
+        <div class="date-wrap"><span class="date-lbl" data-ph="日付">${esc(c.dates.offer||'')}</span><input class="date-hidden" type="date" data-id="${c.id}" data-stage="offer" onchange="saveDate(this)"></div>
       </div></td>
       ${STAGES.filter(s=>s.id.match(/^o\d/)).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}${hiringDone?'':' locked'}" title="${hiringDone?DOT_TITLE[c.stages[st.id]||'pending']:'採用フェーズ完了後に入力可'}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
-          <span class="date-span" contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
+          <div class="date-wrap"><span class="date-lbl" data-ph="日付">${esc(c.dates[st.id]||'')}</span><input class="date-hidden" type="date" data-id="${c.id}" data-stage="${st.id}" onchange="saveDate(this)"></div>
         </div></td>`).join('')}
       <td><button class="lost-btn${c.lost?' active':''}" onclick="toggleLost('${c.id}')">${c.lost?'失注済':'失注'}</button></td>
     `;
@@ -434,31 +436,26 @@ function inputToMmdd(val){
   return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
 }
 
-window.saveDate = function(el){
-  const id=el.dataset.id, field=el.dataset.field;
+window.saveDate = function(input){
+  const id=input.dataset.id, stageId=input.dataset.stage;
   const c=candidates.find(x=>x.id===id);
-  if(!c) return;
-  const raw=el.textContent.trim();
-  if(raw && !/^\d{1,2}\/\d{1,2}$/.test(raw)){
-    el.textContent=c.dates[field.replace('date_','')]||'';
-    el.style.color='';
-    return;
-  }
-  const stageId=field.replace('date_','');
-  c.dates[stageId]=raw;
+  if(!c||!input.value) return;
+  const parts=input.value.split('-');
+  const mmdd=`${parseInt(parts[1])}/${parseInt(parts[2])}`;
+  c.dates[stageId]=mmdd;
+  const lbl=input.previousElementSibling;
+  if(lbl) lbl.textContent=mmdd;
   saveToFirebase();
 };
 
-window.saveJoinMonth = function(el){
-  const id=el.dataset.id;
+window.saveJoinMonth = function(input){
+  const id=input.dataset.id;
   const c=candidates.find(x=>x.id===id);
-  if(!c) return;
-  const raw=el.textContent.trim();
-  if(raw && !/^\d{4}\/\d{1,2}$/.test(raw)){
-    el.textContent=c.joinMonth||'';
-    return;
-  }
-  c.joinMonth=raw;
+  if(!c||!input.value) return;
+  const ymm=input.value.replace('-','/');
+  c.joinMonth=ymm;
+  const lbl=input.previousElementSibling;
+  if(lbl) lbl.textContent=ymm;
   saveToFirebase();
 };
 
