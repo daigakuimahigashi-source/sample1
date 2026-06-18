@@ -72,11 +72,20 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <button onclick="toggleAdminMode()" id="admin-toggle-btn"
-                class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5">
-                <i class="fa-solid fa-lock text-gray-400" id="admin-icon"></i>
-                <span id="admin-label">経営者モード</span>
+            <!-- Firebase Auth UI -->
+            <button id="firebase-login-btn" onclick="firebaseLogin()"
+                class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5">
+                <i class="fa-brands fa-google mr-1"></i> Googleでログイン
             </button>
+            <div id="firebase-user-info" class="hidden items-center gap-2 flex">
+                <span id="firebase-user-email" class="text-xs text-slate-300 max-w-[150px] truncate"></span>
+                <span id="admin-badge" class="hidden text-xs bg-amber-500 text-slate-900 px-2 py-0.5 rounded font-bold">管理者</span>
+                <button onclick="firebaseLogout()"
+                    class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs transition"
+                    title="ログアウト">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
             <div class="flex gap-2" id="header-actions">
                 <!-- JSでビューに応じたボタンが挿入されます -->
             </div>
@@ -600,5 +609,50 @@
     </div>
 
     <script src="js/shift.js"></script>
+
+    <!-- Firebase 初期化（ES Module） -->
+    <script type="module">
+      import {
+        auth, loginWithGoogle, logout, isAdmin, onAuthStateChanged,
+        fsSet, fsGet, fsListen
+      } from './js/firebase-config.js';
+
+      // shift.js からアクセスできるようグローバルに公開
+      window.fbSync = {
+        set: (key, val) => fsSet(key, val),
+        get: (key)      => fsGet(key),
+        listen: (key, cb) => fsListen(key, cb),
+      };
+
+      window.firebaseLogin  = () => loginWithGoogle().catch(e => alert('ログインエラー: ' + e.message));
+      window.firebaseLogout = () => logout();
+
+      // 認証状態の変化を監視
+      onAuthStateChanged(auth, (user) => {
+        window.currentFirebaseUser = user;
+        _updateAuthUI(user);
+        // shift.js 側のコールバックがあれば呼ぶ
+        if (typeof window.onFirebaseAuthReady === 'function') {
+          window.onFirebaseAuthReady(user, isAdmin(user));
+        }
+      });
+
+      function _updateAuthUI(user) {
+        const loginBtn  = document.getElementById('firebase-login-btn');
+        const userInfo  = document.getElementById('firebase-user-info');
+        const emailSpan = document.getElementById('firebase-user-email');
+        const badge     = document.getElementById('admin-badge');
+        if (!loginBtn) return;
+        if (user) {
+          loginBtn.classList.add('hidden');
+          userInfo.classList.remove('hidden');
+          emailSpan.textContent = user.displayName || user.email;
+          isAdmin(user) ? badge.classList.remove('hidden') : badge.classList.add('hidden');
+        } else {
+          loginBtn.classList.remove('hidden');
+          userInfo.classList.add('hidden');
+        }
+      }
+    </script>
 </body>
 </html>

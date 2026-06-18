@@ -106,7 +106,7 @@ function loadStaff() {
 }
 function saveStaffData(staffArr) {
     localStorage.setItem('okk_staff_data', JSON.stringify(staffArr));
-    gasPost('staff', staffArr); // GASにも非同期保存
+    window.fbSync?.set('staff', staffArr).catch(e => console.warn('Firestore保存エラー(staff):', e));
 }
 
 // ===== Shift Storage =====
@@ -117,7 +117,7 @@ function loadShifts() {
 function saveShiftsData(data) {
     localStorage.setItem('okk_shifts', JSON.stringify(data));
     allShiftsData = data;
-    gasPost('shifts', data); // GASにも非同期保存
+    window.fbSync?.set('shifts', data).catch(e => console.warn('Firestore保存エラー(shifts):', e));
 }
 
 // ===== Locked Dates Storage =====
@@ -128,25 +128,33 @@ function loadLockedDatesLocal() {
 function saveLockedDates() {
     const arr = [...lockedDates];
     localStorage.setItem('okk_locked_dates', JSON.stringify(arr));
-    gasPost('lockedDates', arr); // GASにも非同期保存
+    window.fbSync?.set('lockedDates', arr).catch(e => console.warn('Firestore保存エラー(lockedDates):', e));
 }
 
-// ===== GAS API通信 =====
-async function gasGet() {
-    if (!GAS_API_URL) return null;
-    const res = await fetch(GAS_API_URL, { cache: 'no-store' });
-    return res.json();
-}
+// ===== Firebase 認証コールバック（firebase-config.js から呼ばれる） =====
+window.onFirebaseAuthReady = function(user, isAdminUser) {
+    adminMode = !!isAdminUser;
+    updateAdminUI();
+    if (currentView === 'month')    renderMonthView();
+    if (currentView === 'settings') renderSettingsTable();
+    updateHeaderActions();
+};
 
-function gasPost(key, value) {
-    if (!GAS_API_URL) return;
-    // no-cors: レスポンスは読めないがサーバーには届く（CORS回避）
-    fetch(GAS_API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ key, value }),
-    }).catch(err => console.warn('GAS保存エラー:', err));
+// ===== Firestore からデータ一括取得 =====
+async function fsGetAll() {
+    if (!window.fbSync) return null;
+    try {
+        const [staff, shifts, lockedArr] = await Promise.all([
+            window.fbSync.get('staff'),
+            window.fbSync.get('shifts'),
+            window.fbSync.get('lockedDates'),
+        ]);
+        if (!staff && !shifts) return null;
+        return { staff, shifts, lockedDates: lockedArr };
+    } catch (e) {
+        console.warn('Firestore取得エラー:', e);
+        return null;
+    }
 }
 
 // ===== ローディング表示 =====
@@ -237,36 +245,45 @@ const dropZones = document.querySelectorAll('.drop-zone');
 async function init() {
     showLoading(true, 'サーバーに接続しています...');
 
-    if (GAS_API_URL) {
-        try {
-            showLoading(true, 'シフトデータを取得中...');
-            const data = await gasGet();
-            if (data && !data.error) {
-                // GASから取得したデータをstateとlocalStorageに反映
-                initialStaff  = data.staff       || JSON.parse(JSON.stringify(DEFAULT_STAFF));
-                allShiftsData = data.shifts      || {};
-                lockedDates   = new Set(data.lockedDates || []);
-                localStorage.setItem('okk_staff_data',   JSON.stringify(initialStaff));
-                localStorage.setItem('okk_shifts',       JSON.stringify(allShiftsData));
-                localStorage.setItem('okk_locked_dates', JSON.stringify([...lockedDates]));
-                localStorage.setItem('okk_requirements', data.requirements
-                    ? JSON.stringify(data.requirements) : (localStorage.getItem('okk_requirements') || ''));
-            } else {
-                throw new Error(data?.error || '不明なエラー');
-            }
-        } catch (err) {
-            console.warn('GAS取得失敗 → localStorageから復元:', err);
-            showLoading(true, 'オフライン：ローカルデータを使用します');
-            await new Promise(r => setTimeout(r, 800));
-            initialStaff  = loadStaff();
-            allShiftsData = loadShifts();
-            loadLockedDatesLocal();
+    // Firestore からデータ取得（失敗時は localStorage フォールバック）
+    try {
+        showLoading(true, 'シフトデータを取得中...');
+        const data = await fsGetAll();
+        if (data) {
+            initialStaff  = data.staff       || JSON.parse(JSON.stringify(DEFAULT_STAFF));
+            allShiftsData = data.shifts      || {};
+            lockedDates   = new Set(data.lockedDates || []);
+            localStorage.setItem('okk_staff_data',   JSON.stringify(initialStaff));
+            localStorage.setItem('okk_shifts',       JSON.stringify(allShiftsData));
+            localStorage.setItem('okk_locked_dates', JSON.stringify([...lockedDates]));
+        } else {
+            throw new Error('Firestoreにデータなし');
         }
-    } else {
-        // GAS未設定：localStorageのみ使用
+    } catch (err) {
+        console.warn('Firestore取得失敗 → localStorageから復元:', err);
+        showLoading(true, 'オフライン：ローカルデータを使用します');
+        await new Promise(r => setTimeout(r, 800));
         initialStaff  = loadStaff();
         allShiftsData = loadShifts();
         loadLockedDatesLocal();
+    }
+
+    // リアルタイム同期リスナー（他ユーザーの変更を自動反映）
+    if (window.fbSync) {
+        window.fbSync.listen('shifts', (val) => {
+            if (!val) return;
+            allShiftsData = val;
+            localStorage.setItem('okk_shifts', JSON.stringify(val));
+            if (currentView === 'day')   renderDayView();
+            if (currentView === 'week')  renderWeekView();
+            if (currentView === 'month') renderMonthView();
+        });
+        window.fbSync.listen('lockedDates', (val) => {
+            if (!val) return;
+            lockedDates = new Set(val);
+            localStorage.setItem('okk_locked_dates', JSON.stringify(val));
+            applyDayLock();
+        });
     }
 
     currentWeekStart = getMonday(new Date());
