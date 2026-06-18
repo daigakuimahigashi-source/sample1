@@ -128,6 +128,22 @@ span[contenteditable]:focus{background:#e8f0fe;border-radius:2px;border-bottom-c
 </table>
 </div>
 
+<div style="padding:10px 16px;background:#fff;border-top:1px solid #e0e0e0;display:flex;align-items:center;gap:20px;font-size:11px;color:#666;flex-wrap:wrap">
+  <span style="font-weight:600;color:#444">凡例：</span>
+  <span style="display:flex;align-items:center;gap:5px">
+    <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid #bbb;background:#fff;display:inline-block"></span>未着手
+  </span>
+  <span style="display:flex;align-items:center;gap:5px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#1a73e8;display:inline-block"></span>完了（1回押し）
+  </span>
+  <span style="display:flex;align-items:center;gap:5px;position:relative">
+    <span style="width:14px;height:14px;border-radius:50%;background:#d0d0d0;border:1.5px solid #bbb;display:inline-block;position:relative">
+      <span style="position:absolute;top:50%;left:50%;width:130%;height:1.5px;background:#888;transform:translate(-50%,-50%) rotate(-45deg)"></span>
+    </span>スキップ（2回押し）
+  </span>
+  <span style="color:#aaa">※ もう一度押すと未着手に戻ります</span>
+</div>
+
 <div class="notes-panel" id="notes-panel">
   <div class="notes-header" id="notes-title">備考</div>
   <div class="notes-list" id="notes-list"></div>
