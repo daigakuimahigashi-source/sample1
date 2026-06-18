@@ -291,9 +291,14 @@ function render(){
 
   const sub = document.getElementById('sub-header');
   if(!sub.children.length){
-    STAGES.filter(s=>!s.isOffer).forEach(st=>{
+    STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).forEach(st=>{
       const th = document.createElement('th');
       th.innerHTML = st.label + (st.itOnly?'<br><span class="it-only">IT専用</span>':'');
+      sub.appendChild(th);
+    });
+    STAGES.filter(s=>s.id.startsWith('o')).forEach(st=>{
+      const th = document.createElement('th');
+      th.innerHTML = st.label;
       sub.appendChild(th);
     });
   }
@@ -316,7 +321,7 @@ function render(){
       </select></td>
       <td><span contenteditable style="font-size:9px" data-id="${c.id}" data-field="score" onblur="saveField(this)">${c.score||''}</span></td>
       <td><button class="memo-btn" onclick="openNotes('${c.id}')">📝${c.notes&&c.notes.length?c.notes.length:''}</button></td>
-      ${STAGES.filter(s=>!s.isOffer).map(st=>`
+      ${STAGES.filter(s=>!s.isOffer && !s.id.startsWith('o')).map(st=>`
         <td><div class="stage-cell">
           <span class="stage-dot ${DOT_CLASS[c.stages[st.id]||'pending']}" title="${DOT_TITLE[c.stages[st.id]||'pending']}" onclick="cycleDot('${c.id}','${st.id}',this)"></span>
           <span contenteditable data-id="${c.id}" data-field="date_${st.id}" data-ph="日付" onblur="saveDate(this)">${esc(c.dates[st.id]||'')}</span>
