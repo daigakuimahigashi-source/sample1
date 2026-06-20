@@ -137,6 +137,7 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
   <select id="filter-joined" onchange="applyFilter()">
     <option value="exclude">入社済み除く</option>
     <option value="include">入社済み含む</option>
+    <option value="only">入社済みのみ</option>
   </select>
   <label>並び替え</label>
   <select id="sort-order" onchange="applyFilter()">
@@ -260,9 +261,14 @@ function render() {
   const keyword      = (document.getElementById('search-input')?.value || '').trim();
   const statusFilter = document.getElementById('filter-status')?.value || 'all';
   const sortOrder    = document.getElementById('sort-order')?.value || 'default';
-  const showJoined   = document.getElementById('filter-joined')?.value === 'include';
 
-  let all = showJoined ? [...allBase] : allBase.filter(c => !onboardData[c.id]?.joined);
+
+  const joinedFilter = document.getElementById('filter-joined')?.value || 'exclude';
+  let all = joinedFilter === 'only'
+    ? allBase.filter(c => !!onboardData[c.id]?.joined)
+    : joinedFilter === 'include'
+      ? [...allBase]
+      : allBase.filter(c => !onboardData[c.id]?.joined);
   if (statusFilter === 'active')  all = all.filter(c => c.status.startsWith('02_'));
   else if (statusFilter === 'offered') all = all.filter(c => c.status.startsWith('11_'));
   if (keyword) all = all.filter(c => c.name.includes(keyword));
