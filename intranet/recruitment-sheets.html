@@ -22,13 +22,16 @@ body{font-family:'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;font-size:14px;ba
 table{border-collapse:collapse;background:#fff;border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);width:100%;table-layout:fixed}
 th,td{padding:6px 4px;text-align:center;border-bottom:2px solid #dde3f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:56px;z-index:10}
+th.g-info{background:#f5f5f5;color:#666}
 th.g-sel{background:#eef2ff;color:#3a5fd5}
 th.g-onb{background:#e6f4ea;color:#1e8e3e}
 th.col-name{width:90px}
 td{font-size:11px;vertical-align:middle;padding:14px 4px}
 tbody tr:hover{background:#f8fbff}
 tbody tr:last-child td{border-bottom:none}
-.td-name{text-align:left;font-weight:600;font-size:11px;padding-left:24px!important}
+.td-name{text-align:left;font-weight:600;font-size:14px;padding-left:24px!important}
+td.bg-info{background:#fafafa}
+tbody tr:hover td.bg-info{background:#f0f0f0}
 
 /* Stage cell */
 .sc{display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -179,15 +182,27 @@ let onboardData = {};
   const gRow = document.getElementById('group-row');
   const cRow = document.getElementById('col-row');
 
-  // colgroup で氏名列だけ幅固定・他は均等
+  // colgroup で列幅固定
   const cg = document.createElement('colgroup');
   const nameCol = document.createElement('col');
   nameCol.style.width = '180px';
   cg.appendChild(nameCol);
-  for (let i = 0; i < 5 + OSTAGES.length; i++) {
+  for (let i = 0; i < 5 + 5 + OSTAGES.length; i++) {
     cg.appendChild(document.createElement('col'));
   }
   table.prepend(cg);
+
+  // 基本情報グループ
+  const infoCols = ['年齢','性別','就業<br>状況','流入<br>経路','応募日'];
+  const gh0 = document.createElement('th');
+  gh0.className = 'g-info'; gh0.colSpan = infoCols.length;
+  gh0.innerHTML = '基本情報';
+  gRow.appendChild(gh0);
+  infoCols.forEach(l => {
+    const th = document.createElement('th');
+    th.innerHTML = l;
+    cRow.appendChild(th);
+  });
 
   // 採用グループ
   const selCols = [
@@ -195,7 +210,7 @@ let onboardData = {};
   ];
   const gh1 = document.createElement('th');
   gh1.className = 'g-sel'; gh1.colSpan = 5;
-  gh1.innerHTML = '採用フェーズ（スプシ連携・読み取り専用）';
+  gh1.innerHTML = '採用フェーズ（スプシ連携）';
   gRow.appendChild(gh1);
   selCols.forEach(l => {
     const th = document.createElement('th');
@@ -275,6 +290,15 @@ function render() {
     const od = onboardData[c.id] || {};
     const stages = od.stages || {};
 
+    // Basic info cells
+    const infoCells = [
+      `<td class="bg-info">${esc(c.age)}</td>`,
+      `<td class="bg-info">${esc(c.gender)}</td>`,
+      `<td class="bg-info" style="font-size:10px">${esc(c.work)}</td>`,
+      `<td class="bg-info" style="font-size:10px">${esc(c.source)}</td>`,
+      `<td class="bg-info" style="font-size:10px">${esc(c.applyDate)}</td>`,
+    ].join('');
+
     // Selection dots (read-only)
     const selCells = [
       `<td class="bg-sel"><div class="sc">${drDot(c.doc.result)}</div></td>`,
@@ -301,6 +325,7 @@ function render() {
 
     return `<tr class="${isOffered ? 'offered' : ''}">
       <td class="td-name">${esc(c.name)}</td>
+      ${infoCells}
       ${selCells}
       ${onbCells}
     </tr>`;
