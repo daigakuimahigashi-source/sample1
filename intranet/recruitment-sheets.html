@@ -174,8 +174,19 @@ let onboardData = {};
 
 // Build header
 (function buildHeader(){
+  const table = document.getElementById('main-table');
   const gRow = document.getElementById('group-row');
   const cRow = document.getElementById('col-row');
+
+  // colgroup で氏名列だけ幅固定・他は均等
+  const cg = document.createElement('colgroup');
+  const nameCol = document.createElement('col');
+  nameCol.style.width = '90px';
+  cg.appendChild(nameCol);
+  for (let i = 0; i < 5 + OSTAGES.length; i++) {
+    cg.appendChild(document.createElement('col'));
+  }
+  table.prepend(cg);
 
   // 採用グループ
   const selCols = [
