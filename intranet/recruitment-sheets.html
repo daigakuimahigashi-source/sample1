@@ -10,12 +10,12 @@
 body{font-family:'Noto Sans JP',sans-serif;font-size:14px;background:#f5f7fa;color:#444}
 
 /* Header */
-.top-header{background:#1a73e8;color:#fff;padding:10px 20px;display:flex;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.top-header{background:#1a73e8;color:#fff;padding:10px 20px;display:flex;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,.15);position:sticky;top:0;z-index:30}
 .top-title{font-size:17px;font-weight:700;letter-spacing:.5px}
 .top-sync{margin-left:16px;font-size:11px;opacity:.75}
 
 /* Stats bar */
-.stats-bar{background:#fff;border-bottom:2px solid #e8edf5;padding:10px 20px;display:flex;align-items:center;gap:20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stats-bar{background:#fff;border-bottom:2px solid #e8edf5;padding:10px 20px;display:flex;align-items:center;gap:20px;box-shadow:0 1px 4px rgba(0,0,0,.07);position:sticky;top:44px;z-index:20}
 .stat-box{text-align:center;min-width:70px}
 .stat-num{font-size:26px;font-weight:800;color:#1a73e8;line-height:1.1}
 .stat-label{font-size:12px;font-weight:700;color:#666;margin-top:2px}
@@ -26,15 +26,16 @@ body{font-family:'Noto Sans JP',sans-serif;font-size:14px;background:#f5f7fa;col
 .sync-info{font-size:10px;color:#bbb;text-align:right;margin-top:2px}
 
 /* Table */
-.table-wrap{overflow-x:auto;padding:16px 20px}
-.table-outer{border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.table-wrap{padding:16px 20px;overflow-x:auto}
+.table-outer{border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 table{border-collapse:collapse;background:#fff;width:100%;table-layout:fixed}
 th,td{padding:6px 4px;text-align:center;border-bottom:2px solid #dde3f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa}
-th.g-info{background:#f5f5f5;color:#666}
-th.g-sel{background:#eef2ff;color:#3a5fd5}
-th.g-onb{background:#e6f4ea;color:#1e8e3e}
-th.col-name{width:90px}
+th{font-weight:700;font-size:11px;color:#444;border-bottom:2px solid #c8d0e0;background:#edf0f7;position:sticky;top:154px;z-index:5}
+thead tr:first-child th{top:154px;font-size:12px;font-weight:800;letter-spacing:.3px;border-bottom:1px solid #c8d0e0}
+thead tr:last-child th{top:183px;border-bottom:3px solid #b0bcd8}
+th.g-info{background:#e8eaef;color:#555}
+th.g-sel{background:#dce4ff;color:#2a4fc0;border-bottom-color:#b0c0f0}
+th.g-onb{background:#d4edda;color:#1a7a36;border-bottom-color:#90cfa0}
 td{font-size:11px;vertical-align:middle;padding:14px 4px}
 tbody tr:hover{background:#f8fbff}
 tbody tr:last-child td{border-bottom:none}
@@ -86,7 +87,7 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
 .legend-note{font-size:10px;color:#bbb;margin-left:8px}
 
 /* Controls */
-.controls{background:#fff;border-bottom:1px solid #e8edf5;padding:7px 20px;display:flex;align-items:center;gap:10px}
+.controls{background:#fff;border-bottom:1px solid #e8edf5;padding:7px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:112px;z-index:10}
 .controls input{font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;height:28px;width:160px}
 .controls select{font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;height:28px;color:#555;cursor:pointer}
 .controls label{font-size:11px;color:#777}
