@@ -106,6 +106,7 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
   <label>並び替え</label>
   <select id="sort-order" onchange="applyFilter()">
     <option value="default">選考中→手続中</option>
+    <option value="reverse">手続中→選考中</option>
     <option value="name">氏名順</option>
   </select>
 </div>
@@ -260,7 +261,8 @@ function render() {
   if (keyword) all = all.filter(c => c.name.includes(keyword));
 
   // 並び替え
-  if (sortOrder === 'name') all.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  if (sortOrder === 'reverse') all = [...offered, ...active];
+  else if (sortOrder === 'name') all.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   const tbody = document.getElementById('main-tbody');
 
   if (all.length === 0) {
