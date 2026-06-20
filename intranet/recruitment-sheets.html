@@ -142,17 +142,29 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
 
 <div class="table-wrap">
   <table id="main-table">
+    <colgroup>
+      <col style="width:180px">
+      <col><col><col><col><col>
+      <col><col><col><col><col>
+      <col><col><col><col><col><col><col><col><col><col><col><col>
+      <col>
+    </colgroup>
     <thead>
-      <tr id="group-row">
-        <th rowspan="2" class="col-name" style="text-align:left;padding-left:16px">氏名</th>
-        <!-- group headers injected by JS -->
+      <tr>
+        <th rowspan="2" class="g-info" style="text-align:left;padding-left:16px">氏名</th>
+        <th colspan="5" class="g-info">基本情報</th>
+        <th colspan="5" class="g-sel">採用</th>
+        <th colspan="12" class="g-onb">入社手続</th>
+        <th rowspan="2" style="background:#f5f5f5;color:#888;font-weight:700">入社</th>
       </tr>
-      <tr id="col-row">
-        <!-- column headers injected by JS -->
+      <tr>
+        <th>年齢</th><th>性別</th><th>就業<br>状況</th><th>流入<br>経路</th><th>応募日</th>
+        <th>書類</th><th>1次<br>面接</th><th>最終<br>面接</th><th>内定<br>通知</th><th>内定<br>承諾</th>
+        <th>アドレス<br>確認</th><th>Slack<br>追加</th><th>奨学金<br>確認</th><th>人事管理<br>入力依頼</th><th>人事管理<br>入力</th><th>給与<br>設定</th><th>雇用<br>契約書</th><th>社保<br>加入</th><th>雇用保険<br>加入</th><th>市府民税<br>特別徴収</th><th>市府民税<br>納付書</th><th>入社<br>誓約書</th>
       </tr>
     </thead>
     <tbody id="main-tbody">
-      <tr><td colspan="30" class="msg">読み込み中...</td></tr>
+      <tr><td colspan="24" class="msg">読み込み中...</td></tr>
     </tbody>
   </table>
 </div>
@@ -201,67 +213,6 @@ const DC = {pending:'s-p',done:'s-d',skip:'s-s'};
 
 let sheetsData = [];
 let onboardData = {};
-
-// Build header
-(function buildHeader(){
-  const table = document.getElementById('main-table');
-  const gRow = document.getElementById('group-row');
-  const cRow = document.getElementById('col-row');
-
-  // colgroup で列幅固定
-  const cg = document.createElement('colgroup');
-  const nameCol = document.createElement('col');
-  nameCol.style.width = '180px';
-  cg.appendChild(nameCol);
-  for (let i = 0; i < 5 + 5 + OSTAGES.length + 1; i++) {
-    cg.appendChild(document.createElement('col'));
-  }
-  table.prepend(cg);
-
-  // 基本情報グループ
-  const infoCols = ['年齢','性別','就業<br>状況','流入<br>経路','応募日'];
-  const gh0 = document.createElement('th');
-  gh0.className = 'g-info'; gh0.colSpan = infoCols.length;
-  gh0.innerHTML = '基本情報';
-  gRow.appendChild(gh0);
-  infoCols.forEach(l => {
-    const th = document.createElement('th');
-    th.innerHTML = l;
-    cRow.appendChild(th);
-  });
-
-  // 採用グループ
-  const selCols = [
-    '書類','1次<br>面接','最終<br>面接','内定<br>通知','内定<br>承諾'
-  ];
-  const gh1 = document.createElement('th');
-  gh1.className = 'g-sel'; gh1.colSpan = 5;
-  gh1.innerHTML = '採用';
-  gRow.appendChild(gh1);
-  selCols.forEach(l => {
-    const th = document.createElement('th');
-    th.innerHTML = l;
-    cRow.appendChild(th);
-  });
-
-  // 入社手続グループ
-  const gh2 = document.createElement('th');
-  gh2.className = 'g-onb'; gh2.colSpan = OSTAGES.length;
-  gh2.innerHTML = '入社手続';
-  gRow.appendChild(gh2);
-  OSTAGES.forEach(s => {
-    const th = document.createElement('th');
-    th.innerHTML = s.label;
-    cRow.appendChild(th);
-  });
-
-  // 入社列
-  const gh3 = document.createElement('th');
-  gh3.rowSpan = 2;
-  gh3.innerHTML = '入社';
-  gh3.style.cssText = 'background:#f5f5f5;color:#888;font-weight:700';
-  gRow.appendChild(gh3);
-})();
 
 // Firebase listener
 onValue(onboardRef, snap => {
