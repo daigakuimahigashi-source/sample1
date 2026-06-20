@@ -67,6 +67,12 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#777}
 .legend-note{font-size:10px;color:#bbb;margin-left:8px}
 
+/* Controls */
+.controls{background:#fff;border-bottom:1px solid #e8edf5;padding:7px 20px;display:flex;align-items:center;gap:10px}
+.controls input{font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;height:28px;width:160px}
+.controls select{font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;height:28px;color:#555;cursor:pointer}
+.controls label{font-size:11px;color:#777}
+
 /* Message */
 .msg{text-align:center;padding:20px;color:#aaa;font-size:12px}
 </style>
@@ -85,6 +91,22 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
   </div>
   <div class="sync-info" id="sync-info">読み込み中...</div>
   <div class="today-lbl" id="today-lbl"></div>
+</div>
+
+<div class="controls">
+  <label>絞り込み</label>
+  <input type="text" id="search-input" placeholder="氏名で検索..." oninput="applyFilter()">
+  <label>表示</label>
+  <select id="filter-status" onchange="applyFilter()">
+    <option value="all">全員</option>
+    <option value="active">選考中のみ</option>
+    <option value="offered">手続中のみ</option>
+  </select>
+  <label>並び替え</label>
+  <select id="sort-order" onchange="applyFilter()">
+    <option value="default">選考中→手続中</option>
+    <option value="name">氏名順</option>
+  </select>
 </div>
 
 <div class="table-wrap">
@@ -203,6 +225,9 @@ async function loadSheets() {
   }
 }
 
+// Filter & sort
+window.applyFilter = function() { render(); };
+
 // Render
 function render() {
   const active = sheetsData.filter(c => c.status.startsWith('02_'));
@@ -210,7 +235,20 @@ function render() {
   document.getElementById('s-active').textContent = active.length;
   document.getElementById('s-offer').textContent = offered.length;
 
-  const all = [...active, ...offered];
+  const keyword = (document.getElementById('search-input')?.value || '').trim();
+  const statusFilter = document.getElementById('filter-status')?.value || 'all';
+  const sortOrder = document.getElementById('sort-order')?.value || 'default';
+
+  let all = [...active, ...offered];
+
+  // 絞り込み
+  if (statusFilter === 'active') all = active.slice();
+  else if (statusFilter === 'offered') all = offered.slice();
+
+  if (keyword) all = all.filter(c => c.name.includes(keyword));
+
+  // 並び替え
+  if (sortOrder === 'name') all.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   const tbody = document.getElementById('main-tbody');
 
   if (all.length === 0) {
