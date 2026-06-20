@@ -32,6 +32,11 @@ td{font-size:11px;vertical-align:middle;padding:14px 4px}
 tbody tr:hover{background:#f8fbff}
 tbody tr:last-child td{border-bottom:none}
 .td-name{text-align:left;font-weight:600;font-size:14px;padding-left:16px!important}
+.td-name.is-active{border-left:4px solid #1a73e8;background:#f0f4ff}
+.td-name.is-offered{border-left:4px solid #1e8e3e;background:#f0fdf4}
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px;vertical-align:middle}
+.badge-active{background:#e8f0fe;color:#1a73e8}
+.badge-offered{background:#e6f4ea;color:#1e8e3e}
 td.bg-info{background:#fafafa}
 tbody tr:hover td.bg-info{background:#f0f0f0}
 
@@ -326,7 +331,9 @@ function render() {
     }).join('');
 
     return `<tr class="${isOffered ? 'offered' : ''}">
-      <td class="td-name">${esc(c.name)}</td>
+      <td class="td-name ${isOffered ? 'is-offered' : 'is-active'}">
+        ${esc(c.name)}<span class="badge ${isOffered ? 'badge-offered' : 'badge-active'}">${isOffered ? '内定' : '選考中'}</span>
+      </td>
       ${infoCells}
       ${selCells}
       ${onbCells}
