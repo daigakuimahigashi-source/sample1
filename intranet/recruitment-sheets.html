@@ -42,9 +42,13 @@ tbody tr:last-child td{border-bottom:none}
 .td-name{text-align:left;font-weight:600;font-size:14px;padding-left:16px!important}
 .td-name.is-active{border-left:4px solid #1a73e8;background:#f0f4ff}
 .td-name.is-offered{border-left:4px solid #1e8e3e;background:#f0fdf4}
+.td-name.is-joined{border-left:4px solid #888;background:#efefef;color:#888}
 .badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px;vertical-align:middle}
 .badge-active{background:#e8f0fe;color:#1a73e8}
 .badge-offered{background:#e6f4ea;color:#1e8e3e}
+tr.is-joined-row td.bg-sel .dr{opacity:.25}
+tr.is-joined-row td.bg-onb .dc{opacity:.25;pointer-events:none;cursor:default}
+tr.is-joined-row td.bg-onb .date-lbl{opacity:.25;pointer-events:none}
 td.bg-info{background:#fafafa}
 tbody tr:hover td.bg-info{background:#f0f0f0}
 
@@ -276,6 +280,7 @@ function render() {
     const od = onboardData[c.id] || {};
     const stages = od.stages || {};
     const isJoined = !!od.joined;
+    const allDone = isOffered && OSTAGES.every(s => { const st = stages[s.id]||'pending'; return st==='done'||st==='skip'; });
 
     const infoCells = [
       `<td class="bg-info">${esc(c.age)}</td>`,
@@ -305,19 +310,22 @@ function render() {
       </div></td>`;
     }).join('');
 
-    const joinedCls = isJoined ? 's-d' : 's-p';
+    const joinLocked = !isJoined && !allDone;
+    const joinTitle = isJoined ? '入社済み（クリックで解除）' : allDone ? 'クリックで入社済みにする' : '全手続き完了後に押せます';
     const joinCell = `<td style="background:#f9f9f9">
-      <span class="dc ${joinedCls}" data-id="${esc(c.id)}" onclick="toggleJoined(this)" title="${isJoined?'入社済み':'クリックで入社済みにする'}"></span>
+      <span class="dc ${isJoined?'s-d':'s-p'}${joinLocked?' locked':''}" data-id="${esc(c.id)}" onclick="toggleJoined(this)" title="${joinTitle}"></span>
     </td>`;
 
     const nameBadge = isJoined
-      ? `<span class="badge" style="background:#eee;color:#999">入社済</span>`
+      ? `<span class="badge" style="background:#ddd;color:#888">入社済</span>`
       : isOffered
         ? `<span class="badge badge-offered">内定</span>`
         : `<span class="badge badge-active">選考中</span>`;
 
-    return `<tr style="${isJoined?'opacity:.45':''}">
-      <td class="td-name ${isJoined?'':'is-'+(isOffered?'offered':'active')}">${esc(c.name)}${nameBadge}</td>
+    const nameCls = isJoined ? 'td-name is-joined' : `td-name is-${isOffered?'offered':'active'}`;
+
+    return `<tr class="${isJoined?'is-joined-row':''}">
+      <td class="${nameCls}">${esc(c.name)}${nameBadge}</td>
       ${infoCells}${selCells}${onbCells}${joinCell}
     </tr>`;
   }).join('');
