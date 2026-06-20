@@ -86,7 +86,7 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
 .legend-note{font-size:10px;color:#bbb;margin-left:8px}
 
 /* Controls */
-.controls{background:#fff;border-bottom:1px solid #e8edf5;padding:7px 20px;display:flex;align-items:center;gap:10px}
+.controls{background:#fff;border-bottom:1px solid #e8edf5;padding:7px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:var(--stats-bottom,114px);z-index:19}
 .controls input{font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;height:28px;width:160px}
 .controls select{font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;height:28px;color:#555;cursor:pointer}
 .controls label{font-size:11px;color:#777}
@@ -128,6 +128,10 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
     <option value="all">全員</option>
     <option value="active">選考中のみ</option>
     <option value="offered">手続中のみ</option>
+  </select>
+  <select id="filter-joined" onchange="applyFilter()">
+    <option value="exclude">入社済み除く</option>
+    <option value="include">入社済み含む</option>
   </select>
   <label>並び替え</label>
   <select id="sort-order" onchange="applyFilter()">
@@ -210,7 +214,7 @@ let onboardData = {};
   const nameCol = document.createElement('col');
   nameCol.style.width = '180px';
   cg.appendChild(nameCol);
-  for (let i = 0; i < 5 + 5 + OSTAGES.length; i++) {
+  for (let i = 0; i < 5 + 5 + OSTAGES.length + 1; i++) {
     cg.appendChild(document.createElement('col'));
   }
   table.prepend(cg);
@@ -251,6 +255,13 @@ let onboardData = {};
     th.innerHTML = s.label;
     cRow.appendChild(th);
   });
+
+  // 入社列
+  const gh3 = document.createElement('th');
+  gh3.rowSpan = 2;
+  gh3.innerHTML = '入社';
+  gh3.style.cssText = 'background:#f5f5f5;color:#888;font-weight:700';
+  gRow.appendChild(gh3);
 })();
 
 // Firebase listener
@@ -282,31 +293,29 @@ window.applyFilter = function() { render(); };
 
 // Render
 function render() {
-  const active = sheetsData.filter(c => c.status.startsWith('02_'));
-  const offered = sheetsData.filter(c => c.status.startsWith('11_'));
+  const allBase = sheetsData.filter(c => c.status.startsWith('02_') || c.status.startsWith('11_'));
+  const active  = allBase.filter(c => c.status.startsWith('02_') && !onboardData[c.id]?.joined);
+  const offered = allBase.filter(c => c.status.startsWith('11_') && !onboardData[c.id]?.joined);
   document.getElementById('s-total').textContent = active.length + offered.length;
   document.getElementById('s-active').textContent = active.length;
   document.getElementById('s-offer').textContent = offered.length;
 
-  const keyword = (document.getElementById('search-input')?.value || '').trim();
+  const keyword      = (document.getElementById('search-input')?.value || '').trim();
   const statusFilter = document.getElementById('filter-status')?.value || 'all';
-  const sortOrder = document.getElementById('sort-order')?.value || 'default';
+  const sortOrder    = document.getElementById('sort-order')?.value || 'default';
+  const showJoined   = document.getElementById('filter-joined')?.value === 'include';
 
-  let all = [...active, ...offered];
-
-  // 絞り込み
-  if (statusFilter === 'active') all = active.slice();
-  else if (statusFilter === 'offered') all = offered.slice();
-
+  let all = showJoined ? [...allBase] : allBase.filter(c => !onboardData[c.id]?.joined);
+  if (statusFilter === 'active')  all = all.filter(c => c.status.startsWith('02_'));
+  else if (statusFilter === 'offered') all = all.filter(c => c.status.startsWith('11_'));
   if (keyword) all = all.filter(c => c.name.includes(keyword));
+  if (sortOrder === 'reverse') all.sort((a,b) => (b.status.startsWith('11_')?1:0)-(a.status.startsWith('11_')?1:0));
+  else if (sortOrder === 'name') all.sort((a,b) => a.name.localeCompare(b.name,'ja'));
 
-  // 並び替え
-  if (sortOrder === 'reverse') all = [...offered, ...active];
-  else if (sortOrder === 'name') all.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   const tbody = document.getElementById('main-tbody');
-
   if (all.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="30" class="msg">データがありません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="32" class="msg">データがありません</td></tr>';
+    fixStickyTop();
     return;
   }
 
@@ -314,50 +323,63 @@ function render() {
     const isOffered = c.status.startsWith('11_');
     const od = onboardData[c.id] || {};
     const stages = od.stages || {};
+    const isJoined = !!od.joined;
 
-    // Basic info cells
     const infoCells = [
       `<td class="bg-info">${esc(c.age)}</td>`,
       `<td class="bg-info">${esc(c.gender)}</td>`,
       `<td class="bg-info" style="font-size:10px">${esc(c.work)}</td>`,
       `<td class="bg-info" style="font-size:10px">${esc(c.source)}</td>`,
-      `<td class="bg-info" style="font-size:10px">${esc(fmtDate(c.applyDate || c.apply_date || ''))}</td>`,
+      `<td class="bg-info" style="font-size:10px">${esc(fmtDate(c.applyDate||''))}</td>`,
     ].join('');
 
-    // Selection dots (read-only)
     const selCells = [
       `<td class="bg-sel"><div class="sc">${drDot(c.doc.result)}</div></td>`,
       `<td class="bg-sel"><div class="sc">${drDot(c.int1.result)}</div></td>`,
       `<td class="bg-sel"><div class="sc">${drDot(c.final.result)}</div></td>`,
       `<td class="bg-sel"><div class="sc">${drDot(c.offer.result)}</div></td>`,
-      `<td class="bg-sel"><div class="sc">${isOffered ? '<span class="dr done"></span>' : '<span class="dr pending"></span>'}</div></td>`,
+      `<td class="bg-sel"><div class="sc">${isOffered?'<span class="dr done"></span>':'<span class="dr pending"></span>'}</div></td>`,
     ].join('');
 
-    // Onboarding dots (clickable only if offered)
     const onbCells = OSTAGES.map(s => {
       if (!isOffered) return `<td class="bg-onb"><span class="dc s-p locked"></span></td>`;
       const st = stages[s.id] || 'pending';
-      return `<td class="bg-onb">
-        <div class="sc">
-          <span class="dc ${DC[st]}" data-id="${esc(c.id)}" data-sid="${s.id}" onclick="cycleDot(this)"></span>
-          <div class="date-wrap">
-            <span class="date-lbl" data-ph="日付">${esc(od.dates && od.dates[s.id] || '')}</span>
-            <input class="date-hidden" type="date" data-id="${esc(c.id)}" data-sid="${s.id}" onchange="saveDate(this)">
-          </div>
+      return `<td class="bg-onb"><div class="sc">
+        <span class="dc ${DC[st]}" data-id="${esc(c.id)}" data-sid="${s.id}" onclick="cycleDot(this)"></span>
+        <div class="date-wrap">
+          <span class="date-lbl" data-ph="日付">${esc(od.dates&&od.dates[s.id]||'')}</span>
+          <input class="date-hidden" type="date" data-id="${esc(c.id)}" data-sid="${s.id}" onchange="saveDate(this)">
         </div>
-      </td>`;
+      </div></td>`;
     }).join('');
 
-    return `<tr class="${isOffered ? 'offered' : ''}">
-      <td class="td-name ${isOffered ? 'is-offered' : 'is-active'}">
-        ${esc(c.name)}<span class="badge ${isOffered ? 'badge-offered' : 'badge-active'}">${isOffered ? '内定' : '選考中'}</span>
-      </td>
-      ${infoCells}
-      ${selCells}
-      ${onbCells}
+    const joinedCls = isJoined ? 's-d' : 's-p';
+    const joinCell = `<td style="background:#f9f9f9">
+      <span class="dc ${joinedCls}" data-id="${esc(c.id)}" onclick="toggleJoined(this)" title="${isJoined?'入社済み':'クリックで入社済みにする'}"></span>
+    </td>`;
+
+    const nameBadge = isJoined
+      ? `<span class="badge" style="background:#eee;color:#999">入社済</span>`
+      : isOffered
+        ? `<span class="badge badge-offered">内定</span>`
+        : `<span class="badge badge-active">選考中</span>`;
+
+    return `<tr style="${isJoined?'opacity:.45':''}">
+      <td class="td-name ${isJoined?'':'is-'+(isOffered?'offered':'active')}">${esc(c.name)}${nameBadge}</td>
+      ${infoCells}${selCells}${onbCells}${joinCell}
     </tr>`;
   }).join('');
+
+  fixStickyTop();
 }
+
+window.toggleJoined = function(el) {
+  const id = el.dataset.id;
+  if (!onboardData[id]) onboardData[id] = {};
+  onboardData[id].joined = !onboardData[id].joined;
+  saveOnboard();
+  render();
+};
 
 window.cycleDot = function(el) {
   const id = el.dataset.id, sid = el.dataset.sid;
@@ -413,15 +435,17 @@ function fmtDate(s) {
 function fixStickyTop() {
   const header = document.querySelector('.top-header');
   const stats  = document.querySelector('.stats-bar');
-  const ctrl   = document.querySelector('.controls');
-  if (!header || !stats || !ctrl) return;
-  const groupTop = header.offsetHeight + stats.offsetHeight + ctrl.offsetHeight;
-  const colTop   = groupTop + document.querySelector('#group-row')?.offsetHeight || groupTop + 30;
+  if (!header || !stats) return;
+  const statsBottom = header.offsetHeight + stats.offsetHeight;
+  const ctrl = document.querySelector('.controls');
+  const groupTop = statsBottom + (ctrl ? ctrl.offsetHeight : 0);
+  const groupRow = document.querySelector('#group-row th');
+  const colTop = groupTop + (groupRow ? groupRow.offsetHeight : 32);
+  document.documentElement.style.setProperty('--stats-bottom', statsBottom + 'px');
   document.documentElement.style.setProperty('--group-top', groupTop + 'px');
-  document.documentElement.style.setProperty('--col-top',   colTop   + 'px');
+  document.documentElement.style.setProperty('--col-top', colTop + 'px');
 }
 window.addEventListener('resize', fixStickyTop);
-setTimeout(fixStickyTop, 300);
 
 loadSheets();
 setInterval(loadSheets, 5 * 60 * 1000);
