@@ -6,7 +6,7 @@
 <title>採用ダッシュボード</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;font-size:12px;background:#f5f7fa;color:#333}
+body{font-family:'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;font-size:14px;background:#f5f7fa;color:#333}
 
 /* Stats bar */
 .stats-bar{background:#fff;border-bottom:2px solid #e8edf5;padding:10px 20px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.07)}
@@ -20,7 +20,7 @@ body{font-family:'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;font-size:12px;ba
 /* Table */
 .table-wrap{overflow-x:auto;padding:16px 20px}
 table{border-collapse:collapse;background:#fff;border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);width:100%;table-layout:fixed}
-th,td{padding:6px 4px;text-align:center;border-bottom:1px solid #f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+th,td{padding:6px 4px;text-align:center;border-bottom:2px solid #dde3f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:56px;z-index:10}
 th.g-sel{background:#eef2ff;color:#3a5fd5}
 th.g-onb{background:#e6f4ea;color:#1e8e3e}
@@ -181,7 +181,7 @@ let onboardData = {};
   // colgroup で氏名列だけ幅固定・他は均等
   const cg = document.createElement('colgroup');
   const nameCol = document.createElement('col');
-  nameCol.style.width = '90px';
+  nameCol.style.width = '180px';
   cg.appendChild(nameCol);
   for (let i = 0; i < 5 + OSTAGES.length; i++) {
     cg.appendChild(document.createElement('col'));
