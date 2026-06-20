@@ -29,8 +29,8 @@ body{font-family:'Noto Sans JP',sans-serif;font-size:14px;background:#f5f7fa;col
 .table-wrap{overflow-x:auto;padding:16px 20px}
 table{border-collapse:collapse;background:#fff;border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);width:100%;table-layout:fixed}
 th,td{padding:6px 4px;text-align:center;border-bottom:2px solid #dde3f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:178px;z-index:10}
-#group-row th{top:148px}
+th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:var(--col-top,160px);z-index:10}
+#group-row th{top:var(--group-top,130px)}
 th.g-info{background:#f5f5f5;color:#666}
 th.g-sel{background:#eef2ff;color:#3a5fd5}
 th.g-onb{background:#e6f4ea;color:#1e8e3e}
@@ -269,8 +269,9 @@ async function loadSheets() {
     sheetsData = await res.json();
     render();
     const n = new Date();
+    const days = ['日','月','火','水','木','金','土'];
     document.getElementById('sync-info').textContent =
-      `最終更新 ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
+      `最終更新 ${n.getMonth()+1}/${n.getDate()}（${days[n.getDay()]}）${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
   } catch(e) {
     document.getElementById('sync-info').textContent = 'エラー: ' + e.message;
   }
@@ -320,7 +321,7 @@ function render() {
       `<td class="bg-info">${esc(c.gender)}</td>`,
       `<td class="bg-info" style="font-size:10px">${esc(c.work)}</td>`,
       `<td class="bg-info" style="font-size:10px">${esc(c.source)}</td>`,
-      `<td class="bg-info" style="font-size:10px">${esc(fmtDate(c.applyDate))}</td>`,
+      `<td class="bg-info" style="font-size:10px">${esc(fmtDate(c.applyDate || c.apply_date || ''))}</td>`,
     ].join('');
 
     // Selection dots (read-only)
@@ -407,6 +408,20 @@ function fmtDate(s) {
     `<div class="today-date">${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）</div>
      <div class="today-day">${d.getFullYear()}年</div>`;
 })();
+
+// sticky header の top 位置を動的に計算
+function fixStickyTop() {
+  const header = document.querySelector('.top-header');
+  const stats  = document.querySelector('.stats-bar');
+  const ctrl   = document.querySelector('.controls');
+  if (!header || !stats || !ctrl) return;
+  const groupTop = header.offsetHeight + stats.offsetHeight + ctrl.offsetHeight;
+  const colTop   = groupTop + document.querySelector('#group-row')?.offsetHeight || groupTop + 30;
+  document.documentElement.style.setProperty('--group-top', groupTop + 'px');
+  document.documentElement.style.setProperty('--col-top',   colTop   + 'px');
+}
+window.addEventListener('resize', fixStickyTop);
+setTimeout(fixStickyTop, 300);
 
 loadSheets();
 setInterval(loadSheets, 5 * 60 * 1000);
