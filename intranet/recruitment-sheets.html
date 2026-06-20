@@ -9,21 +9,28 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans JP',sans-serif;font-size:14px;background:#f5f7fa;color:#444}
 
+/* Header */
+.top-header{background:#1a73e8;color:#fff;padding:10px 20px;display:flex;align-items:center;position:sticky;top:0;z-index:30;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.top-title{font-size:17px;font-weight:700;letter-spacing:.5px}
+.top-sync{margin-left:16px;font-size:11px;opacity:.75}
+
 /* Stats bar */
-.stats-bar{background:#fff;border-bottom:2px solid #e8edf5;padding:10px 20px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.stat-box{text-align:center;min-width:64px}
-.stat-num{font-size:24px;font-weight:800;color:#1a73e8;line-height:1.1}
-.stat-label{font-size:12px;font-weight:700;color:#555;margin-top:1px}
-.stat-divider{width:1px;height:38px;background:#e0e0e0;flex-shrink:0}
-.sync-info{font-size:10px;color:#aaa;margin-left:auto;text-align:right;line-height:1.7}
-.today-lbl{font-size:11px;color:#777;line-height:1.7;text-align:right}
+.stats-bar{background:#fff;border-bottom:2px solid #e8edf5;padding:10px 20px;display:flex;align-items:center;gap:20px;position:sticky;top:44px;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stat-box{text-align:center;min-width:70px}
+.stat-num{font-size:26px;font-weight:800;color:#1a73e8;line-height:1.1}
+.stat-label{font-size:12px;font-weight:700;color:#666;margin-top:2px}
+.stat-divider{width:1px;height:42px;background:#e0e0e0;flex-shrink:0}
+.today-box{margin-left:auto;text-align:right}
+.today-date{font-size:22px;font-weight:700;color:#222;line-height:1.2}
+.today-day{font-size:12px;color:#888;margin-top:1px}
+.sync-info{font-size:10px;color:#bbb;text-align:right;margin-top:2px}
 
 /* Table */
 .table-wrap{overflow-x:auto;padding:16px 20px}
 table{border-collapse:collapse;background:#fff;border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);width:100%;table-layout:fixed}
 th,td{padding:6px 4px;text-align:center;border-bottom:2px solid #dde3f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:104px;z-index:10}
-#group-row th{top:60px}
+th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:178px;z-index:10}
+#group-row th{top:148px}
 th.g-info{background:#f5f5f5;color:#666}
 th.g-sel{background:#eef2ff;color:#3a5fd5}
 th.g-onb{background:#e6f4ea;color:#1e8e3e}
@@ -90,7 +97,17 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
 </head>
 <body>
 
+<div class="top-header">
+  <div class="top-title">ミライト 採用ダッシュボード</div>
+  <div class="top-sync" id="sync-info">読み込み中...</div>
+</div>
+
 <div class="stats-bar">
+  <div class="stat-box">
+    <div class="stat-num" id="s-total">-</div>
+    <div class="stat-label">候補者</div>
+  </div>
+  <div class="stat-divider"></div>
   <div class="stat-box">
     <div class="stat-num" id="s-active">-</div>
     <div class="stat-label">選考中</div>
@@ -100,8 +117,7 @@ tbody tr:hover td.bg-onb{background:#e6faf0}
     <div class="stat-num" id="s-offer">-</div>
     <div class="stat-label">手続中</div>
   </div>
-  <div class="sync-info" id="sync-info">読み込み中...</div>
-  <div class="today-lbl" id="today-lbl"></div>
+  <div class="today-box" id="today-box"></div>
 </div>
 
 <div class="controls">
@@ -267,6 +283,7 @@ window.applyFilter = function() { render(); };
 function render() {
   const active = sheetsData.filter(c => c.status.startsWith('02_'));
   const offered = sheetsData.filter(c => c.status.startsWith('11_'));
+  document.getElementById('s-total').textContent = active.length + offered.length;
   document.getElementById('s-active').textContent = active.length;
   document.getElementById('s-offer').textContent = offered.length;
 
@@ -386,8 +403,9 @@ function fmtDate(s) {
 
 (function(){
   const d = new Date(), days = ['日','月','火','水','木','金','土'];
-  document.getElementById('today-lbl').innerHTML =
-    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  document.getElementById('today-box').innerHTML =
+    `<div class="today-date">${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）</div>
+     <div class="today-day">${d.getFullYear()}年</div>`;
 })();
 
 loadSheets();
