@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>採用ダッシュボード</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;font-size:12px;background:#f5f7fa;color:#333}
+
+/* Stats bar */
+.stats-bar{background:#fff;border-bottom:2px solid #e8edf5;padding:10px 20px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stat-box{text-align:center;min-width:64px}
+.stat-num{font-size:24px;font-weight:800;color:#1a73e8;line-height:1.1}
+.stat-label{font-size:12px;font-weight:700;color:#555;margin-top:1px}
+.stat-divider{width:1px;height:38px;background:#e0e0e0;flex-shrink:0}
+.sync-info{font-size:10px;color:#aaa;margin-left:auto;text-align:right;line-height:1.7}
+.today-lbl{font-size:11px;color:#777;line-height:1.7;text-align:right}
+
+/* Table */
+.table-wrap{overflow-x:auto;padding:16px 20px}
+table{border-collapse:collapse;background:#fff;border-radius:7px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+th,td{padding:6px 6px;text-align:center;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+th{font-weight:700;font-size:10px;color:#555;border-bottom:2px solid #e0e0e0;background:#f8f9fa;position:sticky;top:56px;z-index:10}
+th.g-sel{background:#eef2ff;color:#3a5fd5}
+th.g-onb{background:#e6f4ea;color:#1e8e3e}
+td{font-size:11px;vertical-align:middle;padding:10px 6px}
+tbody tr:hover{background:#f8fbff}
+tbody tr:last-child td{border-bottom:none}
+.td-name{text-align:left;min-width:88px;font-weight:600;font-size:11px;padding-left:10px!important}
+
+/* Stage cell */
+.sc{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sd{font-size:9px;color:#aaa;line-height:1}
+
+/* Read-only dot */
+.dr{width:14px;height:14px;border-radius:50%;border:1.5px solid #ccc;display:inline-block;position:relative;vertical-align:middle;flex-shrink:0}
+.dr.done{background:#1a73e8;border-color:#1a73e8}
+.dr.ng{background:#d8d8d8;border-color:#bbb}
+.dr.ng::after{content:'';position:absolute;top:50%;left:50%;width:125%;height:1.5px;background:#888;transform:translate(-50%,-50%) rotate(-45deg)}
+.dr.pending{background:#fff;border-color:#ccc}
+
+/* Clickable dot */
+.dc{width:15px;height:15px;border-radius:50%;border:1.5px solid #bbb;display:inline-block;position:relative;vertical-align:middle;cursor:pointer;transition:transform .1s}
+.dc:hover{transform:scale(1.18)}
+.dc.locked{opacity:.25;cursor:not-allowed;pointer-events:none}
+.s-p{background:#fff;border-color:#ccc}
+.s-d{background:#1a73e8;border-color:#1a73e8}
+.s-s{background:#d8d8d8;border-color:#bbb}
+.s-s::after{content:'';position:absolute;top:50%;left:50%;width:125%;height:1.5px;background:#888;transform:translate(-50%,-50%) rotate(-45deg)}
+
+/* Date under dot */
+.date-wrap{position:relative;display:inline-block}
+.date-lbl{font-size:9px;color:#888;border-bottom:1px dotted #ccc;min-width:26px;text-align:center;cursor:pointer;line-height:1.5;display:inline-block}
+.date-lbl:empty::before{content:attr(data-ph);color:#ddd}
+.date-lbl:hover{border-bottom-color:#1a73e8}
+.date-hidden{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0}
+
+/* Phase column coloring */
+td.bg-sel{background:#f0f4ff}
+td.bg-onb{background:#f0fdf4}
+tbody tr:hover td.bg-sel{background:#e8eeff}
+tbody tr:hover td.bg-onb{background:#e6faf0}
+
+/* Legend */
+.legend{display:flex;align-items:center;gap:16px;padding:0 20px 16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#777}
+.legend-note{font-size:10px;color:#bbb;margin-left:8px}
+
+/* Message */
+.msg{text-align:center;padding:20px;color:#aaa;font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="stats-bar">
+  <div class="stat-box">
+    <div class="stat-num" id="s-active">-</div>
+    <div class="stat-label">選考中</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-box">
+    <div class="stat-num" id="s-offer">-</div>
+    <div class="stat-label">手続中</div>
+  </div>
+  <div class="sync-info" id="sync-info">読み込み中...</div>
+  <div class="today-lbl" id="today-lbl"></div>
+</div>
+
+<div class="table-wrap">
+  <table id="main-table">
+    <thead>
+      <tr id="group-row">
+        <th rowspan="2" style="min-width:90px;text-align:left;padding-left:10px">氏名</th>
+        <!-- group headers injected by JS -->
+      </tr>
+      <tr id="col-row">
+        <!-- column headers injected by JS -->
+      </tr>
+    </thead>
+    <tbody id="main-tbody">
+      <tr><td colspan="30" class="msg">読み込み中...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="dc s-d"></span> 完了</div>
+  <div class="legend-item"><span class="dc s-s"></span> スキップ（2回押し）</div>
+  <div class="legend-item"><span class="dc s-p"></span> 未実施</div>
+  <span class="legend-note">採用フェーズはスプシから自動取得（読み取り専用）／入社手続はここで管理・保存</span>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC849vt6ia6qSK-9vEfMXP8hP6R6G2N27E",
+  authDomain: "miraito-saiyou.firebaseapp.com",
+  databaseURL: "https://miraito-saiyou-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "miraito-saiyou",
+  storageBucket: "miraito-saiyou.firebasestorage.app",
+  messagingSenderId: "979218386068",
+  appId: "1:979218386068:web:69f763f395ce1291cf7881"
+};
+const db = getDatabase(initializeApp(firebaseConfig));
+const onboardRef = ref(db, 'onboarding');
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTlQPAVIIeb_QG2tPxu8-mfL5RP47ZpGe-BmDsTwKMmB_lY8MYqNJa_pJJrymdLumokQ/exec';
+
+const OSTAGES = [
+  {id:'o1',label:'アドレス<br>確認'},
+  {id:'o2',label:'Slack<br>追加'},
+  {id:'o3',label:'奨学金<br>確認'},
+  {id:'o4',label:'人事管理<br>入力依頼'},
+  {id:'o5',label:'人事管理<br>入力'},
+  {id:'o6',label:'給与<br>設定'},
+  {id:'o7',label:'雇用<br>契約書'},
+  {id:'o8',label:'社保<br>加入'},
+  {id:'o9',label:'雇用保険<br>加入'},
+  {id:'o10',label:'市府民税<br>特別徴収'},
+  {id:'o11',label:'市府民税<br>納付書'},
+  {id:'o12',label:'入社<br>誓約書'},
+];
+const CYCLE = ['pending','done','skip'];
+const DC = {pending:'s-p',done:'s-d',skip:'s-s'};
+
+let sheetsData = [];
+let onboardData = {};
+
+// Build header
+(function buildHeader(){
+  const gRow = document.getElementById('group-row');
+  const cRow = document.getElementById('col-row');
+
+  // 採用グループ
+  const selCols = [
+    '書類','1次<br>面接','最終<br>面接','内定<br>通知','内定<br>承諾'
+  ];
+  const gh1 = document.createElement('th');
+  gh1.className = 'g-sel'; gh1.colSpan = 5;
+  gh1.innerHTML = '採用フェーズ（スプシ連携・読み取り専用）';
+  gRow.appendChild(gh1);
+  selCols.forEach(l => {
+    const th = document.createElement('th');
+    th.innerHTML = l;
+    cRow.appendChild(th);
+  });
+
+  // 入社手続グループ
+  const gh2 = document.createElement('th');
+  gh2.className = 'g-onb'; gh2.colSpan = OSTAGES.length;
+  gh2.innerHTML = '入社手続（ここで管理）';
+  gRow.appendChild(gh2);
+  OSTAGES.forEach(s => {
+    const th = document.createElement('th');
+    th.innerHTML = s.label;
+    cRow.appendChild(th);
+  });
+})();
+
+// Firebase listener
+onValue(onboardRef, snap => {
+  onboardData = snap.val() || {};
+  render();
+});
+
+function saveOnboard() { set(onboardRef, onboardData); }
+
+// Load Sheets
+async function loadSheets() {
+  document.getElementById('sync-info').textContent = '取得中...';
+  try {
+    const res = await fetch(SCRIPT_URL);
+    sheetsData = await res.json();
+    render();
+    const n = new Date();
+    document.getElementById('sync-info').textContent =
+      `最終更新 ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
+  } catch(e) {
+    document.getElementById('sync-info').textContent = 'エラー: ' + e.message;
+  }
+}
+
+// Render
+function render() {
+  const active = sheetsData.filter(c => c.status.startsWith('02_'));
+  const offered = sheetsData.filter(c => c.status.startsWith('11_'));
+  document.getElementById('s-active').textContent = active.length;
+  document.getElementById('s-offer').textContent = offered.length;
+
+  const all = [...active, ...offered];
+  const tbody = document.getElementById('main-tbody');
+
+  if (all.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="30" class="msg">データがありません</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = all.map(c => {
+    const isOffered = c.status.startsWith('11_');
+    const od = onboardData[c.id] || {};
+    const stages = od.stages || {};
+
+    // Selection dots (read-only)
+    const selCells = [
+      `<td class="bg-sel"><div class="sc">${drDot(c.doc.result)}</div></td>`,
+      `<td class="bg-sel"><div class="sc">${drDot(c.int1.result)}</div></td>`,
+      `<td class="bg-sel"><div class="sc">${drDot(c.final.result)}</div></td>`,
+      `<td class="bg-sel"><div class="sc">${drDot(c.offer.result)}</div></td>`,
+      `<td class="bg-sel"><div class="sc">${isOffered ? '<span class="dr done"></span>' : '<span class="dr pending"></span>'}</div></td>`,
+    ].join('');
+
+    // Onboarding dots (clickable only if offered)
+    const onbCells = OSTAGES.map(s => {
+      if (!isOffered) return `<td class="bg-onb"><span class="dc s-p locked"></span></td>`;
+      const st = stages[s.id] || 'pending';
+      return `<td class="bg-onb">
+        <div class="sc">
+          <span class="dc ${DC[st]}" data-id="${esc(c.id)}" data-sid="${s.id}" onclick="cycleDot(this)"></span>
+          <div class="date-wrap">
+            <span class="date-lbl" data-ph="日付">${esc(od.dates && od.dates[s.id] || '')}</span>
+            <input class="date-hidden" type="date" data-id="${esc(c.id)}" data-sid="${s.id}" onchange="saveDate(this)">
+          </div>
+        </div>
+      </td>`;
+    }).join('');
+
+    return `<tr class="${isOffered ? 'offered' : ''}">
+      <td class="td-name">${esc(c.name)}</td>
+      ${selCells}
+      ${onbCells}
+    </tr>`;
+  }).join('');
+}
+
+window.cycleDot = function(el) {
+  const id = el.dataset.id, sid = el.dataset.sid;
+  if (!onboardData[id]) onboardData[id] = {};
+  if (!onboardData[id].stages) onboardData[id].stages = {};
+  const cur = onboardData[id].stages[sid] || 'pending';
+  const next = CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length];
+  onboardData[id].stages[sid] = next;
+  el.className = `dc ${DC[next]}`;
+  saveOnboard();
+};
+
+window.saveDate = function(input) {
+  const id = input.dataset.id, sid = input.dataset.sid;
+  if (!input.value) return;
+  const p = input.value.split('-');
+  const mmdd = `${parseInt(p[1])}/${parseInt(p[2])}`;
+  if (!onboardData[id]) onboardData[id] = {};
+  if (!onboardData[id].dates) onboardData[id].dates = {};
+  onboardData[id].dates[sid] = mmdd;
+  const lbl = input.previousElementSibling;
+  if (lbl) lbl.textContent = mmdd;
+  saveOnboard();
+};
+
+function drDot(result) {
+  if (!result) return '<span class="dr pending"></span>';
+  const r = String(result).trim();
+  if (r === '○') return '<span class="dr done"></span>';
+  if (r.includes('お見送り') || r === '×' || r.includes('辞退')) return '<span class="dr ng"></span>';
+  return '<span class="dr pending"></span>';
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+(function(){
+  const d = new Date(), days = ['日','月','火','水','木','金','土'];
+  document.getElementById('today-lbl').innerHTML =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+})();
+
+loadSheets();
+setInterval(loadSheets, 5 * 60 * 1000);
+</script>
+</body>
+</html>
