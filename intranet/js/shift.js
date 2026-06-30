@@ -1171,115 +1171,144 @@ function switchWeekView(viewType) {
 
 // ===== Staff Settings =====
 function renderSettingsTable() {
-    const tbody = document.getElementById('settings-table-body');
-    tbody.innerHTML = '';
+    const container = document.getElementById('settings-cards-container');
+    container.innerHTML = '';
+
     initialStaff.forEach((staff, idx) => {
         const age     = getAge(staff.birthdate);
         const under18 = isUnder18(staff.birthdate);
         const isMonthly = staff.salaryType === 'monthly';
+        const minor = isMinorOnDate(staff, new Date());
 
-        const tr = document.createElement('tr');
-        tr.className = 'border-b border-gray-100 hover:bg-gray-50';
-
-        // 給与欄：経営者モードでないかつ月給スタッフは非表示
-        const salaryCell = isMonthly && !adminMode
-            ? `<td class="px-2 py-2 text-center text-gray-300 text-xs"><i class="fa-solid fa-lock"></i></td>`
-            : `<td class="px-2 py-2">
-                <div class="flex items-center gap-1">
-                    <span class="text-xs text-gray-400">${staff.salaryType==='hourly'?'¥/h':'¥/月'}</span>
-                    <input type="number" value="${staff.salary}" onchange="updateStaff(${idx},'salary',+this.value)"
-                        class="w-28 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                </div>
-              </td>`;
-
-        const skillCheckboxes = SKILLS.map(skill => {
+        // スキルチップ
+        const skillChips = SKILLS.map(skill => {
             const has = (staff.skills||[]).includes(skill);
             const col = has ? (SKILL_COLORS[skill] || 'bg-amber-100 text-amber-700 border-amber-300') : 'bg-gray-50 text-gray-400 border-gray-200';
             return `<button type="button" onclick="toggleStaffSkill(${idx},'${skill}',${!has})"
-                class="text-[11px] px-2 py-0.5 rounded-full border whitespace-nowrap transition ${col} hover:opacity-80">${skill}</button>`;
+                class="text-[11px] px-2.5 py-1 rounded-full border whitespace-nowrap transition-all ${col} hover:opacity-75">${skill}</button>`;
         }).join('');
 
-        const minorStatus = isMinorOnDate(staff, new Date());
-        const restrictionHtml = `
-            <div class="flex items-center gap-1 text-xs ${minorStatus ? 'text-red-600 font-bold' : 'text-gray-400'}">
-                ${minorStatus ? '🔞 未成年（18歳未満）' : '成人'}
-                ${staff.birthdate ? `<span class="font-normal text-gray-400 ml-1">${staff.birthdate}</span>` : '<span class="text-gray-300 ml-1">生年月日未設定</span>'}
-            </div>
-            <label class="flex items-center gap-1 text-xs cursor-pointer">
-                <input type="checkbox" ${staff.restrictions?.noSocialInsurance?'checked':''}
-                    onchange="updateStaffRestriction(${idx},'noSocialInsurance',this.checked)"
-                    class="w-3.5 h-3.5 accent-orange-500">
-                <span class="text-orange-600">社保回避</span>
-            </label>
-        `;
+        // 曜日チェック
+        const dayChecks = ALL_DAYS.map(d => {
+            const checked = (staff.unavailableDays||[]).includes(d);
+            const color = d==='土'?'text-blue-600':d==='日'?'text-red-600':'text-gray-700';
+            const bg = checked ? (d==='土'?'bg-blue-100 border-blue-300':d==='日'?'bg-red-100 border-red-300':'bg-gray-200 border-gray-400') : 'bg-white border-gray-300';
+            return `<button type="button" onclick="toggleDay(${idx},'${d}',${!checked})"
+                class="w-9 h-8 rounded border text-xs font-bold transition-all ${bg} ${color}">${d}</button>`;
+        }).join('');
 
-        const slotHtml = ['早番','遅番'].map(slot => `
-            <label class="flex items-center gap-1 text-xs cursor-pointer">
-                <input type="checkbox" ${(staff.unavailableSlots||[]).includes(slot)?'checked':''}
-                    onchange="toggleStaffSlot(${idx},'${slot}',this.checked)"
-                    class="w-3.5 h-3.5 accent-gray-500">
-                <span>${slot}不可</span>
-            </label>
-        `).join('');
+        // 制限チップ
+        const slotChips = ['早番','遅番'].map(slot => {
+            const active = (staff.unavailableSlots||[]).includes(slot);
+            return `<button type="button" onclick="toggleStaffSlot(${idx},'${slot}',${!active})"
+                class="text-xs px-3 py-1 rounded-full border whitespace-nowrap transition-all ${active?'bg-red-100 text-red-700 border-red-300':'bg-gray-50 text-gray-400 border-gray-200'}">${slot}不可</button>`;
+        }).join('');
+        const socialChip = (() => {
+            const active = staff.restrictions?.noSocialInsurance;
+            return `<button type="button" onclick="updateStaffRestriction(${idx},'noSocialInsurance',${!active})"
+                class="text-xs px-3 py-1 rounded-full border whitespace-nowrap transition-all ${active?'bg-orange-100 text-orange-700 border-orange-300':'bg-gray-50 text-gray-400 border-gray-200'}">社保回避</button>`;
+        })();
 
-        tr.innerHTML = `
-            <td class="px-2 py-2">
+        // 出勤不可日タグ
+        const dateTags = (staff.unavailableDates||[]).map(d =>
+            `<span class="inline-flex items-center gap-1 text-xs bg-red-50 text-red-700 border border-red-200 rounded px-2 py-0.5">
+                ${d}
+                <button onclick="removeUnavailableDate(${idx},'${d}')" class="hover:text-red-900 font-bold leading-none">&times;</button>
+            </span>`
+        ).join('');
+
+        // 給与表示
+        const salaryHtml = isMonthly && !adminMode
+            ? `<span class="text-gray-300 text-xs"><i class="fa-solid fa-lock"></i></span>`
+            : `<div class="flex items-center gap-1">
+                <span class="text-xs text-gray-400">${isMonthly?'¥/月':'¥/h'}</span>
+                <input type="number" value="${staff.salary}" onchange="updateStaff(${idx},'salary',+this.value)"
+                    class="w-24 border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
+               </div>`;
+
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden';
+        card.innerHTML = `
+            <!-- 上段：基本情報 -->
+            <div class="flex flex-wrap items-center gap-3 px-4 py-3 bg-slate-50 border-b border-gray-200">
                 <input type="text" value="${staff.name}" onchange="updateStaff(${idx},'name',this.value)"
-                    class="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-            </td>
-            <td class="px-2 py-2">
-                <select onchange="updateStaff(${idx},'salaryType',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                    <option value="monthly" ${staff.salaryType==='monthly'?'selected':''}>月給</option>
-                    <option value="hourly"  ${staff.salaryType==='hourly'?'selected':''}>時給</option>
+                    class="font-bold text-slate-800 text-sm border-b border-transparent hover:border-gray-300 focus:border-amber-400 focus:outline-none bg-transparent w-36 py-0.5">
+                <select onchange="updateStaff(${idx},'salaryType',this.value)" class="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400 bg-white">
+                    <option value="monthly" ${isMonthly?'selected':''}>月給</option>
+                    <option value="hourly"  ${!isMonthly?'selected':''}>時給</option>
                 </select>
-            </td>
-            ${salaryCell}
-            <td class="px-2 py-2">
-                <div class="flex items-center gap-1">
+                ${salaryHtml}
+                <div class="flex items-center gap-1.5">
                     <input type="date" value="${staff.birthdate||''}" onchange="updateStaff(${idx},'birthdate',this.value)"
                         class="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400">
-                    ${under18
-                        ? `<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded font-bold">🔞${age}歳</span>`
-                        : `<span class="text-[10px] text-gray-400">${age}歳</span>`}
+                    ${minor
+                        ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">🔞${age}歳</span>`
+                        : age ? `<span class="text-[10px] text-gray-400">${age}歳</span>` : ''}
                 </div>
-            </td>
-            <td class="px-2 py-2">
-                <select onchange="updateStaff(${idx},'fixedStore',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                    ${Object.entries(STORES_MAP).map(([k,v]) => `<option value="${k}" ${staff.fixedStore===k?'selected':''}>${v}</option>`).join('')}
+                <select onchange="updateStaff(${idx},'fixedStore',this.value)" class="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400 bg-white">
+                    ${Object.entries(STORES_MAP).map(([k,v])=>`<option value="${k}" ${staff.fixedStore===k?'selected':''}>${v}</option>`).join('')}
                 </select>
-            </td>
-            <td class="px-2 py-2">
-                <div class="flex flex-wrap gap-1">
-                    ${ALL_DAYS.map(d => `
-                        <label class="flex items-center gap-0.5 cursor-pointer">
-                            <input type="checkbox" ${(staff.unavailableDays||[]).includes(d)?'checked':''} onchange="toggleDay(${idx},'${d}',this.checked)" class="w-3 h-3 accent-red-500">
-                            <span class="text-[10px] ${d==='土'?'text-blue-600':d==='日'?'text-red-600':'text-gray-600'}">${d}</span>
-                        </label>`).join('')}
-                </div>
-            </td>
-            <td class="px-2 py-2">
-                <div class="flex flex-col gap-1">
-                    ${restrictionHtml}
-                    ${slotHtml}
-                </div>
-            </td>
-            <td class="px-2 py-2 min-w-[480px]">
-                <div class="flex flex-row gap-1 overflow-x-auto pb-0.5">
-                    ${skillCheckboxes}
-                </div>
-            </td>
-            <td class="px-2 py-2">
-                <input type="text" value="${staff.notes||''}" placeholder="例: 土日のみ可・遅番不可" onchange="updateStaff(${idx},'notes',this.value)"
-                    class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400">
-                <p class="text-[10px] text-purple-500 mt-0.5"><i class="fa-solid fa-wand-magic-sparkles mr-0.5"></i>AIが参照します</p>
-            </td>
-            <td class="px-2 py-2 text-center">
-                <button onclick="removeStaff(${idx})" class="text-red-400 hover:text-red-600 transition" title="削除">
-                    <i class="fa-solid fa-trash text-sm"></i>
+                <button onclick="removeStaff(${idx})" class="ml-auto text-red-400 hover:text-red-600 transition px-2" title="削除">
+                    <i class="fa-solid fa-trash"></i>
                 </button>
-            </td>`;
-        tbody.appendChild(tr);
+            </div>
+            <!-- 下段：詳細設定 -->
+            <div class="divide-y divide-gray-100">
+                <div class="flex items-start gap-3 px-4 py-2.5">
+                    <span class="text-xs font-bold text-slate-500 w-20 shrink-0 pt-1">スキル</span>
+                    <div class="flex flex-wrap gap-1.5">${skillChips}</div>
+                </div>
+                <div class="flex items-center gap-3 px-4 py-2.5">
+                    <span class="text-xs font-bold text-slate-500 w-20 shrink-0">不可曜日</span>
+                    <div class="flex gap-1">${dayChecks}</div>
+                </div>
+                <div class="flex items-center gap-3 px-4 py-2.5">
+                    <span class="text-xs font-bold text-slate-500 w-20 shrink-0">不可時間帯</span>
+                    <div class="flex gap-2">${slotChips}${socialChip}</div>
+                </div>
+                <div class="flex items-start gap-3 px-4 py-2.5">
+                    <span class="text-xs font-bold text-slate-500 w-20 shrink-0 pt-1">不可特定日</span>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        ${dateTags}
+                        <div class="flex items-center gap-1">
+                            <input type="date" id="unavail-date-${idx}" class="border border-gray-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-amber-400">
+                            <button onclick="addUnavailableDate(${idx})" class="text-xs bg-amber-500 hover:bg-amber-400 text-white px-2 py-0.5 rounded transition">追加</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 px-4 py-2.5">
+                    <span class="text-xs font-bold text-slate-500 w-20 shrink-0">
+                        <i class="fa-solid fa-wand-magic-sparkles text-purple-400 mr-0.5"></i>フリーワード
+                    </span>
+                    <input type="text" value="${staff.notes||''}" placeholder="例: 土日のみ可・遅番不可" onchange="updateStaff(${idx},'notes',this.value)"
+                        class="flex-1 border border-gray-200 rounded px-3 py-1 text-xs focus:outline-none focus:border-purple-400">
+                    <span class="text-[10px] text-purple-400 whitespace-nowrap">AIが参照します</span>
+                </div>
+            </div>`;
+        container.appendChild(card);
     });
+}
+
+function addUnavailableDate(idx) {
+    const input = document.getElementById(`unavail-date-${idx}`);
+    const date = input.value;
+    if (!date) return;
+    const staff = initialStaff[idx];
+    if (!staff.unavailableDates) staff.unavailableDates = [];
+    if (!staff.unavailableDates.includes(date)) {
+        staff.unavailableDates.push(date);
+        staff.unavailableDates.sort();
+        saveStaffData(initialStaff);
+        renderSettingsTable();
+    }
+    input.value = '';
+}
+
+function removeUnavailableDate(idx, date) {
+    const staff = initialStaff[idx];
+    staff.unavailableDates = (staff.unavailableDates||[]).filter(d => d !== date);
+    saveStaffData(initialStaff);
+    renderSettingsTable();
 }
 
 function updateStaff(idx, field, value) { initialStaff[idx][field] = value; }
@@ -1291,6 +1320,7 @@ function toggleStaffSkill(idx, skill, checked) {
     if (!checked) staff.skills = staff.skills.filter(s => s !== skill);
     saveStaffData(initialStaff);
     renderStaffPool();
+    renderSettingsTable();
 }
 
 function updateStaffRestriction(idx, key, value) {
@@ -1299,6 +1329,7 @@ function updateStaffRestriction(idx, key, value) {
     staff.restrictions[key] = value;
     saveStaffData(initialStaff);
     renderStaffPool();
+    renderSettingsTable();
 }
 
 function toggleStaffSlot(idx, slot, checked) {
@@ -1307,11 +1338,13 @@ function toggleStaffSlot(idx, slot, checked) {
     if (checked && !staff.unavailableSlots.includes(slot)) staff.unavailableSlots.push(slot);
     if (!checked) staff.unavailableSlots = staff.unavailableSlots.filter(s => s !== slot);
     saveStaffData(initialStaff);
+    renderSettingsTable();
 }
 function toggleDay(idx, day, checked) {
     if (!initialStaff[idx].unavailableDays) initialStaff[idx].unavailableDays = [];
     if (checked) { if (!initialStaff[idx].unavailableDays.includes(day)) initialStaff[idx].unavailableDays.push(day); }
     else { initialStaff[idx].unavailableDays = initialStaff[idx].unavailableDays.filter(d => d !== day); }
+    renderSettingsTable();
 }
 function addStaff() {
     initialStaff.push({ id:'staff_'+Date.now(), name:'新スタッフ', salaryType:'hourly', salary:1000, birthdate:'', fixedStore:'', unavailableDays:[], notes:'', skills:[], unavailableDates:[], unavailableSlots:[], restrictions:{ isMinor:false, noSocialInsurance:false } });
