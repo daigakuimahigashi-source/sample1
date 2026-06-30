@@ -1,58 +1,63 @@
+// ===== スキル定義 =====
+const SKILLS = ['肉場', 'サラダ場', 'ドリンカー', 'ホール（肉焼ける）', 'ホール（肉焼けない）', '洗い場', '締め作業', '開店作業', 'レジ'];
+
+const SKILL_COLORS = {
+    '肉場':             'bg-red-100 text-red-700 border-red-200',
+    'サラダ場':         'bg-green-100 text-green-700 border-green-200',
+    'ドリンカー':       'bg-blue-100 text-blue-700 border-blue-200',
+    'ホール（肉焼ける）':   'bg-orange-100 text-orange-700 border-orange-200',
+    'ホール（肉焼けない）': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    '洗い場':           'bg-gray-100 text-gray-600 border-gray-200',
+    '締め作業':         'bg-purple-100 text-purple-700 border-purple-200',
+    '開店作業':         'bg-teal-100 text-teal-700 border-teal-200',
+    'レジ':             'bg-pink-100 text-pink-700 border-pink-200',
+};
+
 // ===== デフォルトスタッフデータ（MF人事より取得 2026/05/29）=====
 const DEFAULT_STAFF = [
-    // ── S層：役員 ──────────────────────────────────────────
-    { id: 'okk10001', name: '又吉 達朗',   layer: 'S', salaryType: 'monthly', salary: 500000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '店舗管理者・フレキシブル配置' },
-
-    // ── A層：日本人正社員 ───────────────────────────────────
-    { id: 'okk10003', name: '又吉 健太',   layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員' },
-    { id: 'okk10004', name: '新城 優樹',   layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員' },
-    { id: 'okk10005', name: '三澤 北斗',   layer: 'A', salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員' },
-
-    // ── B層：未熟正社員（締め不可）─────────────────────────
-    // ── C層：外国籍正社員 ───────────────────────────────────
-    { id: 'okk10006', name: 'チャン フーダット',             layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10008', name: '安里 茜 マーティン',            layer: 'E', salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10028', name: 'アングルガハ ガマゲー インディカ',   layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10037', name: 'ウェルガマ ラーララゲ ランドゥニ',   layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10038', name: 'ウェラコーン ムディヤンセラーゲ ラヒル', layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-    { id: 'okk10048', name: 'アディカーリ ムディアンセラーゲ アヌーシャ', layer: 'C', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要' },
-
-    // ── D層：熟練バイト（入社1年以上）──────────────────────
-    { id: 'okk10002', name: '又吉 未愉',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10007', name: '大城 未琴',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10009', name: '平田 明久',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10010', name: '宮城 文弥',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10011', name: '大嶺 華笑',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10012', name: '栄野比 あいみ', layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10013', name: '金城 心渚',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10014', name: '阿波根 啓',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10015', name: '桑江 旭',     layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10016', name: '又吉 茉紀',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10017', name: '岸本 海利',   layer: 'D', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10018', name: '渡口 来夢',   layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10019', name: '仲地 海斗',   layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10020', name: '平川 翔',     layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10023', name: '具志堅 詩苑', layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10026', name: '久場 百花',   layer: 'D', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-
-    // ── E層：未熟バイト（入社1年未満）──────────────────────
-    { id: 'okk10030', name: '宮城 碧子',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10031', name: '新里 紫緒那', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10032', name: '村田 悠華',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10033', name: '糸満 苺莉愛', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10034', name: '知念 あおい', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10036', name: '當山 健人',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10040', name: '金城 綾華',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10041', name: '下地 美弥',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10042', name: '池原 幸輝',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10043', name: '譜久里 光流', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10044', name: '知念 稚奈',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10045', name: 'サリバン 莉愛', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '※外国籍の場合はB層に変更要' },
-    { id: 'okk10046', name: '安仁屋 匠冴', layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
-    { id: 'okk10047', name: '川満 航希',   layer: 'E', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '' },
+    { id: 'okk10001', name: '又吉 達朗',   salaryType: 'monthly', salary: 500000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '店舗管理者・フレキシブル配置', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10003', name: '又吉 健太',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10004', name: '新城 優樹',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10005', name: '三澤 北斗',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10006', name: 'チャン フーダット',             salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10008', name: '安里 茜 マーティン',            salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10028', name: 'アングルガハ ガマゲー インディカ',   salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10037', name: 'ウェルガマ ラーララゲ ランドゥニ',   salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10038', name: 'ウェラコーン ムディヤンセラーゲ ラヒル', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10048', name: 'アディカーリ ムディアンセラーゲ アヌーシャ', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10002', name: '又吉 未愉',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10007', name: '大城 未琴',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10009', name: '平田 明久',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10010', name: '宮城 文弥',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10011', name: '大嶺 華笑',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10012', name: '栄野比 あいみ', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10013', name: '金城 心渚',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10014', name: '阿波根 啓',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10015', name: '桑江 旭',     salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10016', name: '又吉 茉紀',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10017', name: '岸本 海利',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10018', name: '渡口 来夢',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10019', name: '仲地 海斗',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10020', name: '平川 翔',     salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10023', name: '具志堅 詩苑', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10026', name: '久場 百花',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10030', name: '宮城 碧子',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10031', name: '新里 紫緒那', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10032', name: '村田 悠華',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10033', name: '糸満 苺莉愛', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10034', name: '知念 あおい', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10036', name: '當山 健人',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10040', name: '金城 綾華',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10041', name: '下地 美弥',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10042', name: '池原 幸輝',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10043', name: '譜久里 光流', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10044', name: '知念 稚奈',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10045', name: 'サリバン 莉愛', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10046', name: '安仁屋 匠冴', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10047', name: '川満 航希',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
 ];
 
 const STORES_MAP = {
@@ -83,24 +88,6 @@ let lastAIShift = null;
 let reqData = null;
 let reqActiveStore = 'matsuyama';
 
-const layerStyles = {
-    'S': 'bg-purple-100 text-purple-800 border-purple-200',
-    'A': 'bg-red-100 text-red-800 border-red-200',
-    'B': 'bg-orange-100 text-orange-800 border-orange-200',
-    'C': 'bg-blue-100 text-blue-800 border-blue-200',
-    'D': 'bg-green-100 text-green-800 border-green-200',
-    'E': 'bg-gray-100 text-gray-700 border-gray-200'
-};
-
-// 各レイヤーの配置ルール定義
-const LAYER_RULES = {
-    'S': { label: '役員',           salaryType: '役員報酬',       nightOK: true,  holiday: '—',       note: 'フレキシブル配置（穴埋め・開閉店補助）・配置制限なし', minHoliday: 0 },
-    'A': { label: '日本人正社員',   salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '早番・遅番どちらも可',                                 minHoliday: 6 },
-    'B': { label: '未熟正社員',     salaryType: '月給固定',       nightOK: true,  holiday: '月6公休', note: '一人での締め作業不可・要サポート',                     minHoliday: 6 },
-    'C': { label: '外国籍正社員',   salaryType: '月給固定',       nightOK: true,  holiday: '月8公休', note: '在留資格確認必須',                                     minHoliday: 8 },
-    'D': { label: '熟練バイト',     salaryType: '時給 ¥1100〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',                                      minHoliday: 0 },
-    'E': { label: '未熟バイト',     salaryType: '時給 ¥1000〜',  nightOK: false, holiday: '—',       note: '学生は22:00まで',                                      minHoliday: 0 },
-};
 
 // ===== Staff Storage =====
 function loadStaff() {
@@ -508,11 +495,7 @@ function renderWeekView() {
     weekBody.innerHTML = '';
     staffList.forEach(s => {
         const tr = document.createElement('tr');
-        let rowHtml = `<td class="text-left pl-4 font-medium">
-            <span class="text-xs font-bold w-4 inline-block text-center mr-1
-                ${s.layer==='A'?'text-red-500':s.layer==='B'?'text-blue-500':s.layer==='C'?'text-green-600':'text-gray-500'}">${s.layer}</span>
-            ${s.name}
-        </td>`;
+        let rowHtml = `<td class="text-left pl-4 font-medium">${s.name}</td>`;
 
         weekDates.forEach(d => {
             const dStr = dateToStr(d);
@@ -574,8 +557,7 @@ function renderWeekView() {
                 : ids.map(id => {
                     const s = staffMap[id];
                     if (!s) return '';
-                    return `<div class="text-[11px] mb-1 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm flex items-center">
-                        <span class="font-bold ${s.layer==='A'?'text-red-600':s.layer==='B'?'text-blue-600':s.layer==='C'?'text-green-600':'text-gray-700'} w-3 text-center mr-1">${s.layer}</span>
+                    return `<div class="text-[11px] mb-1 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm">
                         <span class="truncate text-gray-800">${s.name}</span>
                     </div>`;
                 }).join('')
@@ -658,8 +640,8 @@ function renderMonthView() {
             totalPayroll += salaryCalc;
         }
 
-        // 経営者モードでない場合、S/A/B の給与は非表示
-        const salaryDisplay = (!adminMode && (s.layer === 'S' || s.layer === 'A' || s.layer === 'B'))
+        // 経営者モードでない場合、月給スタッフの給与は非表示
+        const salaryDisplay = (!adminMode && s.salaryType === 'monthly')
             ? '<span class="text-gray-300 text-xs"><i class="fa-solid fa-lock text-gray-300 mr-1"></i>経営者のみ</span>'
             : salaryHtml;
 
@@ -670,9 +652,6 @@ function renderMonthView() {
             statusHtml = `<span class="text-red-600 font-bold bg-red-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i>三六超過(${actualOT}h)</span>`;
         } else if (actualOT >= OT_WARN) {
             statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-clock mr-1"></i>注意(${actualOT}h／上限${OT_LIMIT}h)</span>`;
-        } else if ((LAYER_RULES[s.layer]?.minHoliday || 0) > 0 && offDays < LAYER_RULES[s.layer].minHoliday && checkedDays >= 20) {
-            const req = LAYER_RULES[s.layer].minHoliday;
-            statusHtml = `<span class="text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded text-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i>公休不足(${offDays}/${req}日)</span>`;
         } else {
             statusHtml = `<span class="text-green-600 font-bold"><i class="fa-solid fa-check mr-1"></i>適正</span>`;
         }
@@ -697,7 +676,6 @@ function renderMonthView() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="text-left pl-4 font-medium">${s.name}</td>
-            <td><span class="px-2 py-1 rounded text-xs font-bold ${layerStyles[s.layer]}">${s.layer}</span></td>
             <td>${workDays > 0 ? workDays + ' 日' : '<span class="text-gray-300">-</span>'}</td>
             <td class="${offDays > 0 && offDays < 6 ? 'text-amber-600 font-bold' : ''}">${offDays > 0 ? offDays + ' 日' : '<span class="text-gray-300">-</span>'}</td>
             <td>${totalHours > 0 ? totalHours + ' h' : '<span class="text-gray-300">-</span>'}</td>
@@ -713,7 +691,7 @@ function exportMonthCSV() {
     const { year, month } = currentMonthYear;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const staffList   = loadStaff();
-    const headers = ['名前','レイヤー','出勤日数','公休日数','総実働時間h','残業h'];
+    const headers = ['名前','スキル','出勤日数','公休日数','総実働時間h','残業h'];
     if (adminMode) headers.push('想定給与');
     const rows = [headers];
 
@@ -734,7 +712,7 @@ function exportMonthCSV() {
             if (!assigned) offDays++;
         }
         const actualOT = s.salaryType === 'monthly' ? Math.max(0, totalHours - workDays * 8) : 0;
-        const row = [s.name, s.layer, workDays, offDays, totalHours, actualOT];
+        const row = [s.name, (s.skills || []).join('|'), workDays, offDays, totalHours, actualOT];
         if (adminMode) {
             const salary = s.salaryType === 'monthly' ? s.salary : Math.round(totalHours * s.salary);
             row.push(salary);
@@ -755,25 +733,32 @@ function renderStaffPool() {
     staffPoolEl.innerHTML = '';
     initialStaff.forEach(staff => {
         const div = document.createElement('div');
-        div.className = `staff-card px-3 py-2 rounded-lg border shadow-sm select-none ${layerStyles[staff.layer]}`;
+        div.className = 'staff-card px-3 py-2 rounded-lg border shadow-sm select-none bg-white border-gray-200';
         div.draggable = true;
-        div.dataset.id    = staff.id;
-        div.dataset.layer = staff.layer;
-        div.dataset.name  = staff.name;
+        div.dataset.id   = staff.id;
+        div.dataset.name = staff.name;
 
-        const under18 = isUnder18(staff.birthdate);
         const fixedStoreName = staff.fixedStore ? STORES_MAP[staff.fixedStore] : '';
         const badges = [];
-        if (under18) badges.push(`<span class="text-[9px] bg-orange-100 text-orange-700 border border-orange-300 rounded px-1">🔞22時不可</span>`);
+        if (staff.restrictions?.isMinor) badges.push(`<span class="text-[9px] bg-red-50 text-red-600 border border-red-200 rounded px-1">🔞未成年</span>`);
+        if (staff.restrictions?.noSocialInsurance) badges.push(`<span class="text-[9px] bg-orange-50 text-orange-600 border border-orange-200 rounded px-1">⏰20h</span>`);
         if (fixedStoreName) badges.push(`<span class="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 rounded px-1"><i class="fa-solid fa-store" style="font-size:8px"></i> ${fixedStoreName}</span>`);
         if (staff.unavailableDays?.length > 0) badges.push(`<span class="text-[9px] bg-red-50 text-red-500 border border-red-200 rounded px-1">休:${staff.unavailableDays.join('・')}</span>`);
 
+        const skillList = staff.skills || [];
+        const skillChips = skillList.slice(0, 3).map(s =>
+            `<span class="text-[10px] px-1.5 py-0.5 rounded border ${SKILL_COLORS[s] || 'bg-gray-100 text-gray-600 border-gray-200'}">${s}</span>`
+        ).join('');
+        const extraSkills = skillList.length > 3 ? `<span class="text-[10px] text-gray-400">+${skillList.length - 3}</span>` : '';
+
         div.innerHTML = `
             <div class="flex items-center w-full">
-                <div class="font-bold text-sm w-6 text-center opacity-70 border-r border-current mr-2 pr-2">${staff.layer}</div>
                 <div class="flex-1 flex flex-col">
-                    <div class="font-medium text-sm">${staff.name}</div>
-                    ${badges.length > 0 ? `<div class="flex flex-wrap gap-1 mt-1">${badges.join('')}</div>` : ''}
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <span class="font-medium text-sm">${staff.name}</span>
+                        ${badges.join('')}
+                    </div>
+                    ${skillList.length > 0 ? `<div class="flex flex-wrap gap-1 mt-1">${skillChips}${extraSkills}</div>` : ''}
                     <div class="time-display text-[10px] opacity-80 mt-0.5 font-mono"></div>
                 </div>
                 <i class="fa-solid fa-grip-vertical opacity-30 text-sm ml-2"></i>
@@ -801,7 +786,39 @@ function handleDrop(e) {
     if (dropZone.classList.contains('drop-zone')) dropZone.classList.remove('drag-over');
     const staffId = e.dataTransfer.getData('text/plain');
     const staffEl = document.querySelector(`[data-id="${staffId}"]`);
-    if (staffEl) { dropZone.appendChild(staffEl); validateShifts(); }
+    if (!staffEl) return;
+
+    // ドロップ先がスロットの場合、制限チェック
+    if (dropZone.classList.contains('drop-zone')) {
+        const slotKey = dropZone.dataset.shift;
+        const staffData = initialStaff.find(s => s.id === staffId);
+        if (staffData) {
+            // 未成年は遅番スロットへのドロップ不可
+            if (staffData.restrictions?.isMinor && slotKey === 'late') {
+                showAlert('未成年のためこのスロットには入れられません', 'error');
+                return;
+            }
+            // unavailableSlots に含まれる時間帯へのドロップ不可
+            const slotLabel = slotKey === 'late' ? '遅番' : '早番';
+            if ((staffData.unavailableSlots || []).includes(slotLabel)) {
+                showAlert(`${staffData.name} はこの時間帯に入れません`, 'error');
+                return;
+            }
+        }
+    }
+
+    dropZone.appendChild(staffEl);
+    validateShifts();
+}
+
+function showAlert(msg, type = 'error') {
+    const bg = type === 'error' ? 'bg-red-500' : type === 'warn' ? 'bg-amber-500' : 'bg-blue-500';
+    const icon = type === 'error' ? 'fa-circle-xmark' : 'fa-triangle-exclamation';
+    const el = document.createElement('div');
+    el.className = `${bg} text-white px-4 py-3 rounded shadow-lg pointer-events-auto flex items-center w-full max-w-2xl mx-auto mb-2`;
+    el.innerHTML = `<i class="fa-solid ${icon} mr-3 text-xl"></i><span class="font-medium">${msg}</span>`;
+    alertContainer.prepend(el);
+    setTimeout(() => el.remove(), 3000);
 }
 
 // ===== Board Operations =====
@@ -831,33 +848,40 @@ function autoAssign() {
         fixedCards[store].forEach(c => zone?.appendChild(c));
     });
 
-    // 残り（固定店舗なし）を層別に振り分け
-    const aCards = shuffle(freeCards.filter(c => c.dataset.layer === 'A'));
-    const bCards = shuffle(freeCards.filter(c => c.dataset.layer === 'B'));
-    const others = shuffle(freeCards.filter(c => c.dataset.layer !== 'A' && c.dataset.layer !== 'B'));
+    // 締め作業スキル保持者を優先して松山遅番へ
+    const closers = shuffle(freeCards.filter(c => {
+        const s = initialStaff.find(st => st.id === c.dataset.id);
+        return s?.skills?.includes('締め作業');
+    }));
+    const others = shuffle(freeCards.filter(c => {
+        const s = initialStaff.find(st => st.id === c.dataset.id);
+        return !s?.skills?.includes('締め作業');
+    }));
 
-    // A層1名を松山遅番へ
+    // 締め作業できる人1名を松山遅番へ
     const lateZone = document.querySelector('.drop-zone[data-store="matsuyama"][data-shift="late"]');
-    if (aCards.length > 0 && lateZone) lateZone.appendChild(aCards.pop());
+    if (closers.length > 0 && lateZone) lateZone.appendChild(closers.pop());
 
-    // 各店舗のearly zoneにA/Bリーダーを優先配置
+    // 各店舗のearly zoneに締め作業者を優先配置
     const earlyZones = STORES.map(s => document.querySelector(`.drop-zone[data-store="${s}"][data-shift="early"]`));
-    const leaders = [...aCards, ...bCards];
     earlyZones.forEach(zone => {
         if (!zone) return;
-        const hasLeader = Array.from(zone.querySelectorAll('.staff-card')).some(c => ['A','B'].includes(c.dataset.layer));
-        if (!hasLeader && leaders.length > 0) zone.appendChild(leaders.pop());
+        const hasCloser = Array.from(zone.querySelectorAll('.staff-card')).some(c => {
+            const s = initialStaff.find(st => st.id === c.dataset.id);
+            return s?.skills?.includes('締め作業');
+        });
+        if (!hasCloser && closers.length > 0) zone.appendChild(closers.pop());
     });
 
     // 残りスタッフを均等に分散
-    shuffle([...leaders, ...others]).forEach((c, i) => earlyZones[i % earlyZones.length]?.appendChild(c));
+    shuffle([...closers, ...others]).forEach((c, i) => earlyZones[i % earlyZones.length]?.appendChild(c));
     validateShifts();
 }
 
 function getStaffInZone(store, shift) {
     const zone = document.querySelector(`.drop-zone[data-store="${store}"][data-shift="${shift}"]`);
     return zone ? Array.from(zone.querySelectorAll('.staff-card')).map(el => ({
-        id: el.dataset.id, layer: el.dataset.layer, name: el.dataset.name
+        id: el.dataset.id, name: el.dataset.name
     })) : [];
 }
 
@@ -874,8 +898,12 @@ function validateShifts() {
     if (matsuyamaLate.length === 0) {
         alerts.push({ type:'error', msg:'松山店の「遅番」にスタッフが配置されていません。' });
     } else {
-        if (!matsuyamaLate.some(s => ['S','A','B'].includes(s.layer)))
-            alerts.push({ type:'error', msg:`松山店「遅番」にはS / A / Bいずれかを最低1名配置してください。` });
+        const hasCloser = matsuyamaLate.some(s => {
+            const staffData = initialStaff.find(st => st.id === s.id);
+            return staffData?.skills?.includes('締め作業');
+        });
+        if (!hasCloser)
+            alerts.push({ type:'error', msg:`松山店「遅番」には「締め作業」スキルを持つスタッフを最低1名配置してください。` });
         if (matsuyamaLate.length < _minLate)
             alerts.push({ type: matsuyamaLate.length < 2 ? 'error' : 'warn',
                 msg:`松山店「遅番」は${_isFriSat ? '金・土曜' : '平日・日曜'}最低${_minLate}名必要です（現在${matsuyamaLate.length}名）。` });
@@ -885,8 +913,14 @@ function validateShifts() {
 
     ['matsuyama','kumoji','miebash','misato'].forEach(store => {
         const early = getStaffInZone(store, 'early');
-        if (early.length > 0 && !early.some(s => ['S','A','B'].includes(s.layer)))
-            alerts.push({ type:'error', msg:`早番に【責任者(S / A / B)】がいない店舗があります。` });
+        if (early.length > 0) {
+            const hasCloser = early.some(s => {
+                const staffData = initialStaff.find(st => st.id === s.id);
+                return staffData?.skills?.includes('締め作業');
+            });
+            if (!hasCloser)
+                alerts.push({ type:'error', msg:`早番に【締め作業】スキルを持つ責任者がいない店舗があります。` });
+        }
     });
 
     // ===== 三六協定チェック（月間残業） =====
@@ -1074,14 +1108,13 @@ function renderTimeline() {
             <td style="position:relative;height:${rowH}px;">`;
 
         allBars.forEach(({ staff, slot }, idx) => {
-            const c    = layerStyles[staff.layer];
             const left = toPct(slot.start);
             const w    = durPct(slot.start, slot.end);
             const top  = idx * 22;
-            html += `<div class="${c} text-[10px] leading-tight rounded px-1 shadow-sm border"
+            html += `<div class="bg-white border-gray-200 text-gray-800 text-[10px] leading-tight rounded px-1 shadow-sm border"
                 style="position:absolute;left:${left}%;width:${w}%;top:${top}px;height:20px;
                        box-sizing:border-box;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
-                <span class="font-bold opacity-70">${staff.layer}</span> ${staff.name}</div>`;
+                ${staff.name}</div>`;
         });
 
         html += `</td></tr>`;
@@ -1132,13 +1165,13 @@ function renderSettingsTable() {
     initialStaff.forEach((staff, idx) => {
         const age     = getAge(staff.birthdate);
         const under18 = isUnder18(staff.birthdate);
-        const isManagerLayer = staff.layer === 'S' || staff.layer === 'A' || staff.layer === 'B';
+        const isMonthly = staff.salaryType === 'monthly';
 
         const tr = document.createElement('tr');
         tr.className = 'border-b border-gray-100 hover:bg-gray-50';
 
-        // 給与欄：経営者モードでないかつA/B層は非表示
-        const salaryCell = isManagerLayer && !adminMode
+        // 給与欄：経営者モードでないかつ月給スタッフは非表示
+        const salaryCell = isMonthly && !adminMode
             ? `<td class="px-2 py-2 text-center text-gray-300 text-xs"><i class="fa-solid fa-lock"></i></td>`
             : `<td class="px-2 py-2">
                 <div class="flex items-center gap-1">
@@ -1148,18 +1181,43 @@ function renderSettingsTable() {
                 </div>
               </td>`;
 
+        const skillCheckboxes = SKILLS.map(skill => `
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+                <input type="checkbox" ${(staff.skills||[]).includes(skill)?'checked':''}
+                    onchange="toggleStaffSkill(${idx},'${skill}',this.checked)"
+                    class="w-3.5 h-3.5 accent-amber-500">
+                <span>${skill}</span>
+            </label>
+        `).join('');
+
+        const restrictionHtml = `
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+                <input type="checkbox" ${staff.restrictions?.isMinor?'checked':''}
+                    onchange="updateStaffRestriction(${idx},'isMinor',this.checked)"
+                    class="w-3.5 h-3.5 accent-red-500">
+                <span class="text-red-600">未成年</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+                <input type="checkbox" ${staff.restrictions?.noSocialInsurance?'checked':''}
+                    onchange="updateStaffRestriction(${idx},'noSocialInsurance',this.checked)"
+                    class="w-3.5 h-3.5 accent-orange-500">
+                <span class="text-orange-600">社保回避</span>
+            </label>
+        `;
+
+        const slotHtml = ['早番','遅番'].map(slot => `
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+                <input type="checkbox" ${(staff.unavailableSlots||[]).includes(slot)?'checked':''}
+                    onchange="toggleStaffSlot(${idx},'${slot}',this.checked)"
+                    class="w-3.5 h-3.5 accent-gray-500">
+                <span>${slot}不可</span>
+            </label>
+        `).join('');
+
         tr.innerHTML = `
-            <td class="px-2 py-2 text-center">
-                <span class="inline-block w-3 h-3 rounded-full ${staff.layer==='A'?'bg-red-400':staff.layer==='B'?'bg-blue-400':staff.layer==='C'?'bg-green-400':'bg-gray-400'}"></span>
-            </td>
             <td class="px-2 py-2">
                 <input type="text" value="${staff.name}" onchange="updateStaff(${idx},'name',this.value)"
                     class="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-            </td>
-            <td class="px-2 py-2">
-                <select onchange="updateStaff(${idx},'layer',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
-                    ${['S','A','B','C','D'].map(l => `<option value="${l}" ${staff.layer===l?'selected':''}>${l}${l==='S'?' (役員)':l==='A'?' (正社員)':l==='B'?' (外国籍社員)':l==='C'?' (熟練バイト)':' (未熟バイト)'}</option>`).join('')}
-                </select>
             </td>
             <td class="px-2 py-2">
                 <select onchange="updateStaff(${idx},'salaryType',this.value)" class="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:border-amber-400">
@@ -1192,6 +1250,17 @@ function renderSettingsTable() {
                 </div>
             </td>
             <td class="px-2 py-2">
+                <div class="flex flex-col gap-1">
+                    ${restrictionHtml}
+                    ${slotHtml}
+                </div>
+            </td>
+            <td class="px-2 py-2">
+                <div class="flex flex-wrap gap-1">
+                    ${skillCheckboxes}
+                </div>
+            </td>
+            <td class="px-2 py-2">
                 <input type="text" value="${staff.notes||''}" placeholder="メモ" onchange="updateStaff(${idx},'notes',this.value)"
                     class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400">
             </td>
@@ -1205,13 +1274,38 @@ function renderSettingsTable() {
 }
 
 function updateStaff(idx, field, value) { initialStaff[idx][field] = value; }
+
+function toggleStaffSkill(idx, skill, checked) {
+    const staff = initialStaff[idx];
+    if (!staff.skills) staff.skills = [];
+    if (checked && !staff.skills.includes(skill)) staff.skills.push(skill);
+    if (!checked) staff.skills = staff.skills.filter(s => s !== skill);
+    saveStaffData(initialStaff);
+    renderStaffPool();
+}
+
+function updateStaffRestriction(idx, key, value) {
+    const staff = initialStaff[idx];
+    if (!staff.restrictions) staff.restrictions = {};
+    staff.restrictions[key] = value;
+    saveStaffData(initialStaff);
+    renderStaffPool();
+}
+
+function toggleStaffSlot(idx, slot, checked) {
+    const staff = initialStaff[idx];
+    if (!staff.unavailableSlots) staff.unavailableSlots = [];
+    if (checked && !staff.unavailableSlots.includes(slot)) staff.unavailableSlots.push(slot);
+    if (!checked) staff.unavailableSlots = staff.unavailableSlots.filter(s => s !== slot);
+    saveStaffData(initialStaff);
+}
 function toggleDay(idx, day, checked) {
     if (!initialStaff[idx].unavailableDays) initialStaff[idx].unavailableDays = [];
     if (checked) { if (!initialStaff[idx].unavailableDays.includes(day)) initialStaff[idx].unavailableDays.push(day); }
     else { initialStaff[idx].unavailableDays = initialStaff[idx].unavailableDays.filter(d => d !== day); }
 }
 function addStaff() {
-    initialStaff.push({ id:'staff_'+Date.now(), name:'新スタッフ', layer:'D', salaryType:'hourly', salary:1000, birthdate:'', fixedStore:'', unavailableDays:[], notes:'' });
+    initialStaff.push({ id:'staff_'+Date.now(), name:'新スタッフ', salaryType:'hourly', salary:1000, birthdate:'', fixedStore:'', unavailableDays:[], notes:'', skills:[], unavailableDates:[], unavailableSlots:[], restrictions:{ isMinor:false, noSocialInsurance:false } });
     renderSettingsTable();
 }
 function removeStaff(idx) {
@@ -1242,13 +1336,13 @@ const STORES_LIST = [
 ];
 const DEFAULT_REQUIREMENTS = {
     matsuyama: { slots: [
-        { id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] },
-        { id:'s2', name:'遅番（月〜木・日）', start:'20:00', end:'25:00', days:['月','火','水','木','日'], rules:[{ label:'管理職(S/A/B)', layers:['S','A','B'], min:1 },{ label:'総員', layers:['S','A','B','C','D'], min:3 }] },
-        { id:'s3', name:'遅番（金・土）',     start:'20:00', end:'30:00', days:['金','土'],               rules:[{ label:'管理職(S/A/B)', layers:['S','A','B'], min:1 },{ label:'総員', layers:['S','A','B','C','D'], min:4 }] },
+        { id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', skills:['締め作業'], min:1 },{ label:'スタッフ', skills:[], min:2 }] },
+        { id:'s2', name:'遅番（月〜木・日）', start:'20:00', end:'25:00', days:['月','火','水','木','日'], rules:[{ label:'締め責任者', skills:['締め作業'], min:1 },{ label:'総員', skills:[], min:3 }] },
+        { id:'s3', name:'遅番（金・土）',     start:'20:00', end:'30:00', days:['金','土'],               rules:[{ label:'締め責任者', skills:['締め作業'], min:1 },{ label:'総員', skills:[], min:4 }] },
     ]},
-    kumoji:  { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] }] },
-    miebash: { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] }] },
-    misato:  { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', layers:['A','B'], min:1 },{ label:'スタッフ', layers:['C','D'], min:2 }] }] },
+    kumoji:  { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', skills:['締め作業'], min:1 },{ label:'スタッフ', skills:[], min:2 }] }] },
+    miebash: { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', skills:['締め作業'], min:1 },{ label:'スタッフ', skills:[], min:2 }] }] },
+    misato:  { slots: [{ id:'s1', name:'早番', start:'17:30', end:'26:30', days:['月','火','水','木','金','土','日'], rules:[{ label:'責任者', skills:['締め作業'], min:1 },{ label:'スタッフ', skills:[], min:2 }] }] },
 };
 
 function loadRequirements() {
@@ -1327,27 +1421,29 @@ function renderSlotCard(slot, si) {
         </div>`;
 }
 function renderRuleRow(rule, si, ri) {
-    const layerCbs = ['A','B','C','D'].map(l => `
-        <label class="cursor-pointer flex items-center gap-1">
-            <input type="checkbox" ${rule.layers.includes(l)?'checked':''} onchange="toggleRuleLayer(${si},${ri},'${l}',this.checked)" class="w-3.5 h-3.5 accent-amber-500">
-            <span class="text-xs font-bold ${l==='A'?'text-red-600':l==='B'?'text-blue-600':l==='C'?'text-green-600':'text-gray-600'}">${l}</span>
+    const skillCbs = SKILLS.map(skill => `
+        <label class="flex items-center gap-1 text-xs">
+            <input type="checkbox" ${(rule.skills||[]).includes(skill)?'checked':''}
+                onchange="toggleRuleSkill(${si},${ri},'${skill}',this.checked)"
+                class="w-3.5 h-3.5 accent-amber-500">
+            <span>${skill}</span>
         </label>`).join('');
     return `
-        <div class="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
+        <div class="flex flex-wrap items-start gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2">
             <input type="text" value="${rule.label}" onchange="updateRule(${si},${ri},'label',this.value)"
                 class="border border-gray-200 rounded px-2 py-1 text-xs w-36 focus:outline-none focus:border-amber-400">
-            <span class="text-xs text-gray-500 flex-shrink-0">対象層：</span>
-            <div class="flex gap-3">${layerCbs}</div>
-            <span class="text-xs text-gray-500 flex-shrink-0 ml-2">最低</span>
+            <span class="text-xs text-gray-500 flex-shrink-0 mt-1">必要スキル：</span>
+            <div class="flex flex-wrap gap-2">${skillCbs}</div>
+            <span class="text-xs text-gray-500 flex-shrink-0 mt-1 ml-2">最低</span>
             <input type="number" value="${rule.min}" min="1" max="10" onchange="updateRule(${si},${ri},'min',+this.value)"
                 class="border border-gray-200 rounded px-2 py-1 text-xs w-14 text-center focus:outline-none focus:border-amber-400">
-            <span class="text-xs text-gray-500">名</span>
+            <span class="text-xs text-gray-500 mt-1">名</span>
             <button onclick="removeRule(${si},${ri})" class="text-red-400 hover:text-red-600 ml-auto"><i class="fa-solid fa-times text-xs"></i></button>
         </div>`;
 }
 function addSlot() {
     if (!reqData[reqActiveStore]) reqData[reqActiveStore] = { slots: [] };
-    reqData[reqActiveStore].slots.push({ id:'slot_'+Date.now(), name:'新時間帯', start:'17:00', end:'25:00', days:[...ALL_DAYS], rules:[{ label:'責任者', layers:['A','B'], min:1 }] });
+    reqData[reqActiveStore].slots.push({ id:'slot_'+Date.now(), name:'新時間帯', start:'17:00', end:'25:00', days:[...ALL_DAYS], rules:[{ label:'責任者', skills:['締め作業'], min:1 }] });
     renderReqStoreContent();
 }
 function removeSlot(si) { if (confirm('この時間帯を削除しますか？')) { reqData[reqActiveStore].slots.splice(si,1); renderReqStoreContent(); } }
@@ -1357,13 +1453,15 @@ function toggleSlotDay(si, day, checked) {
     if (checked && !days.includes(day)) days.push(day);
     if (!checked) reqData[reqActiveStore].slots[si].days = days.filter(d => d !== day);
 }
-function addRule(si) { reqData[reqActiveStore].slots[si].rules.push({ label:'スタッフ', layers:['C','D'], min:1 }); renderReqStoreContent(); }
+function addRule(si) { reqData[reqActiveStore].slots[si].rules.push({ label:'スタッフ', skills:[], min:1 }); renderReqStoreContent(); }
 function removeRule(si, ri) { reqData[reqActiveStore].slots[si].rules.splice(ri,1); renderReqStoreContent(); }
 function updateRule(si, ri, field, value) { reqData[reqActiveStore].slots[si].rules[ri][field] = value; }
-function toggleRuleLayer(si, ri, layer, checked) {
-    const layers = reqData[reqActiveStore].slots[si].rules[ri].layers;
-    if (checked && !layers.includes(layer)) layers.push(layer);
-    if (!checked) reqData[reqActiveStore].slots[si].rules[ri].layers = layers.filter(l => l !== layer);
+function toggleRuleSkill(si, ri, skill, checked) {
+    if (!reqData[reqActiveStore].slots[si].rules[ri].skills) reqData[reqActiveStore].slots[si].rules[ri].skills = [];
+    const skills = reqData[reqActiveStore].slots[si].rules[ri].skills;
+    if (checked && !skills.includes(skill)) skills.push(skill);
+    if (!checked) reqData[reqActiveStore].slots[si].rules[ri].skills = skills.filter(s => s !== skill);
+    renderReqStoreContent();
 }
 
 // ===== CSV Import / Export =====
@@ -1382,13 +1480,17 @@ function importStaffCSV(input) {
                 const get = name => (cols[headers.indexOf(name)] || '').trim();
                 imported.push({
                     id: 'csv_' + Date.now() + '_' + i,
-                    name: get('名前'), layer: get('レイヤー') || 'D',
+                    name: get('名前'),
                     salaryType: get('給与タイプ') || 'hourly',
                     salary: parseFloat(get('給与額')) || 1000,
                     birthdate: get('生年月日') || '',
                     fixedStore: get('固定店舗') || '',
                     unavailableDays: get('出勤不可曜日') ? get('出勤不可曜日').split('|').filter(Boolean) : [],
                     notes: get('メモ') || '',
+                    skills: get('スキル') ? get('スキル').split('|').filter(Boolean) : [],
+                    unavailableDates: [],
+                    unavailableSlots: [],
+                    restrictions: { isMinor: false, noSocialInsurance: false },
                 });
             }
             if (imported.length === 0) { alert('読み込めるデータがありませんでした。'); return; }
@@ -1405,8 +1507,8 @@ function importStaffCSV(input) {
     reader.readAsText(file, 'UTF-8');
 }
 function exportStaffCSV() {
-    const headers = ['名前','レイヤー','給与タイプ','給与額','生年月日','固定店舗','出勤不可曜日','メモ'];
-    const rows = initialStaff.map(s => [s.name, s.layer, s.salaryType, s.salary, s.birthdate||'', s.fixedStore||'', (s.unavailableDays||[]).join('|'), s.notes||'']);
+    const headers = ['名前','給与タイプ','給与額','生年月日','固定店舗','出勤不可曜日','スキル','メモ'];
+    const rows = initialStaff.map(s => [s.name, s.salaryType, s.salary, s.birthdate||'', s.fixedStore||'', (s.unavailableDays||[]).join('|'), (s.skills||[]).join('|'), s.notes||'']);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
@@ -1508,10 +1610,7 @@ function renderAIResult(shift) {
             const entry = shift.shifts.find(s => s.date===date && s.storeId===key.storeId && s.slotName===key.slotName);
             if (entry?.staff?.length > 0) {
                 html += `<td class="border border-gray-300 px-1 py-1 align-top">${entry.staff.map(st =>
-                    `<div class="flex items-center gap-0.5 mb-0.5">
-                        <span class="font-bold ${st.layer==='A'?'text-red-600':st.layer==='B'?'text-blue-600':st.layer==='C'?'text-green-600':'text-gray-500'}">${st.layer}</span>
-                        <span>${st.name}</span>
-                    </div>`).join('')}</td>`;
+                    `<div class="mb-0.5 text-gray-800">${st.name}</div>`).join('')}</td>`;
             } else {
                 html += `<td class="border border-gray-300 px-1 py-1 text-gray-300 text-center">-</td>`;
             }

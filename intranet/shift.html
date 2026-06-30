@@ -203,13 +203,14 @@
                 </div>
 
                 <div class="p-4 border-t border-gray-200 bg-gray-50 text-xs text-gray-500">
-                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-purple-400 mr-2"></span>S: 役員</div>
-                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>A: 日本人正社員</div>
-                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-orange-400 mr-2"></span>B: 未熟正社員</div>
-                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>C: 外国籍正社員</div>
-                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>D: 熟練バイト</div>
-                    <div class="flex items-center mb-1"><span class="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>E: 未熟バイト</div>
-                    <div class="mt-2 pt-2 border-t border-gray-200 text-[10px] text-orange-600">🎓 学生は22:00まで</div>
+                    <p class="font-bold text-gray-600 mb-2">スキルバッジ凡例</p>
+                    <div class="flex flex-wrap gap-1 mb-2">
+                        <span class="px-1.5 py-0.5 rounded border bg-purple-100 text-purple-700 border-purple-200">締め作業</span>
+                        <span class="px-1.5 py-0.5 rounded border bg-red-100 text-red-700 border-red-200">肉場</span>
+                        <span class="px-1.5 py-0.5 rounded border bg-orange-100 text-orange-700 border-orange-200">ホール（肉焼ける）</span>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-gray-200 text-[10px] text-red-600">🔞 未成年 = 遅番配置不可</div>
+                    <div class="text-[10px] text-orange-600">⏰20h = 社保回避（20h以内）</div>
                 </div>
             </div>
 
@@ -327,70 +328,26 @@
                             <i class="fa-solid fa-chevron-down text-gray-400 ml-auto chv transition-transform duration-200"></i>
                         </button>
                         <div class="border-t border-gray-100 p-4">
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-xs border-collapse">
-                                    <thead>
-                                        <tr class="bg-slate-700 text-white text-left">
-                                            <th class="px-3 py-2 rounded-tl font-bold">レイヤー</th>
-                                            <th class="px-3 py-2 font-bold">区分</th>
-                                            <th class="px-3 py-2 font-bold">給与形態</th>
-                                            <th class="px-3 py-2 font-bold">深夜・早朝</th>
-                                            <th class="px-3 py-2 font-bold">月公休</th>
-                                            <th class="px-3 py-2 rounded-tr font-bold">特記事項</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100">
-                                        <tr class="bg-purple-50">
-                                            <td class="px-3 py-2"><span class="inline-block bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-bold">S</span></td>
-                                            <td class="px-3 py-2 font-bold text-purple-800">役員</td>
-                                            <td class="px-3 py-2 text-gray-600">役員報酬</td>
-                                            <td class="px-3 py-2 text-emerald-600 font-bold">○ 制限なし</td>
-                                            <td class="px-3 py-2 text-gray-500">—</td>
-                                            <td class="px-3 py-2 text-purple-700 font-bold">🎯 フレキシブル配置（穴埋め・開閉店補助）</td>
-                                        </tr>
-                                        <tr class="bg-red-50">
-                                            <td class="px-3 py-2"><span class="inline-block bg-red-100 text-red-800 border border-red-200 px-2 py-0.5 rounded font-bold">A</span></td>
-                                            <td class="px-3 py-2 font-bold text-red-800">日本人正社員</td>
-                                            <td class="px-3 py-2 text-gray-600">月給固定</td>
-                                            <td class="px-3 py-2 text-emerald-600 font-bold">○</td>
-                                            <td class="px-3 py-2"><span class="text-amber-700 font-bold">月6公休必須</span></td>
-                                            <td class="px-3 py-2 text-gray-600">早番・遅番どちらも可</td>
-                                        </tr>
-                                        <tr class="bg-blue-50">
-                                            <td class="px-3 py-2"><span class="inline-block bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-bold">B</span></td>
-                                            <td class="px-3 py-2 font-bold text-blue-800">外国籍正社員</td>
-                                            <td class="px-3 py-2 text-gray-600">月給固定</td>
-                                            <td class="px-3 py-2 text-emerald-600 font-bold">○</td>
-                                            <td class="px-3 py-2"><span class="text-amber-700 font-bold">月8公休必須</span><span class="text-gray-400 text-[10px] ml-1">（週2休）</span></td>
-                                            <td class="px-3 py-2 text-red-600 font-bold">⚠ 在留資格確認必須</td>
-                                        </tr>
-                                        <tr class="bg-green-50">
-                                            <td class="px-3 py-2"><span class="inline-block bg-green-100 text-green-800 border border-green-200 px-2 py-0.5 rounded font-bold">C</span></td>
-                                            <td class="px-3 py-2 font-bold text-green-800">熟練バイト</td>
-                                            <td class="px-3 py-2 text-gray-600">時給（¥1100〜1200）</td>
-                                            <td class="px-3 py-2 text-amber-600 font-bold">△</td>
-                                            <td class="px-3 py-2 text-gray-500">—</td>
-                                            <td class="px-3 py-2 text-orange-700 font-bold">🎓 学生は22:00まで</td>
-                                        </tr>
-                                        <tr class="bg-gray-50">
-                                            <td class="px-3 py-2"><span class="inline-block bg-gray-100 text-gray-700 border border-gray-200 px-2 py-0.5 rounded font-bold">D</span></td>
-                                            <td class="px-3 py-2 font-bold text-gray-700">未熟バイト</td>
-                                            <td class="px-3 py-2 text-gray-600">時給（¥1000〜）</td>
-                                            <td class="px-3 py-2 text-amber-600 font-bold">△</td>
-                                            <td class="px-3 py-2 text-gray-500">—</td>
-                                            <td class="px-3 py-2 text-orange-700 font-bold">🎓 学生は22:00まで</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <p class="text-xs font-bold text-slate-600 mb-3"><i class="fa-solid fa-tag mr-1 text-amber-500"></i>スキル一覧</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs px-2 py-1 rounded border bg-red-100 text-red-700 border-red-200">肉場</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-green-100 text-green-700 border-green-200">サラダ場</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-blue-100 text-blue-700 border-blue-200">ドリンカー</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-orange-100 text-orange-700 border-orange-200">ホール（肉焼ける）</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-yellow-100 text-yellow-700 border-yellow-200">ホール（肉焼けない）</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-gray-100 text-gray-600 border-gray-200">洗い場</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-purple-100 text-purple-700 border-purple-200">締め作業</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-teal-100 text-teal-700 border-teal-200">開店作業</span>
+                                <span class="text-xs px-2 py-1 rounded border bg-pink-100 text-pink-700 border-pink-200">レジ</span>
                             </div>
-                            <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="pt-4 border-t border-gray-100">
                                 <p class="text-xs font-bold text-slate-600 mb-2"><i class="fa-solid fa-users-gear mr-1 text-amber-500"></i>シフト別 最低配置基準</p>
                                 <div class="flex flex-wrap gap-3 text-xs">
                                     <div class="bg-amber-50 border border-amber-200 rounded px-3 py-2 text-amber-800">
-                                        <span class="font-bold">早番（全店）</span>：責任者（A/B）1名以上 ＋ スタッフ（C/D）2名以上
+                                        <span class="font-bold">早番（全店）</span>：締め作業スキル保持者 1名以上 ＋ スタッフ 2名以上
                                     </div>
                                     <div class="bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-700">
-                                        <span class="font-bold">遅番（松山のみ）</span>：A層のみ 1名以上
+                                        <span class="font-bold">遅番（松山のみ）</span>：締め作業スキル保持者 1名以上
                                     </div>
                                 </div>
                                 <p class="mt-3 text-[10px] text-gray-400"><i class="fa-solid fa-info-circle mr-1"></i>詳細な配置基準は「必須人員マスタ」タブで変更できます。</p>
@@ -498,7 +455,6 @@
                         <thead>
                             <tr>
                                 <th class="w-40 text-left pl-4">スタッフ</th>
-                                <th>レイヤー</th>
                                 <th>出勤日数</th>
                                 <th>公休日数</th>
                                 <th>総実働時間</th>
@@ -534,27 +490,24 @@
 
                 <!-- 凡例 -->
                 <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4 text-xs text-gray-600 flex flex-wrap gap-3">
-                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-purple-400"></span><strong>S</strong>: 役員</span>
-                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-red-400"></span><strong>A</strong>: 日本人正社員（月給・月6公休必須）</span>
-                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-blue-400"></span><strong>B</strong>: 外国籍正社員（月給・月8公休・在留資格確認）</span>
-                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-green-400"></span><strong>C</strong>: 熟練バイト（時給）</span>
-                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-gray-400"></span><strong>D</strong>: 未熟バイト（時給）</span>
-                    <span class="text-orange-600 font-bold">🎓 学生 = 22:00まで</span>
-                    <span class="text-amber-600 font-bold">🔞マーク = 18歳未満</span>
+                    <span class="font-bold text-slate-700">スタッフ属性：</span>
+                    <span class="text-red-600 font-bold">🔞未成年 = 遅番配置不可</span>
+                    <span class="text-orange-600 font-bold">⏰20h = 社保回避（20h以内）</span>
+                    <span class="text-amber-600 font-bold">スキルは「スタッフ設定」タブで管理</span>
                 </div>
 
                 <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                     <table class="w-full text-sm" id="settings-table">
                         <thead class="bg-slate-50 border-b border-gray-200">
                             <tr>
-                                <th class="text-left px-3 py-3 font-bold text-slate-600 w-8"></th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">名前</th>
-                                <th class="text-left px-3 py-3 font-bold text-slate-600">レイヤー</th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">給与タイプ</th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">給与額</th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">生年月日</th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">固定店舗</th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">出勤不可曜日</th>
+                                <th class="text-left px-3 py-3 font-bold text-slate-600">制限・時間帯</th>
+                                <th class="text-left px-3 py-3 font-bold text-slate-600">スキル</th>
                                 <th class="text-left px-3 py-3 font-bold text-slate-600">メモ</th>
                                 <th class="px-3 py-3 font-bold text-slate-600 w-16">操作</th>
                             </tr>
