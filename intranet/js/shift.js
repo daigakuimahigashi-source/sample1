@@ -15,49 +15,49 @@ const SKILL_COLORS = {
 
 // ===== デフォルトスタッフデータ（MF人事より取得 2026/05/29）=====
 const DEFAULT_STAFF = [
-    { id: 'okk10001', name: '又吉 達朗',   salaryType: 'monthly', salary: 500000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '店舗管理者・フレキシブル配置', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10003', name: '又吉 健太',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10004', name: '新城 優樹',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10005', name: '三澤 北斗',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10006', name: 'チャン フーダット',             salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10008', name: '安里 茜 マーティン',            salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10028', name: 'アングルガハ ガマゲー インディカ',   salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10037', name: 'ウェルガマ ラーララゲ ランドゥニ',   salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10038', name: 'ウェラコーン ムディヤンセラーゲ ラヒル', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10048', name: 'アディカーリ ムディアンセラーゲ アヌーシャ', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10002', name: '又吉 未愉',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10007', name: '大城 未琴',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10009', name: '平田 明久',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10010', name: '宮城 文弥',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10011', name: '大嶺 華笑',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10012', name: '栄野比 あいみ', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10013', name: '金城 心渚',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10014', name: '阿波根 啓',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10015', name: '桑江 旭',     salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10016', name: '又吉 茉紀',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10017', name: '岸本 海利',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10018', name: '渡口 来夢',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10019', name: '仲地 海斗',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10020', name: '平川 翔',     salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10023', name: '具志堅 詩苑', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10026', name: '久場 百花',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10030', name: '宮城 碧子',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10031', name: '新里 紫緒那', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10032', name: '村田 悠華',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10033', name: '糸満 苺莉愛', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10034', name: '知念 あおい', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10036', name: '當山 健人',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10040', name: '金城 綾華',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10041', name: '下地 美弥',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10042', name: '池原 幸輝',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10043', name: '譜久里 光流', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10044', name: '知念 稚奈',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10045', name: 'サリバン 莉愛', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10046', name: '安仁屋 匠冴', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
-    { id: 'okk10047', name: '川満 航希',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { isMinor: false, noSocialInsurance: false } },
+    { id: 'okk10001', name: '又吉 達朗',   salaryType: 'monthly', salary: 500000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '店舗管理者・フレキシブル配置', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10003', name: '又吉 健太',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10004', name: '新城 優樹',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10005', name: '三澤 北斗',   salaryType: 'monthly', salary: 300000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '正社員', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10006', name: 'チャン フーダット',             salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10008', name: '安里 茜 マーティン',            salaryType: 'hourly',  salary: 1000,   birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10021', name: 'アルス アーラツチゲーダヌカラクシヤ', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10022', name: 'アマラシンガ ガンガナートアマラ',    salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10024', name: 'ラナシンガ チャミルシャーニカラッタナ',salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10028', name: 'アングルガハ ガマゲー インディカ',   salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10037', name: 'ウェルガマ ラーララゲ ランドゥニ',   salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10038', name: 'ウェラコーン ムディヤンセラーゲ ラヒル', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10048', name: 'アディカーリ ムディアンセラーゲ アヌーシャ', salaryType: 'monthly', salary: 250000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '在留資格確認要', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10002', name: '又吉 未愉',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10007', name: '大城 未琴',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10009', name: '平田 明久',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10010', name: '宮城 文弥',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10011', name: '大嶺 華笑',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10012', name: '栄野比 あいみ', salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10013', name: '金城 心渚',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10014', name: '阿波根 啓',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10015', name: '桑江 旭',     salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10016', name: '又吉 茉紀',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10017', name: '岸本 海利',   salaryType: 'hourly', salary: 1150, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10018', name: '渡口 来夢',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10019', name: '仲地 海斗',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10020', name: '平川 翔',     salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10023', name: '具志堅 詩苑', salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10026', name: '久場 百花',   salaryType: 'hourly', salary: 1100, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10030', name: '宮城 碧子',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10031', name: '新里 紫緒那', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10032', name: '村田 悠華',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10033', name: '糸満 苺莉愛', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10034', name: '知念 あおい', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10036', name: '當山 健人',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10040', name: '金城 綾華',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10041', name: '下地 美弥',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10042', name: '池原 幸輝',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10043', name: '譜久里 光流', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10044', name: '知念 稚奈',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10045', name: 'サリバン 莉愛', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10046', name: '安仁屋 匠冴', salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
+    { id: 'okk10047', name: '川満 航希',   salaryType: 'hourly', salary: 1000, birthdate: '', fixedStore: '', unavailableDays: [], notes: '', skills: [], unavailableDates: [], unavailableSlots: [], restrictions: { noSocialInsurance: false } },
 ];
 
 const STORES_MAP = {
@@ -70,6 +70,17 @@ const STORES_MAP = {
 const STORE_NAMES_SHORT = { matsuyama: '松山', kumoji: '久茂地', miebash: '美栄橋', misato: '美里' };
 const ALL_DAYS = ['月','火','水','木','金','土','日'];
 const SLOT_HOURS = { early: 9, late: 10 }; // 早番9h、遅番10h
+
+// 生年月日から指定日時点で18歳未満かどうかを判定
+function isMinorOnDate(staff, date) {
+    if (!staff.birthdate) return false;
+    const birth = new Date(staff.birthdate);
+    const d = date instanceof Date ? date : new Date(date);
+    let age = d.getFullYear() - birth.getFullYear();
+    const m = d.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && d.getDate() < birth.getDate())) age--;
+    return age < 18;
+}
 
 // ===== GAS API設定 =====
 // デプロイ後にウェブアプリURLをここに貼り付ける
@@ -740,7 +751,7 @@ function renderStaffPool() {
 
         const fixedStoreName = staff.fixedStore ? STORES_MAP[staff.fixedStore] : '';
         const badges = [];
-        if (staff.restrictions?.isMinor) badges.push(`<span class="text-[9px] bg-red-50 text-red-600 border border-red-200 rounded px-1">🔞未成年</span>`);
+        if (isMinorOnDate(staff, new Date())) badges.push(`<span class="text-[9px] bg-red-50 text-red-600 border border-red-200 rounded px-1">🔞未成年</span>`);
         if (staff.restrictions?.noSocialInsurance) badges.push(`<span class="text-[9px] bg-orange-50 text-orange-600 border border-orange-200 rounded px-1">⏰20h</span>`);
         if (fixedStoreName) badges.push(`<span class="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 rounded px-1"><i class="fa-solid fa-store" style="font-size:8px"></i> ${fixedStoreName}</span>`);
         if (staff.unavailableDays?.length > 0) badges.push(`<span class="text-[9px] bg-red-50 text-red-500 border border-red-200 rounded px-1">休:${staff.unavailableDays.join('・')}</span>`);
@@ -793,8 +804,8 @@ function handleDrop(e) {
         const slotKey = dropZone.dataset.shift;
         const staffData = initialStaff.find(s => s.id === staffId);
         if (staffData) {
-            // 未成年は遅番スロットへのドロップ不可
-            if (staffData.restrictions?.isMinor && slotKey === 'late') {
+            // 未成年（生年月日で判定）は遅番スロットへのドロップ不可
+            if (isMinorOnDate(staffData, currentViewDate) && slotKey === 'late') {
                 showAlert('未成年のためこのスロットには入れられません', 'error');
                 return;
             }
@@ -1190,13 +1201,12 @@ function renderSettingsTable() {
             </label>
         `).join('');
 
+        const minorStatus = isMinorOnDate(staff, new Date());
         const restrictionHtml = `
-            <label class="flex items-center gap-1 text-xs cursor-pointer">
-                <input type="checkbox" ${staff.restrictions?.isMinor?'checked':''}
-                    onchange="updateStaffRestriction(${idx},'isMinor',this.checked)"
-                    class="w-3.5 h-3.5 accent-red-500">
-                <span class="text-red-600">未成年</span>
-            </label>
+            <div class="flex items-center gap-1 text-xs ${minorStatus ? 'text-red-600 font-bold' : 'text-gray-400'}">
+                ${minorStatus ? '🔞 未成年（18歳未満）' : '成人'}
+                ${staff.birthdate ? `<span class="font-normal text-gray-400 ml-1">${staff.birthdate}</span>` : '<span class="text-gray-300 ml-1">生年月日未設定</span>'}
+            </div>
             <label class="flex items-center gap-1 text-xs cursor-pointer">
                 <input type="checkbox" ${staff.restrictions?.noSocialInsurance?'checked':''}
                     onchange="updateStaffRestriction(${idx},'noSocialInsurance',this.checked)"
@@ -1490,7 +1500,7 @@ function importStaffCSV(input) {
                     skills: get('スキル') ? get('スキル').split('|').filter(Boolean) : [],
                     unavailableDates: [],
                     unavailableSlots: [],
-                    restrictions: { isMinor: false, noSocialInsurance: false },
+                    restrictions: { noSocialInsurance: false },
                 });
             }
             if (imported.length === 0) { alert('読み込めるデータがありませんでした。'); return; }
