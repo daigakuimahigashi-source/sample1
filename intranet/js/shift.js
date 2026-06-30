@@ -1192,14 +1192,12 @@ function renderSettingsTable() {
                 </div>
               </td>`;
 
-        const skillCheckboxes = SKILLS.map(skill => `
-            <label class="flex items-center gap-1 text-xs cursor-pointer">
-                <input type="checkbox" ${(staff.skills||[]).includes(skill)?'checked':''}
-                    onchange="toggleStaffSkill(${idx},'${skill}',this.checked)"
-                    class="w-3.5 h-3.5 accent-amber-500">
-                <span>${skill}</span>
-            </label>
-        `).join('');
+        const skillCheckboxes = SKILLS.map(skill => {
+            const has = (staff.skills||[]).includes(skill);
+            const col = has ? (SKILL_COLORS[skill] || 'bg-amber-100 text-amber-700 border-amber-300') : 'bg-gray-50 text-gray-400 border-gray-200';
+            return `<button type="button" onclick="toggleStaffSkill(${idx},'${skill}',${!has})"
+                class="text-[11px] px-2 py-0.5 rounded-full border whitespace-nowrap transition ${col} hover:opacity-80">${skill}</button>`;
+        }).join('');
 
         const minorStatus = isMinorOnDate(staff, new Date());
         const restrictionHtml = `
@@ -1265,14 +1263,15 @@ function renderSettingsTable() {
                     ${slotHtml}
                 </div>
             </td>
-            <td class="px-2 py-2">
-                <div class="flex flex-wrap gap-1">
+            <td class="px-2 py-2 min-w-[480px]">
+                <div class="flex flex-row gap-1 overflow-x-auto pb-0.5">
                     ${skillCheckboxes}
                 </div>
             </td>
             <td class="px-2 py-2">
-                <input type="text" value="${staff.notes||''}" placeholder="メモ" onchange="updateStaff(${idx},'notes',this.value)"
+                <input type="text" value="${staff.notes||''}" placeholder="例: 土日のみ可・遅番不可" onchange="updateStaff(${idx},'notes',this.value)"
                     class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-amber-400">
+                <p class="text-[10px] text-purple-500 mt-0.5"><i class="fa-solid fa-wand-magic-sparkles mr-0.5"></i>AIが参照します</p>
             </td>
             <td class="px-2 py-2 text-center">
                 <button onclick="removeStaff(${idx})" class="text-red-400 hover:text-red-600 transition" title="削除">
@@ -1570,10 +1569,17 @@ async function runAIShift() {
     document.getElementById('ai-result-area').classList.add('hidden');
     document.getElementById('ai-apply-btn').classList.add('hidden');
     try {
+        // スタッフのフリーワード（メモ欄）をプロンプトに自動追記
+        const staffWithNotes = loadStaff().filter(s => s.notes);
+        let userPromptText = document.getElementById('ai-prompt').value;
+        if (staffWithNotes.length > 0) {
+            const noteLines = staffWithNotes.map(s => `・${s.name}: ${s.notes}`).join('\n');
+            userPromptText += (userPromptText ? '\n\n' : '') + '【スタッフ個別事情】\n' + noteLines;
+        }
         const payload = {
             staffData: loadStaff(), requirements: loadRequirements(),
             weekDates: getWeekDates(weekStart),
-            userPrompt: document.getElementById('ai-prompt').value,
+            userPrompt: userPromptText,
         };
         const res = await fetch(LABOR_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), redirect:'follow' });
         const json = await res.json();
