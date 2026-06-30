@@ -1360,6 +1360,67 @@ function saveSettings() {
     status.classList.remove('hidden');
     setTimeout(() => status.classList.add('hidden'), 2000);
 }
+function importStaffCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const lines = e.target.result.split('\n').filter(l => l.trim());
+            const headers = lines[0].split(',').map(h => h.trim());
+            const imported = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                if (cols.length < 2) continue;
+                const get = name => (cols[headers.indexOf(name)] || '').trim();
+                imported.push({
+                    id: get('ID') || 'csv_' + Date.now() + '_' + i,
+                    name: get('名前'),
+                    salaryType: get('給与タイプ') || 'hourly',
+                    salary: parseFloat(get('給与額')) || 1000,
+                    birthdate: get('生年月日') || '',
+                    fixedStore: get('固定店舗') || '',
+                    unavailableDays: get('出勤不可曜日') ? get('出勤不可曜日').split('|').filter(Boolean) : [],
+                    notes: get('メモ') || '',
+                    skills: get('スキル') ? get('スキル').split('|').filter(Boolean) : [],
+                    unavailableDates: get('不可特定日') ? get('不可特定日').split('|').filter(Boolean) : [],
+                    unavailableSlots: get('不可時間帯') ? get('不可時間帯').split('|').filter(Boolean) : [],
+                    restrictions: { noSocialInsurance: get('社保回避') === 'true' },
+                });
+            }
+            if (imported.length === 0) { alert('読み込めるデータがありませんでした。'); return; }
+            if (confirm(`${imported.length}名のスタッフを読み込みます。既存データを上書きしますか？`)) {
+                initialStaff = imported;
+                saveStaffData(initialStaff);
+                renderSettingsTable();
+                renderStaffPool();
+                alert(`✅ ${imported.length}名を読み込みました！`);
+            }
+        } catch (err) { alert('CSVの読み込みに失敗しました: ' + err.message); }
+        input.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
+function exportStaffCSV() {
+    const headers = ['ID','名前','給与タイプ','給与額','生年月日','固定店舗','出勤不可曜日','スキル','不可特定日','不可時間帯','社保回避','メモ'];
+    const rows = initialStaff.map(s => [
+        s.id||'', s.name, s.salaryType, s.salary, s.birthdate||'', s.fixedStore||'',
+        (s.unavailableDays||[]).join('|'),
+        (s.skills||[]).join('|'),
+        (s.unavailableDates||[]).join('|'),
+        (s.unavailableSlots||[]).join('|'),
+        s.restrictions?.noSocialInsurance ? 'true' : 'false',
+        s.notes||''
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'staff_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+}
+
 function resetSettings() {
     if (confirm('デフォルトのスタッフデータに戻しますか？')) {
         initialStaff = JSON.parse(JSON.stringify(DEFAULT_STAFF));
