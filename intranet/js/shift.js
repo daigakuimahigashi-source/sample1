@@ -371,7 +371,7 @@ function switchView(view) {
         }
     });
     if (view === 'day')          { loadDayIntoBoard(dateToStr(currentViewDate)); }
-    if (view === 'settings')     { renderSettingsTable(); }
+    if (view === 'settings')     { renderSettingsTable(); loadPrefStatus(); }
     if (view === 'requirements') { renderRequirementsView(); }
     if (view === 'week')         { renderWeekView(); }
     if (view === 'month')        { renderMonthView(); }
@@ -1666,6 +1666,88 @@ function exportStaffCSV() {
     a.href = URL.createObjectURL(blob);
     a.download = 'staff_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
+}
+
+// ===== 月次シフト希望 管理者パネル =====
+let prefViewYear, prefViewMonth;
+(function() {
+    const now = new Date();
+    prefViewYear  = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+    prefViewMonth = now.getMonth() === 11 ? 0 : now.getMonth() + 1;
+})();
+
+function updatePrefMonthLabel() {
+    const el = document.getElementById('pref-month-label');
+    if (el) el.textContent = `${prefViewYear}年${prefViewMonth + 1}月`;
+}
+
+function changePrefMonth(delta) {
+    prefViewMonth += delta;
+    if (prefViewMonth < 0)  { prefViewMonth = 11; prefViewYear--; }
+    if (prefViewMonth > 11) { prefViewMonth = 0;  prefViewYear++; }
+    updatePrefMonthLabel();
+    loadPrefStatus();
+}
+
+async function loadPrefStatus() {
+    updatePrefMonthLabel();
+    const listEl = document.getElementById('pref-status-list');
+    if (!listEl) return;
+    if (!window.fbAllPrefs) {
+        listEl.innerHTML = '<p class="text-xs text-blue-500 italic">Firebaseにログインすると表示されます</p>';
+        return;
+    }
+    listEl.innerHTML = '<p class="text-xs text-blue-400">読み込み中...</p>';
+    try {
+        const yearMonth = `${prefViewYear}-${String(prefViewMonth + 1).padStart(2,'0')}`;
+        const prefs = await window.fbAllPrefs(yearMonth);
+        const staff = loadStaff();
+        const rows = staff.map(s => {
+            const p = prefs[s.id];
+            if (p) {
+                const at = new Date(p.submittedAt);
+                const dateList = (p.unavailableDates || []).map(d => {
+                    const dt = new Date(d);
+                    return `${dt.getMonth()+1}/${dt.getDate()}`;
+                }).join(' ');
+                return `<div class="flex items-center justify-between bg-white rounded-lg px-3 py-1.5 text-xs border border-green-200">
+                    <span class="font-bold text-slate-700 w-28 shrink-0">${s.name}</span>
+                    <span class="text-green-600 font-bold shrink-0"><i class="fa-solid fa-circle-check mr-0.5"></i>${at.getMonth()+1}/${at.getDate()}提出</span>
+                    <span class="text-red-500 text-[10px] ml-2 truncate">${dateList || '不可日なし'}</span>
+                </div>`;
+            } else {
+                return `<div class="flex items-center bg-white rounded-lg px-3 py-1.5 text-xs border border-gray-100">
+                    <span class="font-bold text-slate-400 w-28 shrink-0">${s.name}</span>
+                    <span class="text-gray-400 italic">未提出</span>
+                </div>`;
+            }
+        }).join('');
+        const submitted = Object.keys(prefs).length;
+        listEl.innerHTML = `<p class="text-xs text-blue-700 font-bold mb-2">${submitted}名提出済み / ${staff.length}名中</p>` + rows;
+    } catch(e) {
+        listEl.innerHTML = `<p class="text-xs text-red-500">読み込みエラー: ${e.message}</p>`;
+    }
+}
+
+async function applyPrefsToStaff() {
+    if (!window.fbAllPrefs) { alert('Firebaseにログインしてください'); return; }
+    const yearMonth = `${prefViewYear}-${String(prefViewMonth + 1).padStart(2,'0')}`;
+    if (!confirm(`${prefViewYear}年${prefViewMonth + 1}月の提出データを各スタッフの「不可特定日」に反映します。既存の不可特定日は上書きされます。よろしいですか？`)) return;
+    try {
+        const prefs = await window.fbAllPrefs(yearMonth);
+        let count = 0;
+        initialStaff.forEach(s => {
+            if (prefs[s.id]) {
+                s.unavailableDates = prefs[s.id].unavailableDates || [];
+                count++;
+            }
+        });
+        saveStaffData(initialStaff);
+        renderSettingsTable();
+        alert(`✅ ${count}名分の希望を反映しました。「設定を保存」を押して確定してください。`);
+    } catch(e) {
+        alert('反映エラー: ' + e.message);
+    }
 }
 
 // ===== AI Shift Generation =====

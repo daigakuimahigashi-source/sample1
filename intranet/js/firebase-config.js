@@ -2,7 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, onSnapshot, getDoc }
+import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getDocs }
   from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -53,8 +53,56 @@ function fsListen(key, callback) {
   });
 }
 
+// ===== スタッフアカウント紐付け =====
+const LINK_DOC = (uid) => doc(db, 'staff_links', uid);
+
+async function setStaffLink(uid, staffId, staffName) {
+  await setDoc(LINK_DOC(uid), { staffId, staffName, linkedAt: new Date().toISOString() });
+}
+
+async function getStaffLink(uid) {
+  const snap = await getDoc(LINK_DOC(uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+// ===== 月次シフト希望 =====
+// /monthly_prefs/{YYYY-MM}/submissions/{staffId}
+const PREF_DOC = (yearMonth, staffId) =>
+  doc(db, 'monthly_prefs', yearMonth, 'submissions', staffId);
+const PREF_COL = (yearMonth) =>
+  collection(db, 'monthly_prefs', yearMonth, 'submissions');
+
+async function savePref(yearMonth, staffId, staffName, unavailableDates) {
+  await setDoc(PREF_DOC(yearMonth, staffId), {
+    staffId, staffName, unavailableDates,
+    submittedAt: new Date().toISOString(),
+  });
+}
+
+async function getPref(yearMonth, staffId) {
+  const snap = await getDoc(PREF_DOC(yearMonth, staffId));
+  return snap.exists() ? snap.data() : null;
+}
+
+async function getAllPrefs(yearMonth) {
+  const snap = await getDocs(PREF_COL(yearMonth));
+  const result = {};
+  snap.forEach(d => { result[d.id] = d.data(); });
+  return result;
+}
+
+function listenPrefs(yearMonth, callback) {
+  return onSnapshot(PREF_COL(yearMonth), (snap) => {
+    const result = {};
+    snap.forEach(d => { result[d.id] = d.data(); });
+    callback(result);
+  });
+}
+
 export {
   auth, db,
   loginWithGoogle, logout, isAdmin, onAuthStateChanged,
   fsSet, fsGet, fsListen,
+  setStaffLink, getStaffLink,
+  savePref, getPref, getAllPrefs, listenPrefs,
 };

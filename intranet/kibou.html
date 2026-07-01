@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト希望提出 | 焼肉ここから</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #fafaf8; }
+    .day-btn { transition: all 0.15s; }
+    .day-btn.unavailable { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: bold; }
+    .day-btn.today-mark { border-color: #f59e0b; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ヘッダー -->
+<header class="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
+  <div class="flex items-center gap-2">
+    <span class="text-xl">🔥</span>
+    <span class="font-bold text-sm">焼肉ここから｜シフト希望提出</span>
+  </div>
+  <div id="auth-area"></div>
+</header>
+
+<!-- メイン -->
+<main class="max-w-lg mx-auto px-4 py-6 space-y-5">
+
+  <!-- ログイン前 -->
+  <div id="screen-login" class="hidden">
+    <div class="bg-white rounded-2xl shadow p-8 text-center space-y-4">
+      <div class="text-4xl">🔥</div>
+      <h1 class="text-xl font-bold text-slate-800">シフト希望提出</h1>
+      <p class="text-sm text-slate-500">Googleアカウントでログインして<br>来月の希望を提出してください</p>
+      <button id="login-btn"
+        class="w-full flex items-center justify-center gap-2 bg-white border-2 border-gray-300 rounded-xl py-3 px-4 text-sm font-bold hover:bg-gray-50 transition shadow-sm">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
+        Googleでログイン
+      </button>
+    </div>
+  </div>
+
+  <!-- 名前紐付け（初回のみ） -->
+  <div id="screen-link" class="hidden">
+    <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+      <h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-check mr-2 text-amber-500"></i>あなたは誰ですか？</h2>
+      <p class="text-sm text-slate-500">初回のみ設定が必要です。自分の名前を選んでください。</p>
+      <select id="staff-select" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+        <option value="">-- 名前を選ぶ --</option>
+      </select>
+      <button id="link-btn"
+        class="w-full bg-amber-500 hover:bg-amber-400 text-white rounded-xl py-3 text-sm font-bold transition shadow">
+        これが私です
+      </button>
+    </div>
+  </div>
+
+  <!-- 希望提出フォーム -->
+  <div id="screen-form" class="hidden space-y-4">
+
+    <!-- ユーザー情報 -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between">
+      <div>
+        <p class="font-bold text-slate-800" id="display-name"></p>
+        <p class="text-xs text-slate-500">シフト希望提出ページ</p>
+      </div>
+      <button id="logout-btn" class="text-xs text-gray-400 hover:text-gray-600">ログアウト</button>
+    </div>
+
+    <!-- 対象月選択 -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-500 mb-0.5">提出対象月</p>
+        <p id="target-month-label" class="font-bold text-slate-800 text-base"></p>
+      </div>
+      <div class="flex gap-2">
+        <button id="prev-month-btn" class="w-8 h-8 rounded-full border border-gray-200 text-gray-400 hover:border-amber-400 hover:text-amber-500 transition text-sm">‹</button>
+        <button id="next-month-btn" class="w-8 h-8 rounded-full border border-gray-200 text-gray-400 hover:border-amber-400 hover:text-amber-500 transition text-sm">›</button>
+      </div>
+    </div>
+
+    <!-- カレンダー -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs text-slate-500 mb-3"><i class="fa-solid fa-hand-pointer mr-1"></i>出勤できない日をタップしてください（赤くなります）</p>
+      <div class="grid grid-cols-7 gap-1 mb-2">
+        <div class="text-center text-xs font-bold text-slate-400">月</div>
+        <div class="text-center text-xs font-bold text-slate-400">火</div>
+        <div class="text-center text-xs font-bold text-slate-400">水</div>
+        <div class="text-center text-xs font-bold text-slate-400">木</div>
+        <div class="text-center text-xs font-bold text-slate-400">金</div>
+        <div class="text-center text-xs font-bold text-blue-400">土</div>
+        <div class="text-center text-xs font-bold text-red-400">日</div>
+      </div>
+      <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+    </div>
+
+    <!-- 選択中の日リスト -->
+    <div id="selected-summary" class="hidden bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+      <p class="text-xs font-bold text-red-700 mb-1"><i class="fa-solid fa-calendar-xmark mr-1"></i>出勤不可日</p>
+      <p id="selected-dates-text" class="text-sm text-red-600"></p>
+    </div>
+
+    <!-- 提出ボタン -->
+    <div class="space-y-2">
+      <button id="submit-btn"
+        class="w-full bg-amber-500 hover:bg-amber-400 text-white rounded-xl py-4 font-bold text-base transition shadow-md">
+        <i class="fa-solid fa-paper-plane mr-2"></i>希望を提出する
+      </button>
+      <p class="text-xs text-center text-slate-400">提出後も20日まで何度でも修正できます</p>
+    </div>
+
+    <!-- 提出済み表示 -->
+    <div id="submitted-banner" class="hidden bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-center">
+      <p class="text-green-700 font-bold text-sm"><i class="fa-solid fa-circle-check mr-1"></i>提出済み</p>
+      <p id="submitted-at" class="text-xs text-green-600 mt-0.5"></p>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+import {
+  auth, loginWithGoogle, logout, onAuthStateChanged, isAdmin,
+  getStaffLink, setStaffLink, savePref, getPref
+} from './js/firebase-config.js';
+
+// スタッフ一覧（shift.jsと同じDEFAULT_STAFFから名前だけ）
+const STAFF_LIST = [
+  { id:'okk10001', name:'又吉 達朗' }, { id:'okk10003', name:'又吉 健太' },
+  { id:'okk10004', name:'新城 優樹' }, { id:'okk10005', name:'三澤 北斗' },
+  { id:'okk10006', name:'チャン フーダット' }, { id:'okk10008', name:'安里 茜 マーティン' },
+  { id:'okk10021', name:'アルス アーラツチゲーダヌカラクシヤ' },
+  { id:'okk10022', name:'アマラシンガ ガンガナートアマラ' },
+  { id:'okk10024', name:'ラナシンガ チャミルシャーニカラッタナ' },
+  { id:'okk10028', name:'アングルガハ ガマゲー インディカ' },
+  { id:'okk10037', name:'ウェルガマ ラーララゲ ランドゥニ' },
+  { id:'okk10038', name:'ウェラコーン ムディヤンセラーゲ ラヒル' },
+  { id:'okk10048', name:'アディカーリ ムディアンセラーゲ アヌーシャ' },
+  { id:'okk10002', name:'又吉 未愉' }, { id:'okk10007', name:'大城 未琴' },
+  { id:'okk10009', name:'平田 明久' }, { id:'okk10010', name:'宮城 文弥' },
+  { id:'okk10011', name:'大嶺 華笑' }, { id:'okk10012', name:'栄野比 あいみ' },
+  { id:'okk10013', name:'金城 心渚' }, { id:'okk10014', name:'阿波根 啓' },
+  { id:'okk10015', name:'桑江 旭' }, { id:'okk10016', name:'又吉 茉紀' },
+  { id:'okk10017', name:'岸本 海利' }, { id:'okk10018', name:'渡口 来夢' },
+  { id:'okk10019', name:'仲地 海斗' }, { id:'okk10020', name:'平川 翔' },
+  { id:'okk10023', name:'具志堅 詩苑' }, { id:'okk10026', name:'久場 百花' },
+  { id:'okk10030', name:'宮城 碧子' }, { id:'okk10031', name:'新里 紫緒那' },
+  { id:'okk10032', name:'村田 悠華' }, { id:'okk10033', name:'糸満 苺莉愛' },
+  { id:'okk10034', name:'知念 あおい' }, { id:'okk10036', name:'當山 健人' },
+  { id:'okk10040', name:'金城 綾華' }, { id:'okk10041', name:'下地 美弥' },
+  { id:'okk10042', name:'池原 幸輝' }, { id:'okk10043', name:'譜久里 光流' },
+  { id:'okk10044', name:'知念 稚奈' }, { id:'okk10045', name:'サリバン 莉愛' },
+  { id:'okk10046', name:'安仁屋 匠冴' }, { id:'okk10047', name:'川満 航希' },
+];
+
+let currentUser = null;
+let staffLink = null;   // { staffId, staffName }
+let targetYear, targetMonth; // 提出対象年月
+let unavailableDates = new Set();
+
+// 初期月は来月
+const now = new Date();
+targetYear  = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+targetMonth = now.getMonth() === 11 ? 0 : now.getMonth() + 1; // 0-indexed
+
+// ===== 画面切り替え =====
+function showScreen(id) {
+  ['screen-login','screen-link','screen-form'].forEach(s =>
+    document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ===== 認証状態 =====
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  const authArea = document.getElementById('auth-area');
+
+  if (!user) {
+    authArea.innerHTML = '';
+    showScreen('screen-login');
+    return;
+  }
+
+  authArea.innerHTML = `<span class="text-xs text-slate-300">${user.displayName || user.email}</span>`;
+
+  // スタッフ紐付け確認
+  staffLink = await getStaffLink(user.uid);
+  if (!staffLink) {
+    showScreen('screen-link');
+    populateStaffSelect();
+  } else {
+    showScreen('screen-form');
+    initForm();
+  }
+});
+
+// ===== ログイン =====
+document.getElementById('login-btn').addEventListener('click', () => loginWithGoogle());
+document.getElementById('logout-btn').addEventListener('click', () => logout());
+
+// ===== スタッフ選択（初回紐付け） =====
+function populateStaffSelect() {
+  const sel = document.getElementById('staff-select');
+  STAFF_LIST.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('link-btn').addEventListener('click', async () => {
+  const sel = document.getElementById('staff-select');
+  const staffId = sel.value;
+  if (!staffId) { alert('名前を選んでください'); return; }
+  const staff = STAFF_LIST.find(s => s.id === staffId);
+  if (!staff) return;
+  if (!confirm(`「${staff.name}」として登録します。よろしいですか？`)) return;
+
+  await setStaffLink(currentUser.uid, staffId, staff.name);
+  staffLink = { staffId, staffName: staff.name };
+  showScreen('screen-form');
+  initForm();
+});
+
+// ===== フォーム初期化 =====
+async function initForm() {
+  document.getElementById('display-name').textContent = staffLink.staffName;
+  updateMonthLabel();
+  await loadExistingPref();
+  renderCalendar();
+}
+
+function updateMonthLabel() {
+  const label = `${targetYear}年${targetMonth + 1}月`;
+  document.getElementById('target-month-label').textContent = label;
+}
+
+// 月移動
+document.getElementById('prev-month-btn').addEventListener('click', async () => {
+  if (targetMonth === 0) { targetMonth = 11; targetYear--; }
+  else targetMonth--;
+  updateMonthLabel();
+  unavailableDates = new Set();
+  await loadExistingPref();
+  renderCalendar();
+});
+document.getElementById('next-month-btn').addEventListener('click', async () => {
+  if (targetMonth === 11) { targetMonth = 0; targetYear++; }
+  else targetMonth++;
+  updateMonthLabel();
+  unavailableDates = new Set();
+  await loadExistingPref();
+  renderCalendar();
+});
+
+// 既存の提出データ読み込み
+async function loadExistingPref() {
+  const yearMonth = `${targetYear}-${String(targetMonth + 1).padStart(2,'0')}`;
+  const pref = await getPref(yearMonth, staffLink.staffId);
+  if (pref) {
+    unavailableDates = new Set(pref.unavailableDates || []);
+    const banner = document.getElementById('submitted-banner');
+    banner.classList.remove('hidden');
+    const at = new Date(pref.submittedAt);
+    document.getElementById('submitted-at').textContent =
+      `${at.getFullYear()}/${at.getMonth()+1}/${at.getDate()} ${at.getHours()}:${String(at.getMinutes()).padStart(2,'0')} 提出済み`;
+  } else {
+    unavailableDates = new Set();
+    document.getElementById('submitted-banner').classList.add('hidden');
+  }
+  updateSummary();
+}
+
+// ===== カレンダー描画 =====
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+  const todayStr = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(targetYear, targetMonth, 1);
+  // 月曜始まり: 0=月,6=日
+  let startOffset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+  // 空白
+  for (let i = 0; i < startOffset; i++) {
+    const blank = document.createElement('div');
+    grid.appendChild(blank);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${targetYear}-${String(targetMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = (new Date(targetYear, targetMonth, d).getDay() + 6) % 7; // 0=月
+    const isUnavail = unavailableDates.has(dateStr);
+    const isToday = dateStr === todayStr;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `day-btn w-full aspect-square rounded-lg border text-sm flex items-center justify-center
+      ${isUnavail ? 'unavailable' : dow === 5 ? 'bg-blue-50 text-blue-500 border-blue-100' : dow === 6 ? 'bg-red-50 text-red-400 border-red-100' : 'bg-gray-50 text-slate-600 border-gray-200 hover:bg-amber-50 hover:border-amber-300'}
+      ${isToday ? 'today-mark ring-1 ring-amber-400' : ''}`;
+    btn.textContent = d;
+    btn.addEventListener('click', () => toggleDate(dateStr));
+    grid.appendChild(btn);
+  }
+}
+
+function toggleDate(dateStr) {
+  if (unavailableDates.has(dateStr)) unavailableDates.delete(dateStr);
+  else unavailableDates.add(dateStr);
+  renderCalendar();
+  updateSummary();
+}
+
+function updateSummary() {
+  const sorted = [...unavailableDates].sort();
+  const el = document.getElementById('selected-summary');
+  const txt = document.getElementById('selected-dates-text');
+  if (sorted.length === 0) {
+    el.classList.add('hidden');
+  } else {
+    el.classList.remove('hidden');
+    txt.textContent = sorted.map(d => {
+      const dt = new Date(d);
+      return `${dt.getMonth()+1}/${dt.getDate()}(${['日','月','火','水','木','金','土'][dt.getDay()]})`;
+    }).join('、');
+  }
+}
+
+// ===== 提出 =====
+document.getElementById('submit-btn').addEventListener('click', async () => {
+  const yearMonth = `${targetYear}-${String(targetMonth+1).padStart(2,'0')}`;
+  const dates = [...unavailableDates].sort();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '提出中...';
+  try {
+    await savePref(yearMonth, staffLink.staffId, staffLink.staffName, dates);
+    const banner = document.getElementById('submitted-banner');
+    banner.classList.remove('hidden');
+    const now2 = new Date();
+    document.getElementById('submitted-at').textContent =
+      `${now2.getFullYear()}/${now2.getMonth()+1}/${now2.getDate()} ${now2.getHours()}:${String(now2.getMinutes()).padStart(2,'0')} 提出済み`;
+    btn.textContent = '✅ 提出しました！';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>希望を更新する';
+    }, 2000);
+  } catch(e) {
+    alert('提出に失敗しました: ' + e.message);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>希望を提出する';
+  }
+});
+</script>
+</body>
+</html>

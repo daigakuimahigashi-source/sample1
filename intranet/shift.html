@@ -496,6 +496,33 @@
                     <span class="text-amber-600 font-bold">スキルは「スタッフ設定」タブで管理</span>
                 </div>
 
+                <!-- 希望提出状況パネル -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="font-bold text-blue-800 text-sm"><i class="fa-solid fa-calendar-check mr-1"></i>シフト希望提出状況</h3>
+                            <p class="text-xs text-blue-600 mt-0.5">対象月：<span id="pref-month-label" class="font-bold"></span></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changePrefMonth(-1)" class="w-7 h-7 rounded-full border border-blue-300 text-blue-500 hover:bg-blue-100 text-sm transition">‹</button>
+                            <button onclick="changePrefMonth(1)"  class="w-7 h-7 rounded-full border border-blue-300 text-blue-500 hover:bg-blue-100 text-sm transition">›</button>
+                            <button onclick="loadPrefStatus()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg transition">
+                                <i class="fa-solid fa-rotate-right mr-1"></i>更新
+                            </button>
+                            <button onclick="applyPrefsToStaff()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg transition">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>一括反映
+                            </button>
+                        </div>
+                    </div>
+                    <div id="pref-status-list" class="space-y-1.5 max-h-48 overflow-y-auto">
+                        <p class="text-xs text-blue-500 italic">ログイン後に表示されます</p>
+                    </div>
+                    <p class="text-xs text-blue-500 mt-2">
+                        <i class="fa-solid fa-link mr-1"></i>スタッフ用提出ページ：
+                        <a href="kibou.html" target="_blank" class="underline font-bold">kibou.html</a>
+                    </p>
+                </div>
+
                 <div id="settings-cards-container" class="flex flex-col gap-3">
                     <!-- JSで生成 -->
                 </div>
@@ -550,7 +577,7 @@
     <script type="module">
       import {
         auth, loginWithGoogle, logout, isAdmin, onAuthStateChanged,
-        fsSet, fsGet, fsListen
+        fsSet, fsGet, fsListen, getAllPrefs
       } from './js/firebase-config.js';
 
       // shift.js からアクセスできるようグローバルに公開
@@ -560,6 +587,7 @@
         listen: (key, cb) => fsListen(key, cb),
       };
 
+      window.fbAllPrefs     = (yearMonth) => getAllPrefs(yearMonth);
       window.firebaseLogin  = () => loginWithGoogle().catch(e => alert('ログインエラー: ' + e.message));
       window.firebaseLogout = () => logout();
 
