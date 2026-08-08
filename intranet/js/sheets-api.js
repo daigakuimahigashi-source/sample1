@@ -3,7 +3,7 @@
  * daily_summary シートのデータを取得し、SAMPLE_DATA 形式に変換する
  */
 const SheetsAPI = (() => {
-  const GAS_URL       = 'https://script.google.com/macros/s/AKfycbykLuUaDsP2vbsSh73Vm1Kh70nuxsZMoC5_U9m7p0WyTtIaGshNy98rmmsStH46xoA/exec';
+  const GAS_URL       = 'https://script.google.com/macros/s/AKfycbxTNT5mAzNsPenb_D3tI19oO4ziPg8Fc7L4hXTSn5QNxHhcrIe4VzvHST0hmZFoPsDX/exec';
   const LABOR_API_URL = 'https://script.google.com/macros/s/AKfycbyshjsL_IXWMia1n3pg0SbQVhJgzoBpA65ywfNVM2tzVKRSp1sVc6fn02NbhZQq0TOI/exec';
 
   // スマレジ店舗ID → ダッシュボード storeId
