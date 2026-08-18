@@ -5,6 +5,8 @@
   const STORAGE_STAFF = 'okk_shift_v2_staff';
   const DAILY_LIMIT = 8 * 60;
   const WEEKLY_LIMIT = 40 * 60;
+  const BREAK_45_BINDING = 6 * 60 + 45;
+  const BREAK_60_BINDING = 9 * 60;
 
   const refs = {};
   let observer = null;
@@ -95,7 +97,9 @@
           date,
           shift,
           staffId: String(shift.staffId || '').toUpperCase(),
-          minutes: shiftMinutes(shift),
+          minutes: plannedWorkMinutes(shift),
+          bindingMinutes: shiftBindingMinutes(shift),
+          breakMinutes: standardBreakMinutes(shift),
         });
       });
     });
@@ -115,19 +119,19 @@
     refs.banner.innerHTML = `
       <div class="labor-banner-head">
         <div><i class="fa-solid ${hasWarning ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i><strong> 労働時間チェック</strong></div>
-        <div class="labor-legend"><span class="legend-daily">赤＝1日8時間超</span><span class="legend-weekly">紫＝月曜始まり週40時間超</span></div>
+        <div class="labor-legend"><span class="legend-daily">赤＝予定実働1日8時間超</span><span class="legend-weekly">紫＝予定実働週40時間超</span></div>
       </div>
       <div class="labor-banner-body">
-        ${hasWarning ? warningPills(daily, weekly, data.staffMap) : '<span class="labor-clear-message">現時点で、1日8時間・週40時間を超える予定はありません。</span>'}
+        ${hasWarning ? warningPills(daily, weekly, data.staffMap) : '<span class="labor-clear-message">現時点で、標準休憩控除後の予定実働は1日8時間・週40時間を超えていません。</span>'}
       </div>
-      <div class="labor-banner-note">週集計：${formatDateShort(range.start)}（月）〜${formatDateShort(range.end)}（日）／ 現在は開始〜終了の予定時間を休憩控除前で一次判定</div>
+      <div class="labor-banner-note">週集計：${formatDateShort(range.start)}（月）〜${formatDateShort(range.end)}（日）／ V2標準休憩：拘束9:00以上＝60分、拘束6:45以上＝45分。実際の休憩実績はMF勤怠を正本とします。</div>
     `;
   }
 
   function warningPills(daily, weekly, staffMap) {
     const parts = [];
-    daily.forEach(item => parts.push(`<span class="labor-pill labor-pill-daily"><i class="fa-solid fa-clock"></i>${esc(staffName(item.staffId, staffMap))}：1日 ${formatMinutes(item.minutes)}</span>`));
-    weekly.forEach(item => parts.push(`<span class="labor-pill labor-pill-weekly"><i class="fa-solid fa-calendar-week"></i>${esc(staffName(item.staffId, staffMap))}：週 ${formatMinutes(item.minutes)}</span>`));
+    daily.forEach(item => parts.push(`<span class="labor-pill labor-pill-daily"><i class="fa-solid fa-clock"></i>${esc(staffName(item.staffId, staffMap))}：予定実働 ${formatMinutes(item.minutes)}</span>`));
+    weekly.forEach(item => parts.push(`<span class="labor-pill labor-pill-weekly"><i class="fa-solid fa-calendar-week"></i>${esc(staffName(item.staffId, staffMap))}：週予定実働 ${formatMinutes(item.minutes)}</span>`));
     return parts.join('');
   }
 
@@ -161,8 +165,8 @@
         dot.className = `labor-alert-dot ${dailyOver ? 'daily' : 'weekly'}`;
         dot.textContent = dailyOver && weeklyOver ? '!' : dailyOver ? '日' : '週';
         dot.title = [
-          dailyOver ? `1日 ${formatMinutes(dailyMinutes)}（8時間超）` : '',
-          weeklyOver ? `週 ${formatMinutes(weeklyMinutes)}（40時間超・月曜始まり）` : '',
+          dailyOver ? `予定実働1日 ${formatMinutes(dailyMinutes)}（8時間超）` : '',
+          weeklyOver ? `週予定実働 ${formatMinutes(weeklyMinutes)}（40時間超・月曜始まり）` : '',
         ].filter(Boolean).join(' / ');
         bar.appendChild(dot);
       }
@@ -190,9 +194,9 @@
     alert.className = 'labor-inspector-alert';
     alert.innerHTML = `
       <strong><i class="fa-solid fa-triangle-exclamation"></i> 労働時間アラート</strong>
-      ${dailyOver ? `<div>1日：${formatMinutes(dailyMinutes)}（上限目安を ${formatMinutes(dailyMinutes - DAILY_LIMIT)} 超過）</div>` : ''}
-      ${weeklyOver ? `<div>週：${formatMinutes(weeklyMinutes)}（月曜始まりで ${formatMinutes(weeklyMinutes - WEEKLY_LIMIT)} 超過）</div>` : ''}
-      <small>休憩時間をまだ入力していないため、現在は開始〜終了の予定時間で保守的に判定しています。</small>
+      ${dailyOver ? `<div>予定実働1日：${formatMinutes(dailyMinutes)}（8時間を ${formatMinutes(dailyMinutes - DAILY_LIMIT)} 超過）</div>` : ''}
+      ${weeklyOver ? `<div>週予定実働：${formatMinutes(weeklyMinutes)}（月曜始まりで ${formatMinutes(weeklyMinutes - WEEKLY_LIMIT)} 超過）</div>` : ''}
+      <small>V2ではシフトの拘束時間から標準休憩を自動控除して予定実働を判定します。実際の休憩・勤怠はMF勤怠側を正本とします。</small>
     `;
     refs.inspector.prepend(alert);
   }
@@ -221,7 +225,7 @@
       tr.classList.toggle('labor-table-weekly', weeklyOver);
       const status = document.createElement('div');
       status.className = 'labor-table-status';
-      status.innerHTML = `${dailyOver ? `<span class="labor-mini daily">日 ${formatMinutes(dailyMinutes)}</span>` : ''}${weeklyOver ? `<span class="labor-mini weekly">週 ${formatMinutes(weeklyMinutes)}</span>` : ''}`;
+      status.innerHTML = `${dailyOver ? `<span class="labor-mini daily">実働 ${formatMinutes(dailyMinutes)}</span>` : ''}${weeklyOver ? `<span class="labor-mini weekly">週 ${formatMinutes(weeklyMinutes)}</span>` : ''}`;
       tr.cells[tr.cells.length - 1].appendChild(status);
     });
   }
@@ -238,10 +242,21 @@
     return rows.reduce((total, row) => total + (row.staffId === staffId && row.date >= start && row.date <= end ? row.minutes : 0), 0);
   }
 
-  function shiftMinutes(shift) {
+  function shiftBindingMinutes(shift) {
     const start = Number(shift.start);
     const end = Number(shift.end);
     return Number.isFinite(start) && Number.isFinite(end) ? Math.max(0, end - start) : 0;
+  }
+
+  function standardBreakMinutes(shift) {
+    const binding = shiftBindingMinutes(shift);
+    if (binding >= BREAK_60_BINDING) return 60;
+    if (binding >= BREAK_45_BINDING) return 45;
+    return 0;
+  }
+
+  function plannedWorkMinutes(shift) {
+    return Math.max(0, shiftBindingMinutes(shift) - standardBreakMinutes(shift));
   }
 
   function weekRange(dateString) {
