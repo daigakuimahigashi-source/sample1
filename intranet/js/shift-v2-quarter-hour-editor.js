@@ -1,6 +1,7 @@
 (() => {
   'use strict';
 
+  const SHIFTS_KEY = 'okk_shift_v2_shifts';
   const DAY_START = 15 * 60;
   const DAY_END = 30 * 60;
   const STEP = 15;
@@ -18,6 +19,9 @@
     }
     document.addEventListener('click', event => {
       if (event.target.closest?.('.shift-bar,[data-select]')) setTimeout(schedule, 0);
+    });
+    document.addEventListener('change', event => {
+      if (event.target?.id === 'ins-start' || event.target?.id === 'ins-end') setTimeout(schedule, 0);
     });
     schedule();
   }
@@ -41,17 +45,27 @@
     const endSelect = document.getElementById('ins-end');
     if (!startSelect || !endSelect) return;
 
-    const start = Number(startSelect.value);
-    const end = Number(endSelect.value);
+    const shift = selectedShift();
+    const start = Number(shift?.start ?? startSelect.value);
+    const end = Number(shift?.end ?? endSelect.value);
     if (!Number.isFinite(start) || !Number.isFinite(end)) return;
 
     setOptions(startSelect, DAY_START, Math.max(DAY_START, end - STEP), start);
     setOptions(endSelect, Math.min(DAY_END, start + STEP), DAY_END, end);
   }
 
+  function selectedShift() {
+    const date = document.getElementById('work-date')?.value;
+    const selectedId = document.querySelector('#gantt-canvas .shift-bar.selected')?.dataset.shiftId;
+    if (!date || !selectedId) return null;
+    const shifts = readJson(SHIFTS_KEY, {});
+    const rows = Array.isArray(shifts?.[date]) ? shifts[date] : [];
+    return rows.find(item => item?.id === selectedId) || null;
+  }
+
   function setOptions(select, min, max, selected) {
     const signature = `${min}|${max}|${selected}|${STEP}`;
-    if (select.dataset.quarterHourSignature === signature) return;
+    if (select.dataset.quarterHourSignature === signature && select.value === String(selected)) return;
 
     let html = '';
     for (let minute = min; minute <= max; minute += STEP) {
@@ -65,6 +79,15 @@
     select.innerHTML = html;
     select.value = String(selected);
     select.dataset.quarterHourSignature = signature;
+  }
+
+  function readJson(key, fallback) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key));
+      return value ?? fallback;
+    } catch {
+      return fallback;
+    }
   }
 
   function fmtTime(total) {
