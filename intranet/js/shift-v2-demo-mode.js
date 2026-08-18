@@ -5,6 +5,9 @@
   const SHIFTS_KEY = 'okk_shift_v2_shifts';
   const HOLIDAY_KEY = 'okk_shift_v2_holidays';
   const PLAN_KEY = 'okk_shift_v2_work_plans';
+  const SKILLS_KEY = 'okk_shift_v2_skill_definitions';
+  const REQUIREMENTS_KEY = 'okk_shift_v2_staffing_requirements';
+  const RETURN_CANDIDATES_KEY = 'okk_shift_v2_holiday_return_candidates';
   const DEMO_KEY = 'okk_shift_v2_demo_mode';
   const BACKUP_KEY = 'okk_shift_v2_demo_backup_v3';
   const STORES = ['matsuyama', 'kumoji', 'miebashi', 'misato'];
@@ -32,9 +35,18 @@
       const button = makeButton('demo-mode-button', demo);
       top.insertBefore(button, top.firstChild);
     }
+    if (demo && top && !document.getElementById('demo-reset-button')) {
+      const button = makeResetButton('demo-reset-button');
+      top.insertBefore(button, document.getElementById('demo-mode-button') || top.firstChild);
+    }
 
     if (toolbar && !document.getElementById('demo-mode-button-toolbar')) {
       const button = makeButton('demo-mode-button-toolbar', demo);
+      button.style.marginLeft = '6px';
+      toolbar.appendChild(button);
+    }
+    if (demo && toolbar && !document.getElementById('demo-reset-button-toolbar')) {
+      const button = makeResetButton('demo-reset-button-toolbar');
       button.style.marginLeft = '6px';
       toolbar.appendChild(button);
     }
@@ -49,6 +61,16 @@
       : '<i class="fa-solid fa-users"></i> 36名デモへ';
     button.title = demo ? 'デモ投入前のローカルデータへ戻す' : '旧サンプルを36名の架空テスト人員へ安全に差し替える';
     button.addEventListener('click', demo ? restoreBackup : startDemo);
+    return button;
+  }
+
+  function makeResetButton(id) {
+    const button = document.createElement('button');
+    button.id = id;
+    button.className = 'btn btn-light';
+    button.innerHTML = '<i class="fa-solid fa-rotate-left"></i> デモ初期化';
+    button.title = 'デモのスタッフ・スキル・必要人数・シフト・公休を初期状態へ戻す';
+    button.addEventListener('click', resetDemo);
     return button;
   }
 
@@ -70,6 +92,22 @@
     };
     localStorage.setItem(BACKUP_KEY, JSON.stringify(backup));
 
+    seedDemoState();
+    localStorage.setItem(DEMO_KEY, '1');
+    sessionStorage.setItem('okk_shift_v2_return_view', 'planner');
+    window.location.reload();
+  }
+
+  function resetDemo() {
+    if (localStorage.getItem(DEMO_KEY) !== '1') return;
+    if (!window.confirm('デモを初期状態に戻します。テスト中に変更したシフト・スタッフLv・必要人数・公休はリセットされます。実データのバックアップには触れません。よろしいですか？')) return;
+    seedDemoState();
+    localStorage.removeItem(RETURN_CANDIDATES_KEY);
+    sessionStorage.setItem('okk_shift_v2_return_view', 'planner');
+    window.location.reload();
+  }
+
+  function seedDemoState() {
     localStorage.setItem(STAFF_KEY, JSON.stringify(buildStaff()));
     localStorage.setItem(SHIFTS_KEY, JSON.stringify({}));
 
@@ -77,14 +115,19 @@
     holiday.staffDays = [];
     localStorage.setItem(HOLIDAY_KEY, JSON.stringify(holiday));
 
+    const defaults = window.shiftV2BootstrapDefaults || {};
+    if (Array.isArray(defaults.skills) && defaults.skills.length) {
+      localStorage.setItem(SKILLS_KEY, JSON.stringify(defaults.skills));
+    }
+    if (Array.isArray(defaults.requirements) && defaults.requirements.length) {
+      localStorage.setItem(REQUIREMENTS_KEY, JSON.stringify(defaults.requirements));
+    }
+
     localStorage.setItem(PLAN_KEY, JSON.stringify({
       common: { operationalOvertimeCapHours: 30 },
       A: { id: 'A', name: 'Aプラン', fixedOvertimeHours: 25, emergencyCallTarget: 0 },
       B: { id: 'B', name: 'Bプラン', fixedOvertimeHours: 45, emergencyCallTarget: 2 }
     }));
-    localStorage.setItem(DEMO_KEY, '1');
-    sessionStorage.setItem('okk_shift_v2_return_view', 'planner');
-    window.location.reload();
   }
 
   function restoreBackup() {
