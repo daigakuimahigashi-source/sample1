@@ -21,6 +21,7 @@
   <script>
     (() => {
       const localScripts = [
+        'shift-v2-observer-guard.js',
         'shift-v2.js',
         'shift-v2-compliance.js',
         'shift-v2-time-summary.js',
@@ -56,11 +57,10 @@
         const html = await response.text();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
         parsed.querySelectorAll('script').forEach(node => node.remove());
-        const appHtml = parsed.body.innerHTML;
-        document.body.innerHTML = appHtml;
+        document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live1');
+          await loadScript('./js/' + file + '?v=live2');
         }
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
@@ -70,8 +70,8 @@
         encoding.async = true;
         document.head.appendChild(encoding);
 
-        setTimeout(loadFirebase, 100);
-        setTimeout(checkReady, 500);
+        setTimeout(loadFirebase, 800);
+        setTimeout(checkReady, 700);
       }
 
       function loadFirebase() {
