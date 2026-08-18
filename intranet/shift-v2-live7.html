@@ -34,6 +34,7 @@
         'shift-v2-rules-restore.js',
         'shift-v2-rules-safe-ui.js',
         'shift-v2-rules-easy-entry.js',
+        'shift-v2-rules-direct-open.js',
         'shift-v2-staff-constraints.js',
         'shift-v2-work-plan.js',
         'shift-v2-overtime-approval.js',
@@ -61,7 +62,7 @@
       }
 
       async function boot() {
-        const response = await fetch('./shift-v2.html?v=live7h-' + Date.now(), { cache: 'no-store' });
+        const response = await fetch('./shift-v2.html?v=live7i-' + Date.now(), { cache: 'no-store' });
         if (!response.ok) throw new Error(`画面テンプレート HTTP ${response.status}`);
         const html = await response.text();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
@@ -69,12 +70,12 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live7h');
+          await loadScript('./js/' + file + '?v=live7i');
         }
 
         const build = document.createElement('div');
         build.id = 'v2-live-build';
-        build.textContent = 'LIVE7H';
+        build.textContent = 'LIVE7I';
         document.body.appendChild(build);
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
