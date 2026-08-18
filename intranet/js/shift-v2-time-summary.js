@@ -110,10 +110,12 @@
       const binding = bindingMinutes(shift);
       const breakMinutes = standardBreakMinutes(binding);
       const work = Math.max(0, binding - breakMinutes);
+      bar.title = `拘束 ${formatMinutes(binding)} / 標準休憩 ${breakMinutes ? formatMinutes(breakMinutes) : 'なし'} / 予定実働 ${formatMinutes(work)}`;
+      if (!breakMinutes) return;
       const badge = document.createElement('span');
       badge.className = 'time-summary-tooltip';
-      badge.title = `拘束 ${formatMinutes(binding)} / 標準休憩 ${breakMinutes ? formatMinutes(breakMinutes) : 'なし'} / 予定実働 ${formatMinutes(work)}`;
-      badge.innerHTML = '<i class="fa-solid fa-clock"></i>';
+      badge.textContent = `休${breakMinutes}m`;
+      badge.setAttribute('aria-label', `標準休憩${breakMinutes}分`);
       bar.appendChild(badge);
     });
   }
@@ -185,7 +187,7 @@
     const style = document.createElement('style');
     style.id = 'shift-time-summary-style';
     style.textContent = `
-      .shift-time-summary{margin-top:10px;padding:10px;border:1px solid #d0d5dd;border-radius:9px;background:#f8fafc}.shift-time-summary-title{display:flex;align-items:center;gap:5px;font-size:10px;color:#344054;margin-bottom:7px}.shift-time-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.shift-time-summary-grid>div{background:#fff;border:1px solid #eaecf0;border-radius:7px;padding:7px}.shift-time-summary-grid span{display:block;font-size:7px;color:#98a2b3}.shift-time-summary-grid strong{display:block;font-size:12px;margin-top:1px}.shift-time-summary-grid>div:last-child{background:#ecfdf3;border-color:#abefc6;color:#05603a}.shift-time-summary small{display:block;font-size:7px;line-height:1.5;color:#667085;margin-top:6px}.time-summary-mini{font-size:7px;color:#667085;margin-top:2px;white-space:nowrap}.time-summary-tooltip{position:absolute;bottom:2px;right:3px;width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.92);color:#475467;font-size:7px;z-index:7;cursor:help}
+      .shift-time-summary{margin-top:10px;padding:10px;border:1px solid #d0d5dd;border-radius:9px;background:#f8fafc}.shift-time-summary-title{display:flex;align-items:center;gap:5px;font-size:10px;color:#344054;margin-bottom:7px}.shift-time-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.shift-time-summary-grid>div{background:#fff;border:1px solid #eaecf0;border-radius:7px;padding:7px}.shift-time-summary-grid span{display:block;font-size:7px;color:#98a2b3}.shift-time-summary-grid strong{display:block;font-size:12px;margin-top:1px}.shift-time-summary-grid>div:last-child{background:#ecfdf3;border-color:#abefc6;color:#05603a}.shift-time-summary small{display:block;font-size:7px;line-height:1.5;color:#667085;margin-top:6px}.time-summary-mini{font-size:7px;color:#667085;margin-top:2px;white-space:nowrap}.time-summary-tooltip{position:absolute;top:50%;right:20px;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:18px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.94);color:#344054;border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 4px rgba(16,24,40,.14);font-size:8px;font-weight:900;line-height:1;letter-spacing:.1px;z-index:7;pointer-events:none;white-space:nowrap}
     `;
     document.head.appendChild(style);
   }
