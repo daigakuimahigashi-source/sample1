@@ -56,89 +56,37 @@
 
         <div class="planner">
           <aside class="card side">
-            <div class="panel-title">
-              従業員一覧
-              <small>名前を中央の時間軸へドラッグ</small>
-            </div>
-            <div style="padding:8px 9px 0">
-              <input id="staff-search" class="control" style="width:100%" placeholder="氏名・番号・スキルで検索">
-            </div>
+            <div class="panel-title">従業員一覧<small>名前を中央の時間軸へドラッグ</small></div>
+            <div style="padding:8px 9px 0"><input id="staff-search" class="control" style="width:100%" placeholder="氏名・番号・スキルで検索"></div>
             <div id="staff-list" class="staff-list"></div>
           </aside>
-
-          <section class="card gantt-card">
-            <div id="gantt-scroll" class="gantt-scroll">
-              <div id="gantt-canvas" class="gantt-canvas"></div>
-            </div>
-          </section>
-
-          <aside class="card side inspector-panel">
-            <div class="panel-title">
-              シフト詳細
-              <small>バーを選ぶと編集できます</small>
-            </div>
-            <div id="inspector" class="inspector"></div>
-          </aside>
+          <section class="card gantt-card"><div id="gantt-scroll" class="gantt-scroll"><div id="gantt-canvas" class="gantt-canvas"></div></div></section>
+          <aside class="card side inspector-panel"><div class="panel-title">シフト詳細<small>バーを選ぶと編集できます</small></div><div id="inspector" class="inspector"></div></aside>
         </div>
       </section>
 
       <section id="view-staff" class="view">
         <div class="summary" id="staff-summary"></div>
-        <div class="card">
-          <div class="data-head">
-            <h2>従業員別 月間シフト</h2>
-            <input id="staff-month" class="control" type="month">
-          </div>
-          <div class="table-wrap"><table><thead><tr><th>従業員番号</th><th>氏名</th><th>日付</th><th>出勤店舗</th><th>勤務時間</th><th>配置ルート</th></tr></thead><tbody id="staff-view-body"></tbody></table></div>
-        </div>
+        <div class="card"><div class="data-head"><h2>従業員別 月間シフト</h2><input id="staff-month" class="control" type="month"></div><div class="table-wrap"><table><thead><tr><th>従業員番号</th><th>氏名</th><th>日付</th><th>出勤店舗</th><th>勤務時間</th><th>配置ルート</th></tr></thead><tbody id="staff-view-body"></tbody></table></div></div>
       </section>
 
       <section id="view-store" class="view">
-        <div class="card toolbar">
-          <div class="toolbar-left"><span style="font-size:11px;font-weight:900">店舗別配置</span><input id="store-date" class="control" type="date"></div>
-          <div style="font-size:10px;color:#667085">那覇エリアは、久茂地・美栄橋の閉店後を松山合流として自動表示します。</div>
-        </div>
+        <div class="card toolbar"><div class="toolbar-left"><span style="font-size:11px;font-weight:900">店舗別配置</span><input id="store-date" class="control" type="date"></div><div style="font-size:10px;color:#667085">那覇エリアは、久茂地・美栄橋の閉店後を松山合流として自動表示します。</div></div>
         <div id="store-grid" class="store-grid"></div>
       </section>
 
       <section id="view-csv" class="view">
-        <div class="card toolbar">
-          <div class="toolbar-left">
-            <label style="font-size:10px;font-weight:900;color:#667085">開始</label><input id="csv-start" class="control" type="date">
-            <label style="font-size:10px;font-weight:900;color:#667085">終了</label><input id="csv-end" class="control" type="date">
-            <button id="csv-refresh" class="btn btn-light"><i class="fa-solid fa-rotate"></i>更新</button>
-          </div>
-          <button id="csv-download" class="btn btn-green"><i class="fa-solid fa-download"></i>Shift-JIS CSVを保存</button>
-        </div>
-        <div class="card csv-panel">
-          <div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:9px;padding:9px 11px;font-size:10px;line-height:1.6;margin-bottom:10px">
-            MFクラウド勤怠の14列形式で出力します。日をまたぐ終了時刻は、翌5時なら「29:00」のように24時超で出力します。勤務のない日はこのV2では出力しません。
-          </div>
-          <textarea id="csv-preview" class="csv-preview" readonly></textarea>
-        </div>
+        <div class="card toolbar"><div class="toolbar-left"><label style="font-size:10px;font-weight:900;color:#667085">開始</label><input id="csv-start" class="control" type="date"><label style="font-size:10px;font-weight:900;color:#667085">終了</label><input id="csv-end" class="control" type="date"><button id="csv-refresh" class="btn btn-light"><i class="fa-solid fa-rotate"></i>更新</button></div><button id="csv-download" class="btn btn-green"><i class="fa-solid fa-download"></i>Shift-JIS CSVを保存</button></div>
+        <div class="card csv-panel"><div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:9px;padding:9px 11px;font-size:10px;line-height:1.6;margin-bottom:10px">MFクラウド勤怠の14列形式で出力します。日をまたぐ終了時刻は、翌5時なら「29:00」のように24時超で出力します。勤務のない日はこのV2では出力しません。</div><textarea id="csv-preview" class="csv-preview" readonly></textarea></div>
       </section>
     </main>
   </div>
 
   <div id="settings-modal" class="modal-bg" role="dialog" aria-modal="true">
     <div class="modal">
-      <div class="modal-head">
-        <div><strong>店舗・エリア設定</strong><div style="font-size:9px;color:#8a94a5;margin-top:2px">コードを変更せず、閉店時刻と那覇エリアの自動合流を調整</div></div>
-        <button id="settings-close" class="btn btn-light btn-small"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="table-wrap">
-          <table class="settings-table">
-            <thead><tr><th>店舗名</th><th>エリア</th><th>閉店時刻</th><th>閉店後の合流</th><th>合流先</th><th>表示色</th></tr></thead>
-            <tbody id="settings-body"></tbody>
-          </table>
-        </div>
-        <p style="font-size:9px;line-height:1.6;color:#667085;margin:12px 0 0">初期仕様：松山・久茂地・美栄橋は那覇エリア、美里は沖縄エリア。美里は終了時刻を超えても自動合流しません。</p>
-      </div>
-      <div class="modal-foot">
-        <button id="settings-reset" class="btn btn-light">初期値に戻す</button>
-        <button id="settings-save" class="btn btn-green">設定を保存</button>
-      </div>
+      <div class="modal-head"><div><strong>店舗・エリア設定</strong><div style="font-size:9px;color:#8a94a5;margin-top:2px">コードを変更せず、閉店時刻と那覇エリアの自動合流を調整</div></div><button id="settings-close" class="btn btn-light btn-small"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="modal-body"><div class="table-wrap"><table class="settings-table"><thead><tr><th>店舗名</th><th>エリア</th><th>閉店時刻</th><th>閉店後の合流</th><th>合流先</th><th>表示色</th></tr></thead><tbody id="settings-body"></tbody></table></div><p style="font-size:9px;line-height:1.6;color:#667085;margin:12px 0 0">初期仕様：松山・久茂地・美栄橋は那覇エリア、美里は沖縄エリア。美里は終了時刻を超えても自動合流しません。</p></div>
+      <div class="modal-foot"><button id="settings-reset" class="btn btn-light">初期値に戻す</button><button id="settings-save" class="btn btn-green">設定を保存</button></div>
     </div>
   </div>
 
@@ -161,6 +109,7 @@
   <script src="js/shift-v2-time-summary.js"></script>
   <script src="js/shift-v2-audit.js"></script>
   <script src="js/shift-v2-staff-master.js"></script>
+  <script src="js/shift-v2-rules-bootstrap.js"></script>
   <script src="js/shift-v2-rules.js"></script>
   <script src="js/shift-v2-staff-constraints.js"></script>
   <script src="js/shift-v2-work-plan.js"></script>
@@ -168,5 +117,6 @@
   <script src="js/shift-v2-holidays.js"></script>
   <script src="js/shift-v2-holiday-auto-guard.js"></script>
   <script src="js/shift-v2-auto-placement.js"></script>
+  <script src="js/shift-v2-month-builder.js"></script>
 </body>
 </html>
