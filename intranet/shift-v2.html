@@ -61,5 +61,64 @@
   <script src="js/shift-v2-auto-placement.js"></script>
   <script src="js/shift-v2-month-builder.js"></script>
   <script src="js/shift-v2-demo-mode.js"></script>
+
+  <script>
+    (() => {
+      const files = [
+        'shift-v2.js',
+        'shift-v2-compliance.js',
+        'shift-v2-time-summary.js',
+        'shift-v2-audit.js',
+        'shift-v2-staff-master.js',
+        'shift-v2-rules-bootstrap.js',
+        'shift-v2-rules.js',
+        'shift-v2-rules-restore.js',
+        'shift-v2-staff-constraints.js',
+        'shift-v2-work-plan.js',
+        'shift-v2-overtime-approval.js',
+        'shift-v2-holidays.js',
+        'shift-v2-holiday-auto-guard.js',
+        'shift-v2-auto-placement.js',
+        'shift-v2-month-builder.js',
+        'shift-v2-demo-mode.js'
+      ];
+      const rawBase = 'https://raw.githubusercontent.com/daigakuimahigashi-source/sample1/main/intranet/js/';
+      const ready = () => Boolean(document.getElementById('work-date')?.value && document.getElementById('new-store-buttons')?.children.length);
+
+      async function previewFallback() {
+        if (ready() || window.__shiftV2PreviewFallbackRunning) return;
+        window.__shiftV2PreviewFallbackRunning = true;
+        const status = document.getElementById('sync-status');
+        if (status) status.textContent = 'プレビュー読込中...';
+        try {
+          for (const file of files) {
+            const response = await fetch(rawBase + file, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
+            const code = await response.text();
+            (0, eval)(`${code}\n//# sourceURL=${rawBase}${file}`);
+          }
+          document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
+          setTimeout(() => {
+            if (ready()) {
+              if (status) status.textContent = 'プレビュー動作中';
+            } else {
+              throw new Error('V2初期化を確認できませんでした');
+            }
+          }, 250);
+        } catch (error) {
+          console.error('V2 preview fallback failed', error);
+          if (status) {
+            status.textContent = 'プレビュー読込失敗';
+            status.style.color = '#f04438';
+            status.title = String(error?.message || error);
+          }
+          const canvas = document.getElementById('gantt-canvas');
+          if (canvas && !canvas.children.length) canvas.innerHTML = '<div style="padding:24px;font-size:12px;color:#b42318"><strong>プレビュー用JavaScriptを読み込めませんでした。</strong><br>Firebase Hosting版で開くか、ネットワーク制限を確認してください。</div>';
+        }
+      }
+
+      window.addEventListener('load', () => setTimeout(previewFallback, 700), { once: true });
+    })();
+  </script>
 </body>
 </html>
