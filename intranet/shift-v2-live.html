@@ -61,7 +61,7 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live3');
+          await loadScript('./js/' + file + '?v=live4');
         }
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
@@ -71,7 +71,15 @@
         encoding.async = true;
         document.head.appendChild(encoding);
 
-        setTimeout(loadFirebase, 800);
+        if (localStorage.getItem('okk_shift_v2_demo_mode') === '1') {
+          const status = document.getElementById('sync-status');
+          if (status) status.textContent = 'デモ・クラウド同期OFF';
+          window.shiftV2Cloud = null;
+          window.shiftV2User = null;
+          window.shiftV2IsAdmin = false;
+        } else {
+          setTimeout(loadFirebase, 800);
+        }
         setTimeout(checkReady, 700);
       }
 
@@ -99,7 +107,7 @@
         const canvas = document.getElementById('gantt-canvas');
         const status = document.getElementById('sync-status');
         if (date?.value && stores?.children.length && canvas?.children.length) {
-          if (status && !window.shiftV2User) status.textContent = 'ローカル起動済み';
+          if (status && localStorage.getItem('okk_shift_v2_demo_mode') !== '1' && !window.shiftV2User) status.textContent = 'ローカル起動済み';
           return;
         }
         if (status) {
