@@ -22,6 +22,7 @@
     (() => {
       const localScripts = [
         'shift-v2-observer-guard.js',
+        'shift-v2-data-bootstrap.js',
         'shift-v2.js',
         'shift-v2-compliance.js',
         'shift-v2-time-summary.js',
@@ -60,7 +61,7 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live2');
+          await loadScript('./js/' + file + '?v=live3');
         }
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
