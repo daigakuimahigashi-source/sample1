@@ -1,5 +1,6 @@
 name: Deploy intranet to GitHub Pages
 
+# GitHub Pages is published from the intranet directory.
 on:
   push:
     branches: [main]
