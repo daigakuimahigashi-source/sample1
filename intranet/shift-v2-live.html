@@ -39,6 +39,7 @@
         'shift-v2-auto-placement.js',
         'shift-v2-month-builder.js',
         'shift-v2-month-prescribed.js',
+        'shift-v2-b-emergency.js',
         'shift-v2-demo-mode.js'
       ];
 
@@ -62,7 +63,7 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live5');
+          await loadScript('./js/' + file + '?v=live6');
         }
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
