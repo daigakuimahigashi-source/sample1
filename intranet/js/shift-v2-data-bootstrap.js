@@ -1,6 +1,7 @@
 (() => {
   'use strict';
 
+  const STAFF_KEY = 'okk_shift_v2_staff';
   const SKILLS_KEY = 'okk_shift_v2_skill_definitions';
   const REQUIREMENTS_KEY = 'okk_shift_v2_staffing_requirements';
 
@@ -14,6 +15,20 @@
     { id: 'dish', name: '洗い場', active: true },
     { id: 'register', name: 'レジ', active: true },
   ];
+
+  const LEGACY_SKILL_MAP = {
+    'オープン準備': 'opening',
+    '締め作業': 'closing',
+    '肉場': 'meat',
+    'サラダ場': 'salad',
+    'ホール': 'hall',
+    'ホール（肉焼ける）': 'hall',
+    'ホール（肉焼けない）': 'hall',
+    'ドリンク': 'drink',
+    'ドリンカー': 'drink',
+    '洗い場': 'dish',
+    'レジ': 'register',
+  };
 
   const DEFAULT_REQUIREMENTS = [
     req('matsuyama', 'all', 17, 23, 'hall', 1, 3),
@@ -57,6 +72,43 @@
   if (!requirements.length) {
     localStorage.setItem(REQUIREMENTS_KEY, JSON.stringify(DEFAULT_REQUIREMENTS));
     changed = true;
+  }
+
+  const staff = readArray(STAFF_KEY);
+  if (staff.length) {
+    let staffChanged = false;
+    staff.forEach(person => {
+      if (!person || typeof person !== 'object') return;
+
+      if (!person.employmentType && person.salaryType) {
+        person.employmentType = person.salaryType === 'monthly' ? '正社員' : 'アルバイト';
+        staffChanged = true;
+      }
+
+      const levels = { ...(person.skillLevels || {}) };
+      DEFAULT_SKILLS.forEach(skill => {
+        const n = Number(levels[skill.id]);
+        levels[skill.id] = Number.isFinite(n) ? Math.max(0, Math.min(3, Math.round(n))) : 0;
+      });
+
+      (Array.isArray(person.skills) ? person.skills : []).forEach(name => {
+        const id = LEGACY_SKILL_MAP[name];
+        if (id && Number(levels[id] || 0) === 0) {
+          levels[id] = 1;
+          staffChanged = true;
+        }
+      });
+
+      if (!person.skillLevels || DEFAULT_SKILLS.some(skill => Number(person.skillLevels?.[skill.id] ?? -1) !== Number(levels[skill.id]))) {
+        person.skillLevels = levels;
+        staffChanged = true;
+      }
+    });
+
+    if (staffChanged) {
+      localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
+      changed = true;
+    }
   }
 
   window.shiftV2BootstrapDefaults = {
