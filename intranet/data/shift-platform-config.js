@@ -5,7 +5,7 @@ export const ROLE_DEFINITIONS = {
     label: '本部',
     permissions: [
       'shift.plan.create','shift.plan.edit','shift.plan.confirm',
-      'shift.exception.absence','shift.exception.emergency_call','shift.exception.support_move',
+      'shift.exception.absence','shift.exception.emergency_call',
       'staff.skill.edit','staff.master.edit','store.master.edit','requirements.master.edit',
       'mf.export','shift.view.all'
     ]
@@ -13,7 +13,7 @@ export const ROLE_DEFINITIONS = {
   managerQualified: {
     label: '店長資格保有者',
     permissions: [
-      'shift.exception.absence','shift.exception.emergency_call','shift.exception.support_move',
+      'shift.exception.absence','shift.exception.emergency_call',
       'staff.skill.edit','shift.view.all'
     ]
   },
@@ -42,14 +42,13 @@ export const SKILL_NAMES = ['肉場','サラダ場','ドリンカー','ホール
 export const SKILL_LEVELS = [
   { value:0, label:'未経験' },
   { value:1, label:'できる' },
-  { value:2, label:'一人で任せられる' },
+  { value:2, label:'責任もってできる' },
   { value:3, label:'教育できる' }
 ];
 
 export const EXCEPTION_ACTIONS = [
   { id:'absence', label:'欠勤' },
-  { id:'emergency_call', label:'臨時招集' },
-  { id:'support_move', label:'当日応援' }
+  { id:'emergency_call', label:'臨時招集' }
 ];
 
 export function hasPermission(roleId, permission) {
