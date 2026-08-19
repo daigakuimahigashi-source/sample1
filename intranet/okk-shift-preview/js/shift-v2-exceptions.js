@@ -43,16 +43,14 @@
 
     document.querySelectorAll('[data-exception-type]').forEach(btn => {
       btn.addEventListener('click', () => {
-        state.type = btn.dataset.exceptionType;
+        state.type = btn.dataset.exceptionType === 'absence' ? 'absence' : 'emergency_call';
         document.querySelectorAll('[data-exception-type]').forEach(x => x.classList.toggle('active', x === btn));
         renderForm();
       });
     });
 
     const canvas = document.getElementById('gantt-canvas');
-    if (canvas) {
-      new MutationObserver(() => queueDecorate()).observe(canvas, { childList: true, subtree: false });
-    }
+    if (canvas) new MutationObserver(() => queueDecorate()).observe(canvas, { childList: true, subtree: false });
 
     render();
     queueDecorate();
@@ -76,13 +74,6 @@
         <div class="field"><label>欠勤する予定シフト</label><select id="ex-shift" class="control">${shiftOptions(shifts)}</select></div>
         <div class="field"><label>理由・メモ</label><input id="ex-note" class="control" placeholder="例：体調不良（任意）"></div>
         <button id="ex-submit" class="btn btn-dark exception-submit">欠勤として記録</button>`;
-    } else if (state.type === 'support_move') {
-      root.innerHTML = `
-        <div class="field"><label>応援に動く従業員</label><select id="ex-shift" class="control">${shiftOptions(shifts)}</select></div>
-        <div class="field"><label>応援先</label><select id="ex-store" class="control">${storeOptions(stores)}</select></div>
-        <div class="field"><label>応援開始時刻</label><select id="ex-start" class="control">${timeOptions(21*60)}</select></div>
-        <div class="field"><label>メモ</label><input id="ex-note" class="control" placeholder="任意"></div>
-        <button id="ex-submit" class="btn exception-submit" style="background:#0f766e;color:#fff">当日応援を記録</button>`;
     } else {
       root.innerHTML = `
         <div style="background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;border-radius:9px;padding:8px 9px;font-size:9px;font-weight:800;margin-bottom:10px"><i class="fa-solid fa-bolt"></i> 臨時招集は通常シフトとは別勤務として記録し、ガント上でも専用表示します。</div>
@@ -107,11 +98,6 @@
       const shift = dayShifts(state.date).find(s => s.id === shiftId);
       if (!shift) return notify('対象シフトを選んでください');
       record = { id: uid(), type:'absence', date:state.date, shiftId, staffId:shift.staffId, startStoreId:shift.startStoreId, note:value('ex-note'), createdAt:now, createdBy:by };
-    } else if (state.type === 'support_move') {
-      const shiftId = value('ex-shift');
-      const shift = dayShifts(state.date).find(s => s.id === shiftId);
-      if (!shift) return notify('対象シフトを選んでください');
-      record = { id:uid(), type:'support_move', date:state.date, shiftId, staffId:shift.staffId, fromStoreId:shift.startStoreId, toStoreId:value('ex-store'), start:Number(value('ex-start')), note:value('ex-note'), createdAt:now, createdBy:by };
     } else {
       const start = Number(value('ex-start'));
       const end = Number(value('ex-end'));
@@ -132,12 +118,12 @@
     const root = document.getElementById('exception-list');
     const summary = document.getElementById('exception-summary');
     if (!root) return;
-    const rows = dayExceptions(state.date).slice().sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const rows = dayExceptions(state.date).filter(record => record?.type === 'absence' || record?.type === 'emergency_call').slice().sort((a,b) => String(a.createdAt).localeCompare(String(b.createdAt)));
     if (summary) summary.textContent = `${rows.length}件`;
     root.innerHTML = rows.map(record => {
-      const badgeClass = record.type === 'emergency_call' ? 'emergency-call' : record.type === 'support_move' ? 'support-move' : 'absence';
+      const badgeClass = record.type === 'emergency_call' ? 'emergency-call' : 'absence';
       const cardClass = record.type === 'emergency_call' ? ' emergency-call' : '';
-      const timing = record.type === 'emergency_call' ? `${storeName(record.startStoreId)} ${fmt(record.start)}-${fmt(record.end)}` : record.type === 'support_move' ? `${storeName(record.fromStoreId)} → ${storeName(record.toStoreId)} ${fmt(record.start)}〜` : `${storeName(record.startStoreId)} / 予定シフト欠勤`;
+      const timing = record.type === 'emergency_call' ? `${storeName(record.startStoreId)} ${fmt(record.start)}-${fmt(record.end)}` : `${storeName(record.startStoreId)} / 予定シフト欠勤`;
       return `<div class="exception-card${cardClass}" data-exception-id="${esc(record.id)}">
         <div class="exception-card-head"><div><span class="exception-type-badge ${badgeClass}">${record.type==='emergency_call'?'<i class="fa-solid fa-bolt"></i> ':''}${labelFor(record.type)}</span><div class="exception-title" style="margin-top:6px">${esc(staffName(record.staffId))}</div><div class="exception-meta">${esc(timing)}<br>登録：${esc(record.createdBy || '-')}</div></div><div class="exception-actions"><button class="exception-delete" data-delete-exception="${esc(record.id)}">削除</button></div></div>
         ${record.note ? `<div class="exception-note">${esc(record.note)}</div>` : ''}
@@ -160,7 +146,7 @@
     state.decorating = true;
     try {
       canvas.querySelectorAll('.shift-bar').forEach(bar => {
-        bar.classList.remove('absence-mark','support-move-mark','emergency-call');
+        bar.classList.remove('absence-mark','emergency-call');
         bar.querySelectorAll('.emergency-call-badge').forEach(x => x.remove());
       });
       canvas.querySelectorAll('[data-emergency-row="true"]').forEach(x => x.remove());
@@ -168,9 +154,6 @@
       const exceptions = dayExceptions(workDate);
       exceptions.filter(x => x.type === 'absence' && x.shiftId).forEach(x => {
         canvas.querySelector(`.shift-bar[data-shift-id="${cssEsc(x.shiftId)}"]`)?.classList.add('absence-mark');
-      });
-      exceptions.filter(x => x.type === 'support_move' && x.shiftId).forEach(x => {
-        canvas.querySelector(`.shift-bar[data-shift-id="${cssEsc(x.shiftId)}"]`)?.classList.add('support-move-mark');
       });
       exceptions.filter(x => x.type === 'emergency_call').forEach(x => appendEmergencyRow(canvas, x));
     } finally {
@@ -230,7 +213,7 @@
   function staffOptions(staff) { return staff.map(s => `<option value="${esc(String(s.id || s.employeeNumber || '').toUpperCase())}">${esc(s.name || s.id)}</option>`).join(''); }
   function storeOptions(stores) { return stores.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join(''); }
   function timeOptions(selected) { let html=''; for(let m=DAY_START;m<=DAY_END;m+=SLOT) html += `<option value="${m}" ${m===selected?'selected':''}>${fmtVerbose(m)}</option>`; return html; }
-  function labelFor(type) { return type==='absence'?'欠勤':type==='support_move'?'当日応援':'臨時招集'; }
+  function labelFor(type) { return type === 'absence' ? '欠勤' : '臨時招集'; }
   function value(id) { return document.getElementById(id)?.value || ''; }
   function fmt(total) { const h=Math.floor(total/60)%24,m=total%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
   function fmtVerbose(total) { return total>=1440 ? `翌 ${fmt(total)}` : fmt(total); }
