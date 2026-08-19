@@ -17,7 +17,7 @@
   <div class="preview-banner"><i class="fa-solid fa-flask"></i> OKK シフトV1 ローカルプレビュー <span>本番Firestore・現行シフトには接続しません</span></div>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark"><i class="fa-solid fa-chart-gantt"></i></div><div><h1>OKK シフトプランナー V1 Preview</h1><p>出勤店舗・開始時刻・終了時刻だけで、配置・当日対応・スキル・MF CSVまで連動</p></div></div>
+      <div class="brand"><div class="brand-mark"><i class="fa-solid fa-chart-gantt"></i></div><div><h1>OKK シフトプランナー V1 Preview</h1><p>出勤店舗・開始時刻・終了時刻だけで、配置・当日対応・スキル・人員条件・MF CSVまで連動</p></div></div>
       <div class="actions"><span id="sync-status" style="font-size:10px;color:#aeb8c8">ローカル保存</span><button id="login-btn" class="btn btn-dark">ローカルデモ</button><button id="save-btn" class="btn btn-green"><i class="fa-solid fa-floppy-disk"></i>保存</button><button id="settings-btn" class="btn btn-light"><i class="fa-solid fa-sliders"></i>店舗設定</button><a href="../shift-v2-live7.html" class="btn btn-dark" style="text-decoration:none"><i class="fa-solid fa-arrow-left"></i>LIVE7へ戻る</a></div>
     </header>
     <nav class="tabs" aria-label="表示切替"><button class="tab active" data-view="planner"><i class="fa-solid fa-pen-ruler"></i> ガント入力</button><button class="tab" data-view="exceptions"><i class="fa-solid fa-bolt"></i> 当日対応</button><button class="tab" data-view="staff"><i class="fa-solid fa-user-clock"></i> 従業員別</button><button class="tab" data-view="store"><i class="fa-solid fa-store"></i> 店舗別</button><button class="tab" data-view="csv"><i class="fa-solid fa-file-csv"></i> MF CSV</button></nav>
@@ -36,6 +36,7 @@
   <script src="js/shift-v2-exceptions.js"></script>
   <script src="js/shift-v2-exception-overlays.js"></script>
   <script type="module" src="js/shift-v2-skills.js"></script>
+  <script type="module" src="js/shift-v2-requirements.js"></script>
   <script src="js/shift-v2-role-polish.js"></script>
 </body>
 </html>
