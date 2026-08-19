@@ -24,7 +24,6 @@ export const ROLE_DEFINITIONS = {
     permissions: [
       'shift.exception.absence',
       'shift.exception.emergency_call',
-      'shift.exception.support_move',
       'staff.skill.edit',
       'shift.view.all'
     ]
@@ -50,9 +49,8 @@ export const AREA_DEFINITIONS = {
 
 // Planned shifts intentionally stay simple.
 // A monthly plan records only WHO / DATE / START STORE / START TIME / END TIME.
-// Intra-day movement inside the Naha area is an operational decision and is not
-// encoded into the original monthly shift plan. This keeps the plan readable and
-// allows the same source data to feed employee views and MF attendance export.
+// Intra-day movement is an operational decision and is not encoded into the
+// original monthly shift plan.
 export const SHIFT_PLAN_FIELDS = [
   'employeeId',
   'workDate',
@@ -103,15 +101,30 @@ export const DEFAULT_STORE_RULES = [
   }
 ];
 
+// This is the single skill catalogue used by human evaluation, staffing rules
+// and future AI shift generation. Do not create a separate AI-only skill list.
+export const SKILL_DEFINITIONS = [
+  { id: 'meat', name: '肉場', legacyNames: ['肉場'] },
+  { id: 'salad', name: 'サラダ場', legacyNames: ['サラダ場'] },
+  { id: 'drink', name: 'ドリンカー', legacyNames: ['ドリンカー', 'ドリンク'] },
+  { id: 'hall_grill', name: 'ホール（肉焼ける）', legacyNames: ['ホール（肉焼ける）'] },
+  { id: 'hall_basic', name: 'ホール（肉焼けない）', legacyNames: ['ホール（肉焼けない）', 'ホール'] },
+  { id: 'dish', name: '洗い場', legacyNames: ['洗い場'] },
+  { id: 'closing', name: '締め作業', legacyNames: ['締め作業'] },
+  { id: 'opening', name: '開店作業', legacyNames: ['開店作業', 'オープン準備'] },
+  { id: 'register', name: 'レジ', legacyNames: ['レジ'] }
+];
+
 export const SKILL_LEVELS = [
   { value: 0, label: '未経験' },
   { value: 1, label: 'できる' },
-  { value: 2, label: '一人で任せられる' },
+  { value: 2, label: '責任もってできる' },
   { value: 3, label: '教育できる' }
 ];
 
-// These are same-day operational exceptions. They do not rewrite the original
-// confirmed monthly shift plan. If needed, actual movement can be recorded here.
+// Same-day operational exceptions do not rewrite the original confirmed plan.
+// Support moves remain a head-office capability in V1; manager-qualified users
+// are limited to absence and emergency-call operations.
 export const EXCEPTION_ACTIONS = [
   { id: 'absence', label: '欠勤' },
   { id: 'emergency_call', label: '臨時招集' },
