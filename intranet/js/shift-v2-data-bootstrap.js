@@ -31,8 +31,8 @@
   };
 
   const DEFAULT_REQUIREMENTS = [
-    req('matsuyama', 'all', 17, 23, 'hall', 1, 3),
-    req('matsuyama', 'all', 17, 23, 'meat', 2, 1),
+    req('matsuyama', 'all', 17, 23, 'hall', 1, 4),
+    req('matsuyama', 'all', 17, 23, 'meat', 2, 2),
     req('matsuyama', 'all', 17, 23, 'salad', 1, 1),
     req('matsuyama', 'all', 17, 23, 'drink', 1, 1),
     req('matsuyama', 'all', 23, 30, 'hall', 1, 2),
