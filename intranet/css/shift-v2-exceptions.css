@@ -1,0 +1,92 @@
+/* Exception-state visuals for OKK Shift Planner V2.
+   Emergency calls must remain obvious regardless of each store's base color. */
+
+:root {
+  --emergency-call-accent: #e11d48;
+  --emergency-call-soft: #fff1f2;
+  --emergency-call-ink: #9f1239;
+}
+
+/* Apply to a Gantt shift bar when shift.exceptionType === 'emergency_call'. */
+.shift-bar.emergency-call {
+  outline: 3px solid var(--emergency-call-accent) !important;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.96),
+    0 6px 18px rgba(225,29,72,.30) !important;
+}
+
+.shift-bar.emergency-call::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 6;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,.00) 0,
+    rgba(255,255,255,.00) 7px,
+    rgba(255,255,255,.20) 7px,
+    rgba(255,255,255,.20) 12px
+  );
+}
+
+.emergency-call-badge {
+  position: absolute;
+  top: -23px;
+  left: 5px;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--emergency-call-accent);
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 3px 9px rgba(159,18,57,.25);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+
+/* Cards / table rows used in exception-management views. */
+.exception-card.emergency-call,
+tr.emergency-call > td {
+  background: var(--emergency-call-soft);
+}
+
+.exception-card.emergency-call {
+  border: 2px solid #fda4af;
+  box-shadow: 0 4px 16px rgba(225,29,72,.10);
+}
+
+.exception-card.emergency-call .exception-title,
+tr.emergency-call strong {
+  color: var(--emergency-call-ink);
+}
+
+.exception-type-badge.emergency-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--emergency-call-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+/* Keep other exception types visually quieter so emergency calls stand out. */
+.exception-type-badge.absence {
+  background: #475569;
+  color: #fff;
+}
+
+.exception-type-badge.support-move {
+  background: #0f766e;
+  color: #fff;
+}
