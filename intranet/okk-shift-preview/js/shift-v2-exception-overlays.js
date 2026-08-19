@@ -95,15 +95,6 @@
         extra.innerHTML = `<div><strong>${esc(staffName(record.staffId))}</strong><div class="exception-inline emergency"><i class="fa-solid fa-bolt"></i> 臨時招集</div></div><span>${fmt(record.start)}-${fmt(record.end)}</span>`;
         body.appendChild(extra);
       });
-
-      day.filter(item => item.type === 'support_move' && item.toStoreId === store.id).forEach(record => {
-        const body = card.querySelector('.store-body');
-        if (!body) return;
-        const extra = document.createElement('div');
-        extra.className = 'member exception-store-extra';
-        extra.innerHTML = `<div><strong>${esc(staffName(record.staffId))}</strong><div class="exception-inline support">当日応援</div></div><span>${fmt(record.start)}〜</span>`;
-        body.appendChild(extra);
-      });
     });
   }
 
@@ -111,7 +102,6 @@
     if (!rows.length) return '<span class="exception-none">—</span>';
     return rows.map(record => {
       if (record.type === 'emergency_call') return '<span class="exception-inline emergency"><i class="fa-solid fa-bolt"></i> 臨時招集</span>';
-      if (record.type === 'support_move') return '<span class="exception-inline support">当日応援</span>';
       return '<span class="exception-inline absence">欠勤</span>';
     }).join(' ');
   }
@@ -166,7 +156,7 @@
     const style = document.createElement('style');
     style.id = 'exception-overlay-style';
     style.textContent = `
-      .exception-inline{display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 6px;border-radius:999px;font-size:8px;font-weight:900;white-space:nowrap}.exception-inline.emergency{background:#e11d48;color:#fff;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(225,29,72,.18)}.exception-inline.absence{background:#475569;color:#fff}.exception-inline.support{background:#0f766e;color:#fff}.exception-none{color:#98a2b3}.member.member-absence{opacity:.5;text-decoration:line-through}.member.member-absence .exception-inline{text-decoration:none}.emergency-call-store{background:#fff1f2;border-left:3px solid #e11d48;padding-left:8px !important}`;
+      .exception-inline{display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 6px;border-radius:999px;font-size:8px;font-weight:900;white-space:nowrap}.exception-inline.emergency{background:#e11d48;color:#fff;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(225,29,72,.18)}.exception-inline.absence{background:#475569;color:#fff}.exception-none{color:#98a2b3}.member.member-absence{opacity:.5;text-decoration:line-through}.member.member-absence .exception-inline{text-decoration:none}.emergency-call-store{background:#fff1f2;border-left:3px solid #e11d48;padding-left:8px !important}`;
     document.head.appendChild(style);
   }
 })();
