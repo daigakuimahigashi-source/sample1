@@ -1,92 +1,16 @@
-/* Exception-state visuals for OKK Shift Planner V2.
-   Emergency calls must remain obvious regardless of each store's base color. */
-
-:root {
-  --emergency-call-accent: #e11d48;
-  --emergency-call-soft: #fff1f2;
-  --emergency-call-ink: #9f1239;
+/* Exception-state visuals for OKK Shift Planner V2. */
+:root{
+  --emergency-call-accent:#e11d48;
+  --emergency-call-soft:#fff1f2;
+  --emergency-call-ink:#9f1239;
+  --absence-accent:#475569;
+  --support-accent:#0f766e;
 }
 
-/* Apply to a Gantt shift bar when shift.exceptionType === 'emergency_call'. */
-.shift-bar.emergency-call {
-  outline: 3px solid var(--emergency-call-accent) !important;
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,.96),
-    0 6px 18px rgba(225,29,72,.30) !important;
-}
+.exception-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:10px}.exception-entry-panel{overflow:hidden}.exception-type-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px;border-bottom:1px solid #e5e7eb;background:#f8fafc}.exception-type-tabs button{border:1px solid #d7dee8;background:#fff;color:#475569;border-radius:9px;padding:9px 7px;font-size:10px;font-weight:900}.exception-type-tabs button.active{border-color:#94a3b8;background:#e2e8f0;color:#0f172a}.exception-type-tabs .emergency-call-choice.active{border:2px solid var(--emergency-call-accent);background:var(--emergency-call-soft);color:var(--emergency-call-ink);box-shadow:0 3px 12px rgba(225,29,72,.12)}.exception-form{padding:12px}.exception-form .field{margin-bottom:9px}.exception-form .control{width:100%}.exception-submit{width:100%;margin-top:4px}.exception-list{padding:10px;display:flex;flex-direction:column;gap:8px}.exception-card{border:1px solid #dbe2ea;border-radius:10px;padding:10px 11px;background:#fff}.exception-card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.exception-title{font-size:11px;font-weight:900}.exception-meta{font-size:9px;color:#64748b;margin-top:4px;line-height:1.6}.exception-note{font-size:9px;color:#475569;margin-top:7px;padding-top:7px;border-top:1px dashed #e2e8f0}.exception-actions{display:flex;gap:5px;align-items:center}.exception-delete{border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:900}
 
-.shift-bar.emergency-call::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 8px;
-  pointer-events: none;
-  z-index: 6;
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(255,255,255,.00) 0,
-    rgba(255,255,255,.00) 7px,
-    rgba(255,255,255,.20) 7px,
-    rgba(255,255,255,.20) 12px
-  );
-}
+.shift-bar.emergency-call{outline:3px solid var(--emergency-call-accent)!important;outline-offset:2px;box-shadow:0 0 0 2px rgba(255,255,255,.96),0 6px 18px rgba(225,29,72,.30)!important}.shift-bar.emergency-call::after{content:"";position:absolute;inset:0;border-radius:8px;pointer-events:none;z-index:6;background:repeating-linear-gradient(-45deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 7px,rgba(255,255,255,.20) 7px,rgba(255,255,255,.20) 12px)}.emergency-call-badge{position:absolute;top:-23px;left:5px;z-index:12;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;padding:3px 7px;border-radius:999px;background:var(--emergency-call-accent);color:#fff;border:2px solid #fff;box-shadow:0 3px 9px rgba(159,18,57,.25);font-size:8px;font-weight:900;letter-spacing:.02em}.shift-bar.absence-mark{opacity:.42;filter:grayscale(.4)}.shift-bar.absence-mark::before{content:"欠勤";position:absolute;inset:auto 6px 6px auto;z-index:12;background:var(--absence-accent);color:#fff;border-radius:999px;padding:2px 6px;font-size:8px;font-weight:900}.shift-bar.support-move-mark{outline:2px dashed var(--support-accent);outline-offset:2px}.shift-bar.support-move-mark::before{content:"当日応援";position:absolute;top:-20px;right:4px;z-index:12;background:var(--support-accent);color:#fff;border-radius:999px;padding:2px 6px;font-size:8px;font-weight:900}
 
-.emergency-call-badge {
-  position: absolute;
-  top: -23px;
-  left: 5px;
-  z-index: 12;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: var(--emergency-call-accent);
-  color: #fff;
-  border: 2px solid #fff;
-  box-shadow: 0 3px 9px rgba(159,18,57,.25);
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: .02em;
-}
+.exception-card.emergency-call,tr.emergency-call>td{background:var(--emergency-call-soft)}.exception-card.emergency-call{border:2px solid #fda4af;box-shadow:0 4px 16px rgba(225,29,72,.10)}.exception-card.emergency-call .exception-title,tr.emergency-call strong{color:var(--emergency-call-ink)}.exception-type-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;color:#fff;font-size:9px;font-weight:900}.exception-type-badge.emergency-call{background:var(--emergency-call-accent)}.exception-type-badge.absence{background:var(--absence-accent)}.exception-type-badge.support-move{background:var(--support-accent)}
 
-/* Cards / table rows used in exception-management views. */
-.exception-card.emergency-call,
-tr.emergency-call > td {
-  background: var(--emergency-call-soft);
-}
-
-.exception-card.emergency-call {
-  border: 2px solid #fda4af;
-  box-shadow: 0 4px 16px rgba(225,29,72,.10);
-}
-
-.exception-card.emergency-call .exception-title,
-tr.emergency-call strong {
-  color: var(--emergency-call-ink);
-}
-
-.exception-type-badge.emergency-call {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: var(--emergency-call-accent);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 900;
-}
-
-/* Keep other exception types visually quieter so emergency calls stand out. */
-.exception-type-badge.absence {
-  background: #475569;
-  color: #fff;
-}
-
-.exception-type-badge.support-move {
-  background: #0f766e;
-  color: #fff;
-}
+@media(max-width:900px){.exception-layout{grid-template-columns:1fr}.exception-type-tabs{grid-template-columns:1fr 1fr 1fr}}
