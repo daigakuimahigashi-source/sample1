@@ -20,7 +20,7 @@
 <body>
   <div id="loading"><div><div class="spin"></div><strong>シフトデータを読み込んでいます</strong><div class="sub" id="loading-text">従業員マスターを確認中...</div></div></div>
   <iframe id="app" title="OKKシフトプランナー"></iframe>
-  <div id="syncbar"><span id="status">接続確認中</span><button id="login">Googleログイン</button><button id="open">画面を開く</button></div>
+  <div id="syncbar"><span id="status">接続確認中</span><button id="login">Googleログイン</button><button id="open">別タブで開く</button></div>
 
   <script type="module">
     import { auth, loginWithGoogle, logout, isAdmin, onAuthStateChanged, fsGet, fsSet, fsListen } from './js/firebase-config.js';
@@ -63,9 +63,24 @@
         frame.src = 'shift-simple.html';
         frame.addEventListener('load', () => {
           appLoaded = true;
+          injectExtensions();
           loading.style.display = 'none';
           updateStatus();
-        }, { once: true });
+        });
+      }
+    }
+
+    function injectExtensions() {
+      try {
+        const doc = frame.contentDocument;
+        if (!doc || doc.getElementById('shift-simple-mf-template-loader')) return;
+        const script = doc.createElement('script');
+        script.id = 'shift-simple-mf-template-loader';
+        script.src = 'js/shift-simple-mf-template.js';
+        script.defer = true;
+        doc.body.appendChild(script);
+      } catch (e) {
+        console.warn('extension inject failed', e);
       }
     }
 
@@ -86,9 +101,7 @@
       }
     });
 
-    open.addEventListener('click', () => {
-      if (frame.src) window.open('shift-simple.html', '_blank');
-    });
+    open.addEventListener('click', () => window.open('shift-simple-cloud.html', '_blank'));
 
     window.addEventListener('storage', event => {
       if (suppressStoragePush) return;
@@ -115,7 +128,7 @@
       }
     }
 
-    fsListen(STAFF_LOCAL === 'staff' ? STAFF_LOCAL : 'staff', value => {
+    fsListen('staff', value => {
       if (!Array.isArray(value) || !value.length) return;
       applyRemote(STAFF_LOCAL, value, false);
     });
