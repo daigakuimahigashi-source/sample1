@@ -71,7 +71,7 @@
       label:'本部', staffId:null, staffName:'プレビュー本部',
       permissions:[
         'shift.plan.create','shift.plan.edit','shift.plan.confirm',
-        'shift.exception.absence','shift.exception.emergency_call','shift.exception.support_move',
+        'shift.exception.absence','shift.exception.emergency_call',
         'staff.skill.edit','staff.master.edit','store.master.edit','requirements.master.edit',
         'mf.export','shift.view.all'
       ]
@@ -104,7 +104,7 @@
     linked:true,
     authenticated:true,
     can: permission => permissions.has(permission),
-    canAnyException: () => ['shift.exception.absence','shift.exception.emergency_call','shift.exception.support_move'].some(permission => permissions.has(permission)),
+    canAnyException: () => ['shift.exception.absence','shift.exception.emergency_call'].some(permission => permissions.has(permission)),
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -113,7 +113,6 @@
     dispatchAccess();
     setTimeout(applyRoleUi, 50);
     setTimeout(applyRoleUi, 300);
-
     const app = document.querySelector('.app-shell');
     if (app) new MutationObserver(applyRoleUi).observe(app, { childList:true, subtree:true });
     const staffBody = document.getElementById('staff-view-body');
@@ -129,61 +128,30 @@
     if (document.getElementById('preview-controls')) return;
     const banner = document.querySelector('.preview-banner');
     if (!banner) return;
-
     const controls = document.createElement('div');
     controls.id = 'preview-controls';
     controls.innerHTML = `
       <div class="preview-control-copy"><strong>表示権限を試す</strong><span>本番データには接続しません</span></div>
-      <label>権限
-        <select id="preview-role-select">
-          <option value="hq" ${roleId==='hq'?'selected':''}>本部</option>
-          <option value="managerQualified" ${roleId==='managerQualified'?'selected':''}>店長資格保有者</option>
-          <option value="employee" ${roleId==='employee'?'selected':''}>一般従業員</option>
-        </select>
-      </label>
+      <label>権限<select id="preview-role-select"><option value="hq" ${roleId==='hq'?'selected':''}>本部</option><option value="managerQualified" ${roleId==='managerQualified'?'selected':''}>店長資格保有者</option><option value="employee" ${roleId==='employee'?'selected':''}>一般従業員</option></select></label>
       <span id="preview-role-note"></span>
-      <button id="preview-reset" type="button"><i class="fa-solid fa-rotate-left"></i> デモを初期状態へ</button>
-    `;
+      <button id="preview-reset" type="button"><i class="fa-solid fa-rotate-left"></i> デモを初期状態へ</button>`;
     banner.insertAdjacentElement('afterend', controls);
-
     const style = document.createElement('style');
-    style.textContent = `
-      #preview-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:10px}
-      #preview-controls .preview-control-copy strong{display:block;font-size:10px}#preview-controls .preview-control-copy span{display:block;color:#9a3412;font-size:8px}
-      #preview-controls label{display:flex;align-items:center;gap:5px;font-weight:900}#preview-controls select{border:1px solid #fdba74;background:#fff;border-radius:7px;padding:5px 7px;font-size:10px;font-weight:800;color:#7c2d12}
-      #preview-role-note{font-weight:900;color:#9a3412}#preview-reset{margin-left:auto;border:1px solid #fdba74;background:#fff;color:#9a3412;border-radius:7px;padding:6px 9px;font-size:9px;font-weight:900}
-      body[data-preview-role="employee"] #staff-summary{display:none!important}
-      @media(max-width:760px){#preview-reset{margin-left:0}}
-    `;
+    style.textContent = `#preview-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:10px}#preview-controls .preview-control-copy strong{display:block;font-size:10px}#preview-controls .preview-control-copy span{display:block;color:#9a3412;font-size:8px}#preview-controls label{display:flex;align-items:center;gap:5px;font-weight:900}#preview-controls select{border:1px solid #fdba74;background:#fff;border-radius:7px;padding:5px 7px;font-size:10px;font-weight:800;color:#7c2d12}#preview-role-note{font-weight:900;color:#9a3412}#preview-reset{margin-left:auto;border:1px solid #fdba74;background:#fff;color:#9a3412;border-radius:7px;padding:6px 9px;font-size:9px;font-weight:900}body[data-preview-role="employee"] #staff-summary{display:none!important}@media(max-width:760px){#preview-reset{margin-left:0}}`;
     document.head.appendChild(style);
-
-    document.getElementById('preview-role-select')?.addEventListener('change', event => {
-      originalSetItem.call(localStorage, ROLE_KEY, event.target.value);
-      window.location.reload();
-    });
+    document.getElementById('preview-role-select')?.addEventListener('change', event => { originalSetItem.call(localStorage, ROLE_KEY, event.target.value); window.location.reload(); });
     document.getElementById('preview-reset')?.addEventListener('click', () => {
-      if (!window.confirm('プレビュー内で変更したシフト・当日対応・スキルを初期状態へ戻します。よろしいですか？')) return;
+      if (!window.confirm('プレビュー内で変更したシフト・当日対応・スキル・人員条件を初期状態へ戻します。よろしいですか？')) return;
       const keys = [];
-      for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(PREVIEW_PREFIX) && key !== ROLE_KEY) keys.push(key);
-      }
+      for (let i = 0; i < localStorage.length; i += 1) { const key = localStorage.key(i); if (key?.startsWith(PREVIEW_PREFIX) && key !== ROLE_KEY) keys.push(key); }
       keys.forEach(key => originalRemoveItem.call(localStorage, key));
       window.location.reload();
     });
   }
 
   function installInteractionGuards() {
-    document.addEventListener('pointerdown', event => {
-      if (permissions.has('shift.plan.edit')) return;
-      if (event.target.closest('#view-planner .shift-bar')) block(event, '通常シフトの編集は本部のみです');
-    }, true);
-
-    document.addEventListener('dragstart', event => {
-      if (permissions.has('shift.plan.edit')) return;
-      if (event.target.closest('#staff-list .staff-card')) block(event, '通常シフトの追加は本部のみです');
-    }, true);
-
+    document.addEventListener('pointerdown', event => { if (!permissions.has('shift.plan.edit') && event.target.closest('#view-planner .shift-bar')) block(event, '通常シフトの編集は本部のみです'); }, true);
+    document.addEventListener('dragstart', event => { if (!permissions.has('shift.plan.edit') && event.target.closest('#staff-list .staff-card')) block(event, '通常シフトの追加は本部のみです'); }, true);
     document.addEventListener('click', event => {
       const target = event.target;
       if (!permissions.has('shift.plan.edit') && target.closest('#save-btn, #delete-shift')) return block(event, '通常シフトの編集は本部のみです');
@@ -192,95 +160,39 @@
       const typeButton = target.closest('[data-exception-type]');
       if (typeButton && !canException(typeButton.dataset.exceptionType)) return block(event, 'この当日対応を登録する権限がありません');
     }, true);
-
-    document.addEventListener('change', event => {
-      if (permissions.has('shift.plan.edit')) return;
-      if (event.target.closest('#inspector #ins-store, #inspector #ins-start, #inspector #ins-end, #inspector #ins-memo')) block(event, '通常シフトの編集は本部のみです');
-    }, true);
+    document.addEventListener('change', event => { if (!permissions.has('shift.plan.edit') && event.target.closest('#inspector #ins-store, #inspector #ins-start, #inspector #ins-end, #inspector #ins-memo')) block(event, '通常シフトの編集は本部のみです'); }, true);
   }
 
   function applyRoleUi() {
     document.body.dataset.previewRole = roleId;
     const login = document.getElementById('login-btn');
-    if (login) {
-      login.disabled = true;
-      login.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${role.label}`;
-    }
+    if (login) { login.disabled = true; login.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${role.label}`; }
     const status = document.getElementById('sync-status');
     if (status) { status.textContent = '本番データ非接続'; status.style.color = '#fbbf24'; }
     const note = document.getElementById('preview-role-note');
-    if (note) note.textContent = roleId==='hq' ? '通常シフト編集まで可' : roleId==='managerQualified' ? '欠勤・臨時招集・スキルのみ編集可' : '自分のシフト閲覧のみ';
-
+    if (note) note.textContent = roleId==='hq' ? '通常シフト・人員条件まで編集可' : roleId==='managerQualified' ? '欠勤・臨時招集・スキルのみ編集可' : '自分のシフト閲覧のみ';
     setVisible(document.getElementById('save-btn'), permissions.has('shift.plan.edit'));
     setVisible(document.getElementById('settings-btn'), permissions.has('store.master.edit'));
     setVisible(document.querySelector('#view-planner .toolbar-right'), permissions.has('shift.plan.edit'));
     setVisible(document.querySelector('[data-view="csv"]'), permissions.has('mf.export'));
     setVisible(document.querySelector('[data-view="exceptions"]'), window.shiftV2Access.canAnyException());
     setVisible(document.querySelector('[data-view="skills"]'), permissions.has('staff.skill.edit'));
-
-    document.querySelectorAll('#staff-list .staff-card').forEach(card => {
-      if (!permissions.has('shift.plan.edit')) card.setAttribute('draggable','false');
-    });
-    document.querySelectorAll('#gantt-canvas .handle').forEach(handle => {
-      handle.style.display = permissions.has('shift.plan.edit') ? '' : 'none';
-    });
-    document.querySelectorAll('#inspector input, #inspector select').forEach(control => {
-      control.disabled = !permissions.has('shift.plan.edit');
-    });
+    setVisible(document.querySelector('[data-view="requirements"]'), roleId !== 'employee');
+    document.querySelectorAll('#staff-list .staff-card').forEach(card => { if (!permissions.has('shift.plan.edit')) card.setAttribute('draggable','false'); });
+    document.querySelectorAll('#gantt-canvas .handle').forEach(handle => { handle.style.display = permissions.has('shift.plan.edit') ? '' : 'none'; });
+    document.querySelectorAll('#inspector input, #inspector select').forEach(control => { control.disabled = !permissions.has('shift.plan.edit'); });
     setVisible(document.getElementById('delete-shift'), permissions.has('shift.plan.edit'));
-
     if (roleId === 'employee') {
-      setVisible(document.querySelector('[data-view="planner"]'), false);
-      setVisible(document.querySelector('[data-view="store"]'), false);
-      setVisible(document.querySelector('[data-view="exceptions"]'), false);
-      setVisible(document.querySelector('[data-view="csv"]'), false);
-      setVisible(document.querySelector('[data-view="skills"]'), false);
-      activateStaffView();
-      filterOwnRows();
+      ['planner','store','exceptions','csv','skills','requirements'].forEach(view => setVisible(document.querySelector(`[data-view="${view}"]`), false));
+      activateStaffView(); filterOwnRows();
     }
   }
 
-  function activateStaffView() {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === 'staff'));
-    document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === 'view-staff'));
-  }
-
-  function filterOwnRows() {
-    if (roleId !== 'employee') return;
-    const body = document.getElementById('staff-view-body');
-    if (!body) return;
-    body.querySelectorAll('tr').forEach(row => {
-      const cells = row.querySelectorAll('td');
-      if (cells.length <= 1) return;
-      const id = String(cells[0]?.textContent || '').trim().toUpperCase();
-      row.style.display = id === String(role.staffId).toUpperCase() ? '' : 'none';
-    });
-  }
-
-  function canException(type) {
-    const permission = type === 'absence' ? 'shift.exception.absence' : type === 'support_move' ? 'shift.exception.support_move' : 'shift.exception.emergency_call';
-    return permissions.has(permission);
-  }
-
-  function setVisible(element, visible) {
-    if (element) element.style.display = visible ? '' : 'none';
-  }
-
-  function block(event, message) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    notify(message);
-  }
-
-  function notify(message) {
-    const toast = document.getElementById('toast');
-    if (!toast) return;
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1800);
-  }
-
-  function dateKey(date) {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0,10);
-  }
+  function activateStaffView() { document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === 'staff')); document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === 'view-staff')); }
+  function filterOwnRows() { if (roleId !== 'employee') return; const body = document.getElementById('staff-view-body'); if (!body) return; body.querySelectorAll('tr').forEach(row => { const cells=row.querySelectorAll('td'); if(cells.length<=1)return; row.style.display=String(cells[0]?.textContent||'').trim().toUpperCase()===String(role.staffId).toUpperCase()?'':'none'; }); }
+  function canException(type) { const permission = type === 'absence' ? 'shift.exception.absence' : 'shift.exception.emergency_call'; return permissions.has(permission); }
+  function setVisible(element, visible) { if (element) element.style.display = visible ? '' : 'none'; }
+  function block(event, message) { event.preventDefault(); event.stopImmediatePropagation(); notify(message); }
+  function notify(message) { const toast=document.getElementById('toast'); if(!toast)return; toast.textContent=message; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
+  function dateKey(date) { return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0,10); }
 })();
