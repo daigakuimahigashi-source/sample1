@@ -33,6 +33,7 @@
 
     <nav class="tabs" aria-label="表示切替">
       <button class="tab active" data-view="planner"><i class="fa-solid fa-pen-ruler"></i> ガント入力</button>
+      <button class="tab" data-view="exceptions"><i class="fa-solid fa-bolt"></i> 当日対応</button>
       <button class="tab" data-view="staff"><i class="fa-solid fa-user-clock"></i> 従業員別</button>
       <button class="tab" data-view="store"><i class="fa-solid fa-store"></i> 店舗別</button>
       <button class="tab" data-view="csv"><i class="fa-solid fa-file-csv"></i> MF CSV</button>
@@ -74,10 +75,40 @@
           <aside class="card side inspector-panel">
             <div class="panel-title">
               シフト詳細
-              <small>バーを選ぶと編集できます</small>
+              <small>通常シフトと当日対応をここで確認</small>
             </div>
             <div id="inspector" class="inspector"></div>
           </aside>
+        </div>
+      </section>
+
+      <section id="view-exceptions" class="view">
+        <div class="card toolbar">
+          <div class="toolbar-left">
+            <strong style="font-size:12px">当日対応</strong>
+            <input id="exception-date" class="control" type="date">
+          </div>
+          <div style="font-size:10px;color:#667085">通常シフトはそのまま残し、欠勤・臨時招集・当日応援を別記録します。</div>
+        </div>
+
+        <div class="exception-layout">
+          <div class="card exception-entry-panel">
+            <div class="panel-title">対応を登録<small>店長資格保有者が扱う当日例外</small></div>
+            <div class="exception-type-tabs">
+              <button type="button" data-exception-type="absence">欠勤</button>
+              <button type="button" data-exception-type="emergency_call" class="active emergency-call-choice"><i class="fa-solid fa-bolt"></i> 臨時招集</button>
+              <button type="button" data-exception-type="support_move">当日応援</button>
+            </div>
+            <div id="exception-form" class="exception-form"></div>
+          </div>
+
+          <div class="card">
+            <div class="data-head">
+              <h2>当日対応履歴</h2>
+              <span id="exception-summary" style="font-size:10px;color:#667085"></span>
+            </div>
+            <div id="exception-list" class="exception-list"></div>
+          </div>
         </div>
       </section>
 
@@ -88,14 +119,14 @@
             <h2>従業員別 月間シフト</h2>
             <input id="staff-month" class="control" type="month">
           </div>
-          <div class="table-wrap"><table><thead><tr><th>従業員番号</th><th>氏名</th><th>日付</th><th>出勤店舗</th><th>勤務時間</th></tr></thead><tbody id="staff-view-body"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>従業員番号</th><th>氏名</th><th>日付</th><th>出勤店舗</th><th>勤務時間</th><th>当日対応</th></tr></thead><tbody id="staff-view-body"></tbody></table></div>
         </div>
       </section>
 
       <section id="view-store" class="view">
         <div class="card toolbar">
           <div class="toolbar-left"><span style="font-size:11px;font-weight:900">出勤店舗別</span><input id="store-date" class="control" type="date"></div>
-          <div style="font-size:10px;color:#667085">ここでは予定上の「出勤店舗」を表示します。那覇エリア内の当日移動は月間シフトとは分けて扱います。</div>
+          <div style="font-size:10px;color:#667085">予定上の出勤店舗に、当日の欠勤・臨時招集・応援状況を重ねて表示します。</div>
         </div>
         <div id="store-grid" class="store-grid"></div>
       </section>
@@ -111,7 +142,7 @@
         </div>
         <div class="card csv-panel">
           <div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:9px;padding:9px 11px;font-size:10px;line-height:1.6;margin-bottom:10px">
-            MFクラウド勤怠の14列形式で出力します。日をまたぐ終了時刻は、翌5時なら「29:00」のように24時超で出力します。出勤店舗は実務用の表示に使い、MFには勤務開始・終了を1本で渡します。
+            MFクラウド勤怠の14列形式で、確定した予定シフトを出力します。日をまたぐ終了時刻は、翌5時なら「29:00」のように24時超で出力します。
           </div>
           <textarea id="csv-preview" class="csv-preview" readonly></textarea>
         </div>
