@@ -37,7 +37,6 @@
     const requirements = view.querySelector('.rules-requirements-card');
     if (!hero || !skillGroup || !staffSkills || !requirements) return;
 
-    // The old 1 -> 2 -> 3 jump guide is superseded by real tabs.
     const guide = document.getElementById('rules-easy-guide');
     if (guide) guide.style.display = 'none';
 
@@ -72,13 +71,11 @@
     if (staffSkills.parentElement !== staffPane) staffPane.appendChild(staffSkills);
     if (requirements.parentElement !== requirementsPane) requirementsPane.appendChild(requirements);
 
-    // Stable order directly after the tab strip.
     [skillsPane, staffPane, requirementsPane].forEach((pane, index, panes) => {
       const previous = index === 0 ? tabs : panes[index - 1];
       if (pane.previousElementSibling !== previous) previous.insertAdjacentElement('afterend', pane);
     });
 
-    // Clean up headings now that the active tab already carries the step number.
     const masterHeading = skillsPane.querySelector('.rules-card-head h2');
     if (masterHeading) masterHeading.textContent = 'スキル種類';
     const staffHeading = staffPane.querySelector('.rules-card-head h2');
@@ -143,17 +140,30 @@
       #view-rules .rules-section-tab>span{display:block;min-width:0}
       #view-rules .rules-section-tab strong{display:block;font-size:10px;white-space:normal}
       #view-rules .rules-section-tab small{display:block;font-size:7px;margin-top:1px;opacity:.72;white-space:normal}
-      #view-rules .rules-section-pane{display:none}
+
+      /* Only the page itself scrolls vertically. */
+      #view-rules .rules-section-pane{display:none;max-height:none!important;height:auto!important;overflow:visible!important}
       #view-rules .rules-section-pane.active{display:block}
       #view-rules .rules-section-pane>.rules-card,
-      #view-rules .rules-section-pane>.rules-grid-two{margin-bottom:10px}
+      #view-rules .rules-section-pane>.rules-grid-two{margin-bottom:10px;max-height:none!important;height:auto!important}
       #view-rules .rules-section-pane[data-rules-pane="skills"] .rules-grid-two{
         grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);
       }
-      #view-rules .rules-section-pane[data-rules-pane="staff"] .employee-skill-table-wrap,
-      #view-rules .rules-section-pane[data-rules-pane="requirements"] .rules-table-wrap{
-        max-height:none!important;overflow-y:visible!important;overflow-x:auto!important;
+      #view-rules .skill-master-list{
+        max-height:none!important;height:auto!important;overflow:visible!important;
       }
+      #view-rules .employee-skill-table-wrap,
+      #view-rules .rules-table-wrap{
+        max-height:none!important;height:auto!important;
+        overflow-x:auto!important;
+        overflow-y:visible!important;
+      }
+      #view-rules .employee-skills-card,
+      #view-rules .rules-requirements-card,
+      #view-rules .rules-card{
+        max-height:none!important;height:auto!important;
+      }
+
       @media(max-width:900px){
         #view-rules .rules-section-tabs{grid-template-columns:1fr}
         #view-rules .rules-section-pane[data-rules-pane="skills"] .rules-grid-two{grid-template-columns:1fr}
