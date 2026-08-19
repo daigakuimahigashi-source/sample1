@@ -174,18 +174,7 @@
 
   <div id="toast" class="toast"></div>
 
-  <script type="module">
-    import { auth, loginWithGoogle, logout, isAdmin, onAuthStateChanged, fsGet, fsSet, fsListen } from './js/firebase-config.js';
-    window.shiftV2Cloud = { get: fsGet, set: fsSet, listen: fsListen };
-    window.shiftV2Login = () => loginWithGoogle();
-    window.shiftV2Logout = () => logout();
-    onAuthStateChanged(auth, user => {
-      window.shiftV2User = user;
-      window.shiftV2IsAdmin = isAdmin(user);
-      document.dispatchEvent(new CustomEvent('shiftv2-auth', { detail: { user, admin: isAdmin(user) } }));
-    });
-    document.dispatchEvent(new Event('shiftv2-cloud-ready'));
-  </script>
+  <script type="module" src="js/shift-v2-access.js"></script>
   <script src="js/shift-v2.js"></script>
   <script src="js/shift-v2-exceptions.js"></script>
 </body>
