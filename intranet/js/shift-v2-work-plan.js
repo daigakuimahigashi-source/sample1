@@ -81,16 +81,16 @@
 
       <div class="work-plan-table-wrap">
         <table class="work-plan-table">
-          <thead><tr><th>正社員</th><th>プラン</th><th>固定残業時間</th><th>臨時招集の月目安</th><th>運用上限</th></tr></thead>
-          <tbody>${fullTime.map(person => personRow(person)).join('') || '<tr><td colspan="5" class="work-plan-empty">正社員データがありません。</td></tr>'}</tbody>
+          <thead><tr><th>正社員</th><th class="plan-choice-head plan-a-col">A</th><th class="plan-choice-head plan-b-col">B</th><th>固定残業時間</th><th>臨時招集の月目安</th><th>運用上限</th></tr></thead>
+          <tbody>${fullTime.map(person => personRow(person)).join('') || '<tr><td colspan="6" class="work-plan-empty">正社員データがありません。</td></tr>'}</tbody>
         </table>
       </div>
-      <div class="work-plan-note"><i class="fa-solid fa-circle-info"></i> Bプランの「月2回」は配置余力を考えるための社内目安です。毎月必ず2回出勤させる条件にはせず、休日カレンダーと接続した後に候補順位へ使います。</div>
+      <div class="work-plan-note"><i class="fa-solid fa-circle-info"></i> A / B はラジオ位置を縦に揃えているため、一覧でプラン分布を視覚的に確認できます。Bプランの「月2回」は不足時の臨時招集目安で、休日カレンダー上の公休日から候補を選びます。</div>
     `;
 
     panel.querySelectorAll('[data-plan-field]').forEach(input => input.addEventListener('change', onPlanDefinitionChange));
     panel.querySelector('[data-common-cap]')?.addEventListener('change', onCommonCapChange);
-    panel.querySelectorAll('[data-person-plan]').forEach(select => select.addEventListener('change', onPersonPlanChange));
+    panel.querySelectorAll('[data-person-plan]').forEach(input => input.addEventListener('change', onPersonPlanChange));
   }
 
   function planCard(id, plan) {
@@ -103,9 +103,11 @@
 
   function personRow(person) {
     const plan = state.plans[person.workPlanId] || null;
+    const group = `work-plan-${String(person.id || '').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
     return `<tr>
       <td><strong>${esc(person.name || person.id)}</strong><small>${esc(person.id || '')}</small></td>
-      <td><select class="control" data-person-plan="${esc(person.id)}"><option value="">未設定</option><option value="A" ${person.workPlanId === 'A' ? 'selected' : ''}>Aプラン</option><option value="B" ${person.workPlanId === 'B' ? 'selected' : ''}>Bプラン</option></select></td>
+      <td class="plan-choice-cell plan-a-col"><input class="work-plan-radio radio-a" type="radio" name="${esc(group)}" data-person-plan="${esc(person.id)}" value="A" aria-label="${esc(person.name || person.id)} Aプラン" ${person.workPlanId === 'A' ? 'checked' : ''}></td>
+      <td class="plan-choice-cell plan-b-col"><input class="work-plan-radio radio-b" type="radio" name="${esc(group)}" data-person-plan="${esc(person.id)}" value="B" aria-label="${esc(person.name || person.id)} Bプラン" ${person.workPlanId === 'B' ? 'checked' : ''}></td>
       <td>${plan ? `${num(plan.fixedOvertimeHours, 0)}h` : '—'}</td>
       <td>${plan ? `${num(plan.emergencyCallTarget, 0)}回` : '—'}</td>
       <td>${num(state.plans.common.operationalOvertimeCapHours, 30)}h/月</td>
@@ -128,6 +130,7 @@
   }
 
   function onPersonPlanChange(event) {
+    if (!event.target.checked) return;
     const id = String(event.target.dataset.personPlan || '').toUpperCase();
     const staff = loadStaff();
     const person = staff.find(item => String(item.id || '').toUpperCase() === id);
@@ -208,7 +211,7 @@
     const style = document.createElement('style');
     style.id = 'shift-v2-work-plan-style';
     style.textContent = `
-      .work-plan-panel{margin:0 0 10px;padding:0;overflow:hidden}.work-plan-head{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #eaecf0}.work-plan-head h2{font-size:12px;margin:0;color:#344054}.work-plan-head p{font-size:8px;color:#667085;margin:3px 0 0;line-height:1.5}.work-plan-counts{display:flex;gap:5px;align-items:flex-start;flex-wrap:wrap}.work-plan-counts span{font-size:8px;font-weight:900;padding:4px 7px;border-radius:999px;background:#f2f4f7;color:#475467}.work-plan-counts .warn{background:#fffaeb;color:#b54708}.work-plan-settings{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:8px;padding:10px 12px;background:#fcfcfd;border-bottom:1px solid #eaecf0}.work-plan-rule-card{border:1px solid #e4e7ec;border-radius:9px;background:#fff;padding:9px;display:flex;flex-direction:column;gap:5px}.work-plan-rule-card.plan-a{border-left:3px solid #2e90fa}.work-plan-rule-card.plan-b{border-left:3px solid #12b76a}.work-plan-rule-card.common{border-left:3px solid #7f56d9}.plan-label{display:flex;align-items:center;gap:6px}.plan-label b{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#f2f4f7}.plan-label strong,.work-plan-rule-card>strong{font-size:9px}.work-plan-rule-card label{font-size:8px;color:#475467;font-weight:800}.work-plan-rule-card input{width:55px;height:26px;border:1px solid #d0d5dd;border-radius:6px;padding:0 5px}.work-plan-rule-card small{font-size:7px;color:#667085;line-height:1.5}.work-plan-table-wrap{overflow:auto;max-height:300px}.work-plan-table{width:100%;border-collapse:collapse;font-size:9px}.work-plan-table th{position:sticky;top:0;background:#f8fafc;color:#475467;padding:7px;border-bottom:1px solid #e4e7ec}.work-plan-table td{padding:7px;border-bottom:1px solid #f2f4f7;text-align:center}.work-plan-table td:first-child{text-align:left}.work-plan-table td:first-child strong{display:block;font-size:9px}.work-plan-table td:first-child small{display:block;font-size:7px;color:#98a2b3}.work-plan-table select{min-width:105px}.work-plan-empty{padding:22px!important;color:#98a2b3}.work-plan-note{padding:8px 12px;background:#f8fafc;color:#667085;font-size:8px;line-height:1.55}.work-plan-note i{margin-right:4px}@media(max-width:900px){.work-plan-settings{grid-template-columns:1fr}.work-plan-head{flex-direction:column}}
+      .work-plan-panel{margin:0 0 10px;padding:0;overflow:hidden}.work-plan-head{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #eaecf0}.work-plan-head h2{font-size:12px;margin:0;color:#344054}.work-plan-head p{font-size:8px;color:#667085;margin:3px 0 0;line-height:1.5}.work-plan-counts{display:flex;gap:5px;align-items:flex-start;flex-wrap:wrap}.work-plan-counts span{font-size:8px;font-weight:900;padding:4px 7px;border-radius:999px;background:#f2f4f7;color:#475467}.work-plan-counts .warn{background:#fffaeb;color:#b54708}.work-plan-settings{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:8px;padding:10px 12px;background:#fcfcfd;border-bottom:1px solid #eaecf0}.work-plan-rule-card{border:1px solid #e4e7ec;border-radius:9px;background:#fff;padding:9px;display:flex;flex-direction:column;gap:5px}.work-plan-rule-card.plan-a{border-left:3px solid #2e90fa}.work-plan-rule-card.plan-b{border-left:3px solid #12b76a}.work-plan-rule-card.common{border-left:3px solid #7f56d9}.plan-label{display:flex;align-items:center;gap:6px}.plan-label b{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#f2f4f7}.plan-label strong,.work-plan-rule-card>strong{font-size:9px}.work-plan-rule-card label{font-size:8px;color:#475467;font-weight:800}.work-plan-rule-card input{width:55px;height:26px;border:1px solid #d0d5dd;border-radius:6px;padding:0 5px}.work-plan-rule-card small{font-size:7px;color:#667085;line-height:1.5}.work-plan-table-wrap{overflow:auto;max-height:300px}.work-plan-table{width:100%;border-collapse:collapse;font-size:9px}.work-plan-table th{position:sticky;top:0;background:#f8fafc;color:#475467;padding:7px;border-bottom:1px solid #e4e7ec}.work-plan-table td{padding:7px;border-bottom:1px solid #f2f4f7;text-align:center}.work-plan-table td:first-child{text-align:left}.work-plan-table td:first-child strong{display:block;font-size:9px}.work-plan-table td:first-child small{display:block;font-size:7px;color:#98a2b3}.work-plan-table .plan-choice-head{width:54px;font-size:10px;font-weight:900}.work-plan-table .plan-a-col{background:#f5faff}.work-plan-table .plan-b-col{background:#f3fdf7}.work-plan-table td.plan-choice-cell{padding:5px 7px}.work-plan-radio{width:17px;height:17px;margin:0;cursor:pointer;vertical-align:middle}.work-plan-radio.radio-a{accent-color:#2e90fa}.work-plan-radio.radio-b{accent-color:#12b76a}.work-plan-table tbody tr:hover td{background-image:linear-gradient(rgba(16,24,40,.025),rgba(16,24,40,.025))}.work-plan-table tbody tr:hover td.plan-a-col{background-color:#edf7ff}.work-plan-table tbody tr:hover td.plan-b-col{background-color:#ecfdf3}.work-plan-empty{padding:22px!important;color:#98a2b3}.work-plan-note{padding:8px 12px;background:#f8fafc;color:#667085;font-size:8px;line-height:1.55}.work-plan-note i{margin-right:4px}@media(max-width:900px){.work-plan-settings{grid-template-columns:1fr}.work-plan-head{flex-direction:column}}
     `;
     document.head.appendChild(style);
   }
