@@ -47,7 +47,8 @@
         'shift-v2-holiday-accounting.js',
         'shift-v2-start-store-only.js',
         'shift-v2-quarter-hour-editor.js',
-        'shift-v2-demo-mode.js'
+        'shift-v2-demo-mode.js',
+        'shift-v2-skill-hourly-matrix.js'
       ];
 
       function loadScript(src) {
@@ -62,7 +63,7 @@
       }
 
       async function boot() {
-        const response = await fetch('./shift-v2.html?v=live7k-' + Date.now(), { cache: 'no-store' });
+        const response = await fetch('./shift-v2.html?v=live7l-' + Date.now(), { cache: 'no-store' });
         if (!response.ok) throw new Error(`画面テンプレート HTTP ${response.status}`);
         const html = await response.text();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
@@ -70,12 +71,12 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live7k');
+          await loadScript('./js/' + file + '?v=live7l');
         }
 
         const build = document.createElement('div');
         build.id = 'v2-live-build';
-        build.textContent = 'LIVE7K';
+        build.textContent = 'LIVE7L';
         document.body.appendChild(build);
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
