@@ -48,9 +48,22 @@ export const AREA_DEFINITIONS = {
   }
 };
 
+// Planned shifts intentionally stay simple.
+// A monthly plan records only WHO / DATE / START STORE / START TIME / END TIME.
+// Intra-day movement inside the Naha area is an operational decision and is not
+// encoded into the original monthly shift plan. This keeps the plan readable and
+// allows the same source data to feed employee views and MF attendance export.
+export const SHIFT_PLAN_FIELDS = [
+  'employeeId',
+  'workDate',
+  'startStoreId',
+  'startTime',
+  'endTime'
+];
+
 // closeHour supports 24+ hour notation for next-day closing times.
-// Naha-area stores can automatically be visualized as joining Matsuyama after close.
-// Misato remains within the Okinawa area and does not auto-join Matsuyama.
+// Closing time is reference information for UI/AI validation only; it does not
+// automatically create a move or change the employee's planned shift.
 export const DEFAULT_STORE_RULES = [
   {
     id: 'matsuyama',
@@ -58,8 +71,6 @@ export const DEFAULT_STORE_RULES = [
     areaId: 'naha',
     closeHour: 30,
     closeLabel: '翌6:00',
-    afterCloseMode: 'stay',
-    joinStoreId: null,
     displayOrder: 1,
     effectiveFrom: '2026-08-01'
   },
@@ -69,8 +80,6 @@ export const DEFAULT_STORE_RULES = [
     areaId: 'naha',
     closeHour: 25,
     closeLabel: '翌1:00',
-    afterCloseMode: 'auto_join',
-    joinStoreId: 'matsuyama',
     displayOrder: 2,
     effectiveFrom: '2026-08-01'
   },
@@ -80,8 +89,6 @@ export const DEFAULT_STORE_RULES = [
     areaId: 'naha',
     closeHour: 25,
     closeLabel: '翌1:00',
-    afterCloseMode: 'auto_join',
-    joinStoreId: 'matsuyama',
     displayOrder: 3,
     effectiveFrom: '2026-08-01'
   },
@@ -91,8 +98,6 @@ export const DEFAULT_STORE_RULES = [
     areaId: 'okinawa',
     closeHour: 26,
     closeLabel: '翌2:00',
-    afterCloseMode: 'stay',
-    joinStoreId: null,
     displayOrder: 4,
     effectiveFrom: '2026-08-01'
   }
@@ -105,6 +110,8 @@ export const SKILL_LEVELS = [
   { value: 3, label: '教育できる' }
 ];
 
+// These are same-day operational exceptions. They do not rewrite the original
+// confirmed monthly shift plan. If needed, actual movement can be recorded here.
 export const EXCEPTION_ACTIONS = [
   { id: 'absence', label: '欠勤' },
   { id: 'emergency_call', label: '臨時招集' },
