@@ -10,7 +10,6 @@ export const ROLE_DEFINITIONS = {
       'shift.plan.confirm',
       'shift.exception.absence',
       'shift.exception.emergency_call',
-      'shift.exception.support_move',
       'staff.skill.edit',
       'staff.master.edit',
       'store.master.edit',
@@ -47,10 +46,6 @@ export const AREA_DEFINITIONS = {
   }
 };
 
-// Planned shifts intentionally stay simple.
-// A monthly plan records only WHO / DATE / START STORE / START TIME / END TIME.
-// Intra-day movement is an operational decision and is not encoded into the
-// original monthly shift plan.
 export const SHIFT_PLAN_FIELDS = [
   'employeeId',
   'workDate',
@@ -59,50 +54,13 @@ export const SHIFT_PLAN_FIELDS = [
   'endTime'
 ];
 
-// closeHour supports 24+ hour notation for next-day closing times.
-// Closing time is reference information for UI/AI validation only; it does not
-// automatically create a move or change the employee's planned shift.
 export const DEFAULT_STORE_RULES = [
-  {
-    id: 'matsuyama',
-    name: '松山店',
-    areaId: 'naha',
-    closeHour: 30,
-    closeLabel: '翌6:00',
-    displayOrder: 1,
-    effectiveFrom: '2026-08-01'
-  },
-  {
-    id: 'kumoji',
-    name: '久茂地店',
-    areaId: 'naha',
-    closeHour: 25,
-    closeLabel: '翌1:00',
-    displayOrder: 2,
-    effectiveFrom: '2026-08-01'
-  },
-  {
-    id: 'miebashi',
-    name: '美栄橋店',
-    areaId: 'naha',
-    closeHour: 25,
-    closeLabel: '翌1:00',
-    displayOrder: 3,
-    effectiveFrom: '2026-08-01'
-  },
-  {
-    id: 'misato',
-    name: '美里店',
-    areaId: 'okinawa',
-    closeHour: 26,
-    closeLabel: '翌2:00',
-    displayOrder: 4,
-    effectiveFrom: '2026-08-01'
-  }
+  { id: 'matsuyama', name: '松山店', areaId: 'naha', closeHour: 30, closeLabel: '翌6:00', displayOrder: 1, effectiveFrom: '2026-08-01' },
+  { id: 'kumoji', name: '久茂地店', areaId: 'naha', closeHour: 25, closeLabel: '翌1:00', displayOrder: 2, effectiveFrom: '2026-08-01' },
+  { id: 'miebashi', name: '美栄橋店', areaId: 'naha', closeHour: 25, closeLabel: '翌1:00', displayOrder: 3, effectiveFrom: '2026-08-01' },
+  { id: 'misato', name: '美里店', areaId: 'okinawa', closeHour: 26, closeLabel: '翌2:00', displayOrder: 4, effectiveFrom: '2026-08-01' }
 ];
 
-// This is the single skill catalogue used by human evaluation, staffing rules
-// and future AI shift generation. Do not create a separate AI-only skill list.
 export const SKILL_DEFINITIONS = [
   { id: 'meat', name: '肉場', legacyNames: ['肉場'] },
   { id: 'salad', name: 'サラダ場', legacyNames: ['サラダ場'] },
@@ -122,13 +80,9 @@ export const SKILL_LEVELS = [
   { value: 3, label: '教育できる' }
 ];
 
-// Same-day operational exceptions do not rewrite the original confirmed plan.
-// Support moves remain a head-office capability in V1; manager-qualified users
-// are limited to absence and emergency-call operations.
 export const EXCEPTION_ACTIONS = [
   { id: 'absence', label: '欠勤' },
-  { id: 'emergency_call', label: '臨時招集' },
-  { id: 'support_move', label: '当日応援' }
+  { id: 'emergency_call', label: '臨時招集' }
 ];
 
 export function hasPermission(roleId, permission) {
