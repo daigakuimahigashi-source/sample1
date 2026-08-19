@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OKK シフトプランナー</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111827;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+    #app{width:100%;height:100%;border:0;background:#f4f6f9}
+    #syncbar{position:fixed;right:14px;top:14px;z-index:9999;display:flex;align-items:center;gap:8px;background:rgba(17,24,39,.94);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:7px 9px;box-shadow:0 6px 22px rgba(0,0,0,.22);font-size:11px}
+    #status{color:#cbd5e1;font-weight:700;white-space:nowrap}
+    button{border:0;border-radius:7px;padding:6px 9px;font-size:11px;font-weight:800;cursor:pointer}
+    #login{background:#fff;color:#334155}
+    #open{background:#f59e0b;color:#171717}
+    #loading{position:fixed;inset:0;z-index:9998;display:grid;place-items:center;background:#111827;color:#fff}
+    #loading>div{text-align:center}.spin{width:36px;height:36px;border:4px solid #475569;border-top-color:#f59e0b;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}@keyframes spin{to{transform:rotate(360deg)}}
+    .sub{font-size:11px;color:#94a3b8;margin-top:6px}
+  </style>
+</head>
+<body>
+  <div id="loading"><div><div class="spin"></div><strong>シフトデータを読み込んでいます</strong><div class="sub" id="loading-text">従業員マスターを確認中...</div></div></div>
+  <iframe id="app" title="OKKシフトプランナー"></iframe>
+  <div id="syncbar"><span id="status">接続確認中</span><button id="login">Googleログイン</button><button id="open">画面を開く</button></div>
+
+  <script type="module">
+    import { auth, loginWithGoogle, logout, isAdmin, onAuthStateChanged, fsGet, fsSet, fsListen } from './js/firebase-config.js';
+
+    const STAFF_LOCAL = 'okk_shift_v2_staff';
+    const STORES_LOCAL = 'okk_shift_simple_stores';
+    const SHIFTS_LOCAL = 'okk_shift_simple_shifts';
+    const STORE_CLOUD = 'shiftSimpleStores';
+    const SHIFT_CLOUD = 'shiftSimpleShifts';
+
+    const frame = document.getElementById('app');
+    const loading = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const status = document.getElementById('status');
+    const login = document.getElementById('login');
+    const open = document.getElementById('open');
+
+    let currentUser = null;
+    let admin = false;
+    let appLoaded = false;
+    let suppressStoragePush = false;
+    let saveTimer = null;
+
+    init();
+
+    async function init() {
+      try {
+        loadingText.textContent = '従業員マスター・店舗設定を同期中...';
+        const [staff, stores, shifts] = await Promise.all([
+          fsGet('staff').catch(() => null),
+          fsGet(STORE_CLOUD).catch(() => null),
+          fsGet(SHIFT_CLOUD).catch(() => null),
+        ]);
+        if (Array.isArray(staff) && staff.length) localStorage.setItem(STAFF_LOCAL, JSON.stringify(staff));
+        if (Array.isArray(stores) && stores.length) localStorage.setItem(STORES_LOCAL, JSON.stringify(stores));
+        if (shifts && typeof shifts === 'object') localStorage.setItem(SHIFTS_LOCAL, JSON.stringify(shifts));
+      } catch (e) {
+        console.warn('initial cloud sync failed', e);
+      } finally {
+        frame.src = 'shift-simple.html';
+        frame.addEventListener('load', () => {
+          appLoaded = true;
+          loading.style.display = 'none';
+          updateStatus();
+        }, { once: true });
+      }
+    }
+
+    onAuthStateChanged(auth, user => {
+      currentUser = user;
+      admin = isAdmin(user);
+      login.textContent = user ? 'ログアウト' : 'Googleログイン';
+      updateStatus();
+    });
+
+    login.addEventListener('click', async () => {
+      try {
+        if (currentUser) await logout();
+        else await loginWithGoogle();
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'ログインに失敗しました';
+      }
+    });
+
+    open.addEventListener('click', () => {
+      if (frame.src) window.open('shift-simple.html', '_blank');
+    });
+
+    window.addEventListener('storage', event => {
+      if (suppressStoragePush) return;
+      if (![STORES_LOCAL, SHIFTS_LOCAL].includes(event.key)) return;
+      if (!currentUser || !admin) {
+        updateStatus('この端末に保存中');
+        return;
+      }
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => pushLocal(event.key), 350);
+    });
+
+    async function pushLocal(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+        const value = JSON.parse(raw);
+        updateStatus('クラウドへ保存中...');
+        await fsSet(key === STORES_LOCAL ? STORE_CLOUD : SHIFT_CLOUD, value);
+        updateStatus('クラウド同期済み');
+      } catch (e) {
+        console.error('cloud save failed', e);
+        updateStatus('クラウド保存に失敗');
+      }
+    }
+
+    fsListen(STAFF_LOCAL === 'staff' ? STAFF_LOCAL : 'staff', value => {
+      if (!Array.isArray(value) || !value.length) return;
+      applyRemote(STAFF_LOCAL, value, false);
+    });
+    fsListen(STORE_CLOUD, value => {
+      if (!Array.isArray(value) || !value.length) return;
+      applyRemote(STORES_LOCAL, value, true);
+    });
+    fsListen(SHIFT_CLOUD, value => {
+      if (!value || typeof value !== 'object') return;
+      applyRemote(SHIFTS_LOCAL, value, true);
+    });
+
+    function applyRemote(localKey, value, refresh) {
+      try {
+        const next = JSON.stringify(value);
+        if (localStorage.getItem(localKey) === next) return;
+        suppressStoragePush = true;
+        localStorage.setItem(localKey, next);
+        setTimeout(() => { suppressStoragePush = false; }, 100);
+        if (refresh && appLoaded) {
+          updateStatus('他端末の変更を反映');
+          frame.contentWindow.location.reload();
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    function updateStatus(forced) {
+      if (forced) { status.textContent = forced; return; }
+      if (!appLoaded) status.textContent = '読み込み中';
+      else if (currentUser && admin) status.textContent = 'クラウド編集モード';
+      else if (currentUser) status.textContent = '閲覧モード';
+      else status.textContent = 'この端末に保存';
+    }
+  </script>
+</body>
+</html>
