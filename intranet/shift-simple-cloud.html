@@ -43,6 +43,7 @@
     let appLoaded = false;
     let suppressStoragePush = false;
     let saveTimer = null;
+    let staffReloadTimer = null;
 
     init();
 
@@ -63,6 +64,7 @@
         frame.src = 'shift-simple.html';
         frame.addEventListener('load', () => {
           appLoaded = true;
+          exposeCloudBridge();
           injectExtensions();
           loading.style.display = 'none';
           updateStatus();
@@ -70,15 +72,35 @@
       }
     }
 
+    function exposeCloudBridge() {
+      try {
+        const win = frame.contentWindow;
+        if (!win) return;
+        win.shiftV2Cloud = { get: fsGet, set: fsSet, listen: fsListen };
+        win.shiftV2User = currentUser;
+        win.shiftV2IsAdmin = admin;
+        win.dispatchEvent(new CustomEvent('shiftv2-cloud-ready'));
+        win.document.dispatchEvent(new CustomEvent('shiftv2-auth', { detail: { user: currentUser, admin } }));
+      } catch (e) {
+        console.warn('cloud bridge failed', e);
+      }
+    }
+
     function injectExtensions() {
       try {
         const doc = frame.contentDocument;
-        if (!doc || doc.getElementById('shift-simple-mf-template-loader')) return;
-        const script = doc.createElement('script');
-        script.id = 'shift-simple-mf-template-loader';
-        script.src = 'js/shift-simple-mf-template.js';
-        script.defer = true;
-        doc.body.appendChild(script);
+        if (!doc) return;
+        [
+          ['shift-simple-mf-template-loader', 'js/shift-simple-mf-template.js'],
+          ['shift-simple-staff-master-loader', 'js/shift-v2-staff-master.js'],
+        ].forEach(([id, src]) => {
+          if (doc.getElementById(id)) return;
+          const script = doc.createElement('script');
+          script.id = id;
+          script.src = src;
+          script.defer = true;
+          doc.body.appendChild(script);
+        });
       } catch (e) {
         console.warn('extension inject failed', e);
       }
@@ -88,6 +110,14 @@
       currentUser = user;
       admin = isAdmin(user);
       login.textContent = user ? 'ログアウト' : 'Googleログイン';
+      if (appLoaded) {
+        exposeCloudBridge();
+        try {
+          frame.contentWindow.shiftV2User = currentUser;
+          frame.contentWindow.shiftV2IsAdmin = admin;
+          frame.contentDocument.dispatchEvent(new CustomEvent('shiftv2-auth', { detail: { user, admin } }));
+        } catch (e) { console.warn(e); }
+      }
       updateStatus();
     });
 
@@ -105,6 +135,17 @@
 
     window.addEventListener('storage', event => {
       if (suppressStoragePush) return;
+
+      if (event.key === STAFF_LOCAL) {
+        clearTimeout(staffReloadTimer);
+        staffReloadTimer = setTimeout(() => {
+          if (!appLoaded) return;
+          updateStatus('従業員マスターを反映');
+          frame.contentWindow.location.reload();
+        }, 500);
+        return;
+      }
+
       if (![STORES_LOCAL, SHIFTS_LOCAL].includes(event.key)) return;
       if (!currentUser || !admin) {
         updateStatus('この端末に保存中');
@@ -130,7 +171,7 @@
 
     fsListen('staff', value => {
       if (!Array.isArray(value) || !value.length) return;
-      applyRemote(STAFF_LOCAL, value, false);
+      applyRemote(STAFF_LOCAL, value, true);
     });
     fsListen(STORE_CLOUD, value => {
       if (!Array.isArray(value) || !value.length) return;
@@ -149,7 +190,7 @@
         localStorage.setItem(localKey, next);
         setTimeout(() => { suppressStoragePush = false; }, 100);
         if (refresh && appLoaded) {
-          updateStatus('他端末の変更を反映');
+          updateStatus(localKey === STAFF_LOCAL ? '従業員マスターを更新' : '他端末の変更を反映');
           frame.contentWindow.location.reload();
         }
       } catch (e) {
