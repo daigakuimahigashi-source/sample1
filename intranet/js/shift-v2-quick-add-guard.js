@@ -158,7 +158,8 @@
     if (closures.some(item => (typeof item === 'string' ? item : item?.date) === date)) hard.push('会社休業日です。');
     const staffDays = Array.isArray(holiday.staffDays) ? holiday.staffDays : [];
     const dayOff = staffDays.find(item => String(item.staffId || '').toUpperCase() === staffId && item.date === date);
-    if (dayOff?.type === 'off') hard.push('公休として登録されています。');
+    if (dayOff?.requestedOff === true) warnings.push('希望休として登録されています。管理者判断で上書きできます。');
+    else if (dayOff?.type === 'off') hard.push('公休として登録されています。');
     if (dayOff?.type === 'paid_leave') hard.push('有休として登録されています。');
 
     const c = person.workConstraints || {};
@@ -170,12 +171,10 @@
     if (availableStart !== null && start < availableStart) hard.push(`勤務可能開始 ${fmtTime(availableStart)} より前です。`);
     if (availableEnd !== null && end > availableEnd) hard.push(`勤務可能終了 ${fmtTime(availableEnd)} より後です。`);
 
-    if (Array.isArray(person.placementStoreIds) && person.placementStoreIds.length && storeId && !person.placementStoreIds.includes(storeId)) {
-      hard.push('この店舗は配置可能店舗に設定されていません。');
-    }
+    if (Array.isArray(person.placementStoreIds) && person.placementStoreIds.length && storeId && !person.placementStoreIds.includes(storeId)) hard.push('この店舗は配置可能店舗に設定されていません。');
 
     const requestedOff = Array.isArray(c.requestedOffDates) && c.requestedOffDates.includes(date);
-    if (requestedOff) warnings.push('希望休として登録されています。');
+    if (requestedOff) warnings.push('希望休として登録されています。管理者判断で上書きできます。');
 
     if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
       const candidate = { staffId, start, end };
