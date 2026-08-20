@@ -42,7 +42,6 @@
     const summary = document.getElementById('month-builder-summary');
     if (!modal?.classList.contains('open') || !summary || calculating) return;
 
-    // 反映判定パネル側で正式/仮マスタを表示するため、旧バナーは重複表示しない。
     document.getElementById('master-readiness-banner')?.remove();
 
     const month = document.getElementById('month-builder-month')?.value || document.getElementById('work-date')?.value?.slice(0,7) || monthKey(new Date());
@@ -51,7 +50,7 @@
       includeSoft: Boolean(document.getElementById('month-builder-soft')?.checked),
     };
 
-    const previewFn = window.shiftV2MonthBuilderEnhanced?.preview || window.shiftV2MonthBuilder?.preview;
+    const previewFn = window.shiftV2MonthBuilderFinal?.preview || window.shiftV2MonthBuilderEnhanced?.preview || window.shiftV2MonthBuilder?.preview;
     if (typeof previewFn !== 'function') return;
 
     calculating = true;
