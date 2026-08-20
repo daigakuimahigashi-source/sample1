@@ -15,9 +15,13 @@ const firebaseConfig = {
   measurementId:     "G-QQR625M5R8"
 };
 
-// 管理者メールアドレス（編集権限を持つユーザー）
+// 本部管理者メールアドレス（シフト作成・修正・従業員マスタ管理などの管理権限）
 const ADMIN_EMAILS = [
-  'daigaku.imahigashi@gmail.com',
+  'daigaku.imahigashi@gmail.com', // 今東大岳
+  'rreeeccoo05@gmail.com',         // 荒井令子
+  'matayoshi.mw@gmail.com',        // 又吉佳祐
+  '010420.love@gmail.com',         // 又吉未愉
+  // 又吉達郎：メールアドレス確定後に追加
 ];
 
 const app  = initializeApp(firebaseConfig);
