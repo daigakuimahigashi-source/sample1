@@ -12,11 +12,13 @@
   let mode = 'signed-out';
   let heartbeat = null;
   let takeoverTimer = null;
-  let sessionId = sessionStorage.getItem(SESSION_KEY);
-  if (!sessionId) {
-    sessionId = `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`;
-    sessionStorage.setItem(SESSION_KEY, sessionId);
-  }
+
+  // 同じブラウザのタブ・再読込は同じ編集セッションとして扱う。
+  // 旧版のsessionStorage IDがあれば初回だけ移行し、現在残っているロックもそのまま引き継ぐ。
+  let sessionId = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+  if (!sessionId) sessionId = `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`;
+  localStorage.setItem(SESSION_KEY, sessionId);
+  sessionStorage.setItem(SESSION_KEY, sessionId);
 
   if (window.__shiftV2AccessControlInstalled) return;
   window.__shiftV2AccessControlInstalled = true;
@@ -29,9 +31,9 @@
     lease = event.detail?.lease || null;
     recalcMode();
   });
-  window.addEventListener('beforeunload', () => {
-    if (mode === 'editor') window.shiftV2EditorLease?.release?.(user, sessionId).catch?.(() => {});
-  });
+
+  // unloadで即解放すると、同じブラウザの別タブまで編集席を失うため解放しない。
+  // 全タブが閉じられた場合はFirestore側の有効期限で自動解放される。
 
   window.shiftV2Access = {
     get mode(){ return mode; },
@@ -174,6 +176,12 @@
     document.dispatchEvent(new CustomEvent('shiftv2-access-changed', { detail:{ mode, lease, user, authResolved } }));
   }
 
+  function holderInfo() {
+    if (!lease || Number(lease.expiresAt || 0) <= Date.now()) return { mine:false, name:'別の本部管理者' };
+    const mine = Boolean(user && lease.uid === user.uid);
+    return { mine, name: lease.displayName || lease.email || (mine ? 'あなた' : '別の本部管理者') };
+  }
+
   function renderBanner() {
     let bar = document.getElementById('shift-v2-access-banner');
     if (!bar) {
@@ -197,9 +205,11 @@
       bar.innerHTML = `<strong>本部編集モード</strong><span>${esc(user?.displayName || user?.email || '本部管理者')}さんが編集席を使用中</span>`;
       return;
     }
-    const holder = lease && Number(lease.expiresAt || 0) > Date.now() ? (lease.displayName || lease.email || '別の本部管理者') : '別の本部管理者';
+    const holder = holderInfo();
     bar.className = 'access-banner viewer';
-    bar.innerHTML = `<strong>閲覧・店長相当モード</strong><span>${esc(holder)}さんが本部編集モードを使用中です。</span>`;
+    bar.innerHTML = holder.mine
+      ? '<strong>閲覧モード</strong><span>あなたの別タブまたは前回セッションが編集席を使用中です。自動的に引き継ぎを試みます。</span>'
+      : `<strong>閲覧・店長相当モード</strong><span>${esc(holder.name)}さんが本部編集モードを使用中です。</span>`;
   }
 
   function applyReadonlyUi() {
@@ -224,8 +234,8 @@
     if (mode === 'signed-out') message = 'Googleログイン後に操作できます';
     else if (mode === 'no-access') message = 'このアカウントには利用権限がありません';
     else if (mode === 'admin-viewer') {
-      const holder = lease && Number(lease.expiresAt || 0) > Date.now() ? (lease.displayName || lease.email || '別の本部管理者') : '別の本部管理者';
-      message = `${holder}さんが本部編集モードを使用中です`;
+      const holder = holderInfo();
+      message = holder.mine ? 'あなたの別タブまたは前回セッションが編集中です' : `${holder.name}さんが本部編集モードを使用中です`;
     }
     toast.textContent = message;
     toast.classList.add('show');
