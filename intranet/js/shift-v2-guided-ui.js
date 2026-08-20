@@ -3,6 +3,7 @@
 
   const AFTER_APPLY_KEY = 'okk_shift_v2_guided_after_apply';
   const TARGET_DATE_KEY = 'okk_shift_v2_guided_target_date';
+  const TARGET_STORE_KEY = 'okk_shift_v2_guided_target_store';
   const STYLE_ID = 'shift-v2-guided-ui-style';
   const GUIDE_ID = 'shift-v2-guided-help';
 
@@ -20,7 +21,7 @@
     const observer = new MutationObserver(() => enhanceUi());
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 月間AUTO反映後は、ユーザーが確認したい日に自動で移動する。
+    // 月間AUTO反映後は、ユーザーが確認したい日・店舗に自動で移動する。
     setTimeout(restoreAfterApply, 900);
   }
 
@@ -41,12 +42,11 @@
       #${GUIDE_ID} button{white-space:nowrap}
       #gantt-canvas [data-select].guided-edit-button{display:inline-flex;align-items:center;gap:4px;min-width:54px;justify-content:center;font-weight:800}
       .month-builder-guide{margin:8px 14px 0;padding:9px 11px;border-radius:9px;background:#f8fafc;border:1px solid #e4e7ec;color:#475467;font-size:10px;font-weight:700;line-height:1.7}
-      .month-builder-guide strong{color:#101828}
       .month-shortage.guided-shortage{cursor:pointer;position:relative;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
       .month-shortage.guided-shortage:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(16,24,40,.08)}
-      .month-shortage.guided-shortage::after{content:'確認日として選ぶ';position:absolute;right:7px;top:6px;font-size:8px;font-weight:900;color:#667085;background:#fff;border:1px solid #e4e7ec;border-radius:999px;padding:2px 6px}
+      .month-shortage.guided-shortage::after{content:'確認先に選ぶ';position:absolute;right:7px;top:6px;font-size:8px;font-weight:900;color:#667085;background:#fff;border:1px solid #e4e7ec;border-radius:999px;padding:2px 6px}
       .month-shortage.guided-shortage.guided-selected{outline:2px solid #344054;outline-offset:1px;background:#fff9f8}
-      .month-shortage.guided-shortage.guided-selected::after{content:'反映後にこの日を開く';color:#fff;background:#344054;border-color:#344054}
+      .month-shortage.guided-shortage.guided-selected::after{content:'反映後にここを開く';color:#fff;background:#344054;border-color:#344054}
       .guided-flash{animation:guidedFlash 1.1s ease 2}
       @keyframes guidedFlash{0%,100%{box-shadow:0 0 0 0 rgba(52,64,84,0)}50%{box-shadow:0 0 0 5px rgba(52,64,84,.18)}}
       #guided-toast{position:fixed;left:50%;top:88px;transform:translateX(-50%);z-index:10050;background:#101828;color:#fff;padding:10px 14px;border-radius:10px;font:800 11px/1.6 'Noto Sans JP',sans-serif;box-shadow:0 12px 30px rgba(16,24,40,.22);max-width:min(640px,90vw);text-align:center}
@@ -100,7 +100,7 @@
     if (notice && !modal.querySelector('.month-builder-guide')) {
       const guide = document.createElement('div');
       guide.className = 'month-builder-guide';
-      guide.innerHTML = '<strong>ここでは月間案を作るだけです。</strong> 赤い不足カードを押すと「反映後に確認する日」を選べます。最後に右下の「この案を反映」を押すと、その日の日別編集画面へ移動します。';
+      guide.innerHTML = '<strong>ここでは月間案を作るだけです。</strong> 不足カードを押すと「反映後に確認する日・店舗」を選べます。最後に右下の「この案を反映」を押すと、その日・店舗の日別編集画面へ移動します。';
       notice.insertAdjacentElement('afterend', guide);
     }
 
@@ -114,14 +114,16 @@
     if (apply && apply.dataset.guidedEnhanced !== '1') {
       apply.dataset.guidedEnhanced = '1';
       apply.innerHTML = '<i class="fa-solid fa-check"></i> この案を反映して個別修正へ';
-      apply.title = '月間案を保存して、選んだ不足日の日別編集画面へ移動します';
+      apply.title = '月間案を保存して、選んだ不足日・店舗の日別編集画面へ移動します';
     }
 
     const selectedDate = sessionStorage.getItem(TARGET_DATE_KEY) || '';
+    const selectedStore = sessionStorage.getItem(TARGET_STORE_KEY) || '';
     modal.querySelectorAll('.month-shortage').forEach(card => {
       card.classList.add('guided-shortage');
-      const date = parseDate(card.textContent);
-      if (date && date === selectedDate) card.classList.add('guided-selected');
+      const date = card.dataset.date || parseDate(card.textContent);
+      const store = card.dataset.store || '';
+      if (date && date === selectedDate && (!selectedStore || store === selectedStore)) card.classList.add('guided-selected');
       else card.classList.remove('guided-selected');
     });
   }
@@ -136,22 +138,29 @@
 
       const shortage = event.target.closest('#month-builder-modal .month-shortage');
       if (shortage) {
-        const date = parseDate(shortage.textContent);
+        const date = shortage.dataset.date || parseDate(shortage.textContent);
         if (!date) return;
+        const storeId = shortage.dataset.store || '';
+        const storeName = shortage.dataset.storeName || '';
         sessionStorage.setItem(TARGET_DATE_KEY, date);
+        if (storeId) sessionStorage.setItem(TARGET_STORE_KEY, storeId);
+        else sessionStorage.removeItem(TARGET_STORE_KEY);
         document.querySelectorAll('#month-builder-modal .month-shortage').forEach(card => card.classList.remove('guided-selected'));
         shortage.classList.add('guided-selected');
-        showToast(`${formatDate(date)} を、反映後に個別修正で開きます`);
+        showToast(`${formatDate(date)}${storeName ? `・${storeName}` : ''} を、反映後に個別修正で開きます`);
         return;
       }
 
       const apply = event.target.closest('#month-builder-apply');
       if (apply) {
         const selected = sessionStorage.getItem(TARGET_DATE_KEY);
-        const firstShortage = parseDate(document.querySelector('#month-builder-modal .month-shortage')?.textContent || '');
+        const firstCard = document.querySelector('#month-builder-modal .month-shortage');
+        const firstShortage = firstCard?.dataset.date || parseDate(firstCard?.textContent || '');
+        const firstStore = firstCard?.dataset.store || '';
         const month = document.getElementById('month-builder-month')?.value;
         const target = selected || firstShortage || (month ? `${month}-01` : '');
         if (target) sessionStorage.setItem(AFTER_APPLY_KEY, target);
+        if (!sessionStorage.getItem(TARGET_STORE_KEY) && firstStore) sessionStorage.setItem(TARGET_STORE_KEY, firstStore);
         return;
       }
 
@@ -170,22 +179,26 @@
   function restoreAfterApply() {
     const target = sessionStorage.getItem(AFTER_APPLY_KEY);
     if (!target) return;
+    const targetStore = sessionStorage.getItem(TARGET_STORE_KEY) || '';
     sessionStorage.removeItem(AFTER_APPLY_KEY);
     sessionStorage.removeItem(TARGET_DATE_KEY);
+    sessionStorage.removeItem(TARGET_STORE_KEY);
 
     // month-builder本体の復元処理より後に上書きする。
     setTimeout(() => {
-      openDate(target);
-      showToast(`月間一括作成を反映しました。${formatDate(target)} を開いています。配置済みスタッフの「編集」から個別修正できます。`, 6500);
+      openDate(target, targetStore);
+      const storeName = selectPlannerStore(targetStore);
+      showToast(`月間一括作成を反映しました。${formatDate(target)}${storeName ? `・${storeName}` : ''} を開いています。配置済みスタッフの「編集」から個別修正できます。`, 6500);
     }, 450);
   }
 
-  function openDate(date) {
+  function openDate(date, storeId = '') {
     const input = document.getElementById('work-date');
     if (!input || !date) return;
     input.value = date;
     input.dispatchEvent(new Event('change', { bubbles: true }));
     setTimeout(() => {
+      if (storeId) selectPlannerStore(storeId);
       input.classList.add('guided-flash');
       input.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const guide = document.getElementById(GUIDE_ID);
@@ -197,6 +210,16 @@
     }, 120);
   }
 
+  function selectPlannerStore(storeId) {
+    if (!storeId) return '';
+    const button = document.querySelector(`#new-store-buttons [data-store="${cssEsc(storeId)}"]`);
+    if (!button) return '';
+    button.click();
+    button.classList.add('guided-flash');
+    setTimeout(() => button.classList.remove('guided-flash'), 2400);
+    return button.textContent?.trim() || '';
+  }
+
   function parseDate(text) {
     const match = String(text || '').match(/20\d{2}-\d{2}-\d{2}/);
     return match ? match[0] : '';
@@ -205,6 +228,11 @@
   function formatDate(date) {
     const [year, month, day] = String(date).split('-');
     return year && month && day ? `${Number(month)}月${Number(day)}日` : date;
+  }
+
+  function cssEsc(value) {
+    if (window.CSS?.escape) return CSS.escape(String(value));
+    return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
   }
 
   function showToast(message, duration = 3200) {
