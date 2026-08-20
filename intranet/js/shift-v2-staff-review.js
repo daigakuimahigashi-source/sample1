@@ -3,10 +3,18 @@
 
   const STAFF_KEY = 'okk_shift_v2_staff';
   const REVIEW_KEY = 'okk_shift_v2_staff_review_v1';
+  const READINESS_KEY = 'okk_shift_v2_master_readiness_v1';
+  const STORES_KEY = 'okk_shift_v2_config';
   const FILTER_KEY = 'okk_shift_v2_unreviewed_only';
   const STORE_KEY = 'okk_shift_v2_field_hearing_store';
   const STYLE_ID = 'shift-v2-staff-review-style';
   const FILTER_ID = 'stable-unreviewed-only';
+  const DEFAULT_STORES = [
+    { id:'matsuyama', name:'松山店' },
+    { id:'kumoji', name:'久茂地店' },
+    { id:'miebashi', name:'美栄橋店' },
+    { id:'misato', name:'美里店' },
+  ];
 
   let tableObserver = null;
   let observedHead = null;
@@ -22,6 +30,7 @@
   function init() {
     injectStyles();
     bindEvents();
+    syncReadinessFromReviews();
     scheduleRefresh(120);
   }
 
@@ -162,10 +171,16 @@
   function decorateRows(body) {
     const storeId = currentStore();
     const reviews = loadReviews();
+    const eligible = reviewStaff();
+    const eligibleIds = new Set(eligible.map(person => normalizeId(person.id || person.employeeNumber)));
 
     body.querySelectorAll('tr[data-person]').forEach(row => {
       row.querySelector('.staff-review-cell')?.remove();
       const personId = normalizeId(row.dataset.person);
+      if (!eligibleIds.has(personId)) {
+        row.dataset.staffReviewed = '0';
+        return;
+      }
       const reviewed = Boolean(storeId && reviews?.[storeId]?.[personId]);
 
       const td = document.createElement('td');
@@ -181,12 +196,12 @@
   function applyFilters() {
     const storeId = currentStore();
     const unreviewedOnly = document.getElementById(FILTER_ID)?.checked === true;
-    const staff = loadStaff();
+    const staff = reviewStaff();
 
     document.querySelectorAll('#rs-staff-body tr[data-person]').forEach(row => {
       const personId = normalizeId(row.dataset.person);
       const person = staff.find(item => normalizeId(item.id || item.employeeNumber) === personId);
-      const storeMatch = !storeId || matchesStore(person, storeId);
+      const storeMatch = Boolean(person && (!storeId || matchesStore(person, storeId)));
       const reviewMatch = !unreviewedOnly || row.dataset.staffReviewed !== '1';
       row.classList.toggle('staff-review-hidden', !(storeMatch && reviewMatch));
     });
@@ -197,7 +212,7 @@
     if (!count) return;
 
     const storeId = currentStore();
-    const staff = loadStaff().filter(person => !storeId || matchesStore(person, storeId));
+    const staff = reviewStaff().filter(person => !storeId || matchesStore(person, storeId));
     const reviews = loadReviews();
     const reviewed = storeId
       ? staff.filter(person => Boolean(reviews?.[storeId]?.[normalizeId(person.id || person.employeeNumber)])).length
@@ -217,7 +232,7 @@
     if (!button) return;
 
     const storeId = currentStore();
-    const staff = loadStaff().filter(person => !storeId || matchesStore(person, storeId));
+    const staff = reviewStaff().filter(person => !storeId || matchesStore(person, storeId));
     const reviews = loadReviews();
     const reviewed = storeId
       ? staff.filter(person => Boolean(reviews?.[storeId]?.[normalizeId(person.id || person.employeeNumber)])).length
@@ -251,6 +266,7 @@
       }
     });
     if (changed) saveReviews(reviews);
+    else syncReadinessFromReviews();
   }
 
   function loadReviews() {
@@ -264,6 +280,36 @@
 
   function saveReviews(value) {
     localStorage.setItem(REVIEW_KEY, JSON.stringify(value));
+    syncReadinessFromReviews();
+  }
+
+  function syncReadinessFromReviews() {
+    const staff = reviewStaff();
+    const stores = loadStores();
+    const validStoreIds = new Set(stores.map(store => String(store.id)));
+    const reviews = loadReviews();
+    const pairs = [];
+    let hasUnassigned = false;
+
+    staff.forEach(person => {
+      const personId = normalizeId(person.id || person.employeeNumber);
+      const storeIds = storeIdsForPerson(person).filter(storeId => validStoreIds.has(storeId));
+      if (!storeIds.length) {
+        hasUnassigned = true;
+        return;
+      }
+      storeIds.forEach(storeId => pairs.push([storeId, personId]));
+    });
+
+    const complete = Boolean(staff.length && pairs.length && !hasUnassigned && pairs.every(([storeId, personId]) => Boolean(reviews?.[storeId]?.[personId])));
+    let current = {};
+    try { current = JSON.parse(localStorage.getItem(READINESS_KEY)) || {}; } catch {}
+    if (Boolean(current.staffSkillsConfirmed) === complete) return;
+
+    current.staffSkillsConfirmed = complete;
+    current.updatedAt = new Date().toISOString();
+    localStorage.setItem(READINESS_KEY, JSON.stringify(current));
+    document.dispatchEvent(new CustomEvent('shiftv2-master-readiness-changed', { detail:{ staffSkillsConfirmed:complete } }));
   }
 
   function currentStore() {
@@ -279,23 +325,34 @@
     }
   }
 
-  function matchesStore(person, storeId) {
-    if (!person) return false;
-    const ids = [
+  function reviewStaff() {
+    return loadStaff().filter(person => person && person.active !== false && person.shiftTarget !== false && person.shiftEnabled !== false && person.shiftEligible !== false);
+  }
+
+  function storeIdsForPerson(person) {
+    if (!person) return [];
+    return Array.from(new Set([
       person.mainStoreId,
       ...(Array.isArray(person.affiliationStoreIds) ? person.affiliationStoreIds : []),
       ...(Array.isArray(person.placementStoreIds) ? person.placementStoreIds : []),
-    ].filter(Boolean).map(String);
-    return ids.includes(String(storeId));
+    ].filter(Boolean).map(String)));
+  }
+
+  function matchesStore(person, storeId) {
+    return storeIdsForPerson(person).includes(String(storeId));
+  }
+
+  function loadStores() {
+    try {
+      const value = JSON.parse(localStorage.getItem(STORES_KEY));
+      if (Array.isArray(value) && value.length) return value;
+      if (Array.isArray(value?.stores) && value.stores.length) return value.stores;
+    } catch {}
+    return DEFAULT_STORES;
   }
 
   function storeName(id) {
-    try {
-      const stores = JSON.parse(localStorage.getItem('okk_shift_v2_config'));
-      const found = Array.isArray(stores) ? stores.find(store => String(store.id) === String(id)) : null;
-      if (found?.name) return found.name;
-    } catch {}
-    return ({ matsuyama:'松山店', kumoji:'久茂地店', miebashi:'美栄橋店', misato:'美里店' })[id] || id;
+    return loadStores().find(store => String(store.id) === String(id))?.name || id;
   }
 
   function normalizeId(value) {
