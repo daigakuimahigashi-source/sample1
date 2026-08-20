@@ -2,16 +2,20 @@
   'use strict';
 
   const STYLE_ID = 'shift-v2-quick-add-style';
+  const MODAL_ID = 'quick-add-modal';
   const DEFAULT_START = 17 * 60;
   const DAY_START = 15 * 60;
+  const DAY_END = 30 * 60;
   const SLOT = 30;
   const SLOT_PX = 46;
+  let pendingStaff = null;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 
   function init() {
     injectStyles();
+    injectModal();
     enhanceStaffCards();
     const observer = new MutationObserver(enhanceStaffCards);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -29,8 +33,51 @@
       .staff-card.assigned .quick-add-btn{background:#f2f4f7;color:#98a2b3;border-color:#e4e7ec;cursor:default}
       .quick-add-note{font-size:9px;color:#667085;font-weight:700;margin-top:6px;line-height:1.5}
       #quick-add-toast{position:fixed;left:50%;top:88px;transform:translateX(-50%);z-index:10060;background:#101828;color:#fff;padding:10px 14px;border-radius:10px;font:800 11px/1.6 'Noto Sans JP',sans-serif;box-shadow:0 12px 30px rgba(16,24,40,.22);max-width:min(680px,90vw);text-align:center}
+      .quick-add-bg{display:none;position:fixed;inset:0;z-index:10070;background:rgba(16,24,40,.48);align-items:center;justify-content:center;padding:20px;font-family:'Noto Sans JP',sans-serif}
+      .quick-add-bg.open{display:flex}
+      .quick-add-dialog{width:min(520px,94vw);background:#fff;border-radius:16px;box-shadow:0 24px 64px rgba(16,24,40,.24);overflow:hidden;border:1px solid #e4e7ec}
+      .quick-add-head{padding:16px 18px;border-bottom:1px solid #e4e7ec;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+      .quick-add-head h3{margin:0;color:#101828;font-size:17px}
+      .quick-add-head p{margin:4px 0 0;color:#667085;font-size:10px;font-weight:700;line-height:1.5}
+      .quick-add-body{padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+      .quick-add-field{display:flex;flex-direction:column;gap:5px}
+      .quick-add-field.full{grid-column:1/-1}
+      .quick-add-field label{font-size:10px;font-weight:900;color:#344054}
+      .quick-add-field select,.quick-add-field input{height:38px;border:1px solid #d0d5dd;border-radius:9px;padding:0 10px;background:#fff;color:#101828;font:700 12px 'Noto Sans JP',sans-serif}
+      .quick-add-summary{grid-column:1/-1;padding:10px 12px;border-radius:10px;background:#f8fafc;border:1px solid #e4e7ec;color:#475467;font-size:10px;font-weight:700;line-height:1.6}
+      .quick-add-foot{padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #f2f4f7}
+      @media(max-width:640px){.quick-add-body{grid-template-columns:1fr}.quick-add-field.full,.quick-add-summary{grid-column:1}}
     `;
     document.head.appendChild(style);
+  }
+
+  function injectModal() {
+    if (document.getElementById(MODAL_ID)) return;
+    const modal = document.createElement('div');
+    modal.id = MODAL_ID;
+    modal.className = 'quick-add-bg';
+    modal.innerHTML = `
+      <div class="quick-add-dialog" role="dialog" aria-modal="true" aria-label="スタッフをシフトへ追加">
+        <div class="quick-add-head">
+          <div><h3 id="quick-add-title">スタッフを追加</h3><p id="quick-add-subtitle"></p></div>
+          <button type="button" class="btn btn-light btn-small" data-quick-add-close><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="quick-add-body">
+          <div class="quick-add-field full"><label>出勤店舗</label><select id="quick-add-store"></select></div>
+          <div class="quick-add-field"><label>開始時刻</label><select id="quick-add-start"></select></div>
+          <div class="quick-add-field"><label>終了時刻</label><select id="quick-add-end"></select></div>
+          <div id="quick-add-summary" class="quick-add-summary"></div>
+        </div>
+        <div class="quick-add-foot">
+          <button type="button" class="btn btn-light" data-quick-add-close>キャンセル</button>
+          <button type="button" id="quick-add-confirm" class="btn btn-green"><i class="fa-solid fa-plus"></i> この内容で追加</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    document.getElementById('quick-add-start')?.addEventListener('change', syncModalSummary);
+    document.getElementById('quick-add-end')?.addEventListener('change', syncModalSummary);
+    document.getElementById('quick-add-store')?.addEventListener('change', syncModalSummary);
   }
 
   function enhanceStaffCards() {
@@ -47,7 +94,7 @@
         btn.disabled = true;
       } else {
         btn.innerHTML = '<i class="fa-solid fa-plus"></i> 追加';
-        btn.title = '17:00開始で仮配置し、右側ですぐ修正できます';
+        btn.title = '店舗と勤務時間を選んで追加';
       }
       card.appendChild(btn);
     });
@@ -57,47 +104,174 @@
       const note = document.createElement('div');
       note.className = 'quick-add-note';
       note.style.cssText = 'position:absolute;left:12px;bottom:7px;z-index:3;background:rgba(255,255,255,.94);padding:3px 6px;border-radius:6px;border:1px solid #e4e7ec;pointer-events:none';
-      note.textContent = 'ドラッグでも追加できます。左の「追加」なら17:00で仮配置します。';
+      note.textContent = 'ドラッグでも追加できます。左の「追加」なら店舗・時間を選んで配置できます。';
       empty.appendChild(note);
     }
   }
 
   function onClick(event) {
     const button = event.target.closest('[data-quick-add-staff]');
-    if (!button || button.disabled) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const staffId = button.dataset.quickAddStaff;
-    if (!staffId) return;
-    quickAdd(staffId);
+    if (button && !button.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
+      openQuickAdd(button);
+      return;
+    }
+
+    if (event.target.closest('[data-quick-add-close]') || event.target.id === MODAL_ID) {
+      closeModal();
+      return;
+    }
+
+    if (event.target.closest('#quick-add-confirm')) {
+      event.preventDefault();
+      confirmQuickAdd();
+    }
   }
 
-  function quickAdd(staffId) {
+  function openQuickAdd(button) {
+    const card = button.closest('.staff-card');
+    const staffId = button.dataset.quickAddStaff;
+    const name = card?.querySelector('.staff-name')?.textContent?.trim() || staffId;
+    const isMonthly = card?.textContent?.includes('正社員');
+    const date = document.getElementById('work-date')?.value || '';
+    const start = DEFAULT_START;
+    const end = Math.min(DAY_END, start + (isMonthly ? 8 : 5) * 60);
+    pendingStaff = { staffId, name, date, isMonthly };
+
+    document.getElementById('quick-add-title').textContent = `${name} を追加`;
+    document.getElementById('quick-add-subtitle').textContent = `${date || '選択日'} のシフトに追加します。ドラッグ操作は不要です。`;
+
+    const storeSelect = document.getElementById('quick-add-store');
+    const activeStore = document.querySelector('#new-store-buttons button.active')?.dataset.store || '';
+    const stores = Array.from(document.querySelectorAll('#new-store-buttons button[data-store]')).map(btn => ({ id: btn.dataset.store, name: btn.textContent.trim() }));
+    storeSelect.innerHTML = stores.map(store => `<option value="${esc(store.id)}" ${store.id === activeStore ? 'selected' : ''}>${esc(store.name)}</option>`).join('');
+
+    const startSelect = document.getElementById('quick-add-start');
+    const endSelect = document.getElementById('quick-add-end');
+    startSelect.innerHTML = timeOptions(DAY_START, DAY_END - SLOT, start);
+    endSelect.innerHTML = timeOptions(DAY_START + SLOT, DAY_END, end);
+    startSelect.value = String(start);
+    endSelect.value = String(end);
+    syncEndMinimum();
+    syncModalSummary();
+    document.getElementById(MODAL_ID)?.classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById(MODAL_ID)?.classList.remove('open');
+    pendingStaff = null;
+  }
+
+  function syncEndMinimum() {
+    const startSelect = document.getElementById('quick-add-start');
+    const endSelect = document.getElementById('quick-add-end');
+    if (!startSelect || !endSelect) return;
+    const start = Number(startSelect.value || DEFAULT_START);
+    let end = Number(endSelect.value || start + SLOT);
+    if (end <= start) end = Math.min(DAY_END, start + SLOT);
+    endSelect.innerHTML = timeOptions(start + SLOT, DAY_END, end);
+    endSelect.value = String(end);
+  }
+
+  function syncModalSummary() {
+    syncEndMinimum();
+    const start = Number(document.getElementById('quick-add-start')?.value || DEFAULT_START);
+    const end = Number(document.getElementById('quick-add-end')?.value || start + SLOT);
+    const store = document.getElementById('quick-add-store')?.selectedOptions?.[0]?.textContent || '';
+    const duration = Math.max(0, end - start);
+    const summary = document.getElementById('quick-add-summary');
+    if (summary) summary.textContent = `${store} / ${fmtTime(start)}〜${fmtTime(end)} / ${formatDuration(duration)}`;
+  }
+
+  function confirmQuickAdd() {
+    if (!pendingStaff) return;
+    const storeId = document.getElementById('quick-add-store')?.value || '';
+    const start = Number(document.getElementById('quick-add-start')?.value || DEFAULT_START);
+    const end = Number(document.getElementById('quick-add-end')?.value || start + SLOT);
+    if (!storeId) return showToast('出勤店舗を選んでください。');
+    if (end <= start) return showToast('終了時刻は開始時刻より後にしてください。');
+
+    const staff = { ...pendingStaff };
+    closeModal();
+    createByDrop(staff.staffId, storeId, start, end);
+  }
+
+  function createByDrop(staffId, storeId, start, end) {
     const dropTrack = document.getElementById('empty-drop-track');
     if (!dropTrack) return showToast('追加先がまだ表示されていません。ガント入力タブを開いてください。');
 
     try {
+      const storeButton = document.querySelector(`#new-store-buttons button[data-store="${cssEsc(storeId)}"]`);
+      storeButton?.click();
+
       const dt = new DataTransfer();
       dt.setData('text/staff-id', staffId);
       const rect = dropTrack.getBoundingClientRect();
-      const slotsFromStart = (DEFAULT_START - DAY_START) / SLOT;
+      const slotsFromStart = (start - DAY_START) / SLOT;
       const clientX = rect.left + (slotsFromStart * SLOT_PX) + 4;
-      const event = new DragEvent('drop', {
+      const dropEvent = new DragEvent('drop', {
         bubbles: true,
         cancelable: true,
         dataTransfer: dt,
         clientX,
         clientY: rect.top + Math.max(8, rect.height / 2)
       });
-      dropTrack.dispatchEvent(event);
-      showToast('17:00開始で仮配置しました。右側の編集欄で開始・終了時刻を調整できます。');
-      setTimeout(() => {
-        document.getElementById('inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 120);
+      dropTrack.dispatchEvent(dropEvent);
+
+      setTimeout(() => applyInspectorValues(storeId, start, end, 0), 80);
     } catch (error) {
       console.warn('Quick add failed', error);
-      showToast('クイック追加に失敗しました。従来どおりドラッグで追加できます。');
+      showToast('追加に失敗しました。従来どおりドラッグでも追加できます。');
     }
+  }
+
+  function applyInspectorValues(storeId, start, end, step) {
+    const sequence = [
+      ['ins-store', storeId],
+      ['ins-start', String(start)],
+      ['ins-end', String(end)],
+    ];
+    if (step >= sequence.length) {
+      showToast(`${fmtTime(start)}〜${fmtTime(end)} で追加しました。右側からいつでも修正・削除できます。`);
+      setTimeout(() => document.getElementById('inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+      return;
+    }
+    const [id, value] = sequence[step];
+    const control = document.getElementById(id);
+    if (control) {
+      control.value = value;
+      control.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    setTimeout(() => applyInspectorValues(storeId, start, end, step + 1), 70);
+  }
+
+  function timeOptions(min, max, selected) {
+    const rows = [];
+    for (let minute = min; minute <= max; minute += SLOT) rows.push(`<option value="${minute}" ${minute === selected ? 'selected' : ''}>${fmtTime(minute)}</option>`);
+    return rows.join('');
+  }
+
+  function fmtTime(minute) {
+    const normalized = Number(minute) || 0;
+    const hour = Math.floor(normalized / 60);
+    const mins = normalized % 60;
+    return `${hour}:${String(mins).padStart(2, '0')}`;
+  }
+
+  function formatDuration(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins ? `${hours}時間${mins}分` : `${hours}時間`;
+  }
+
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  }
+
+  function cssEsc(value) {
+    if (window.CSS?.escape) return window.CSS.escape(String(value));
+    return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
   }
 
   function showToast(message) {
