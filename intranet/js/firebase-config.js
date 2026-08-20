@@ -27,27 +27,20 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-function loginWithGoogle() {
-  return signInWithPopup(auth, new GoogleAuthProvider());
-}
-function logout() {
-  return signOut(auth);
-}
-function isAdmin(user) {
-  return Boolean(user && ADMIN_EMAILS.includes(String(user.email || '').toLowerCase()));
-}
+function loginWithGoogle() { return signInWithPopup(auth, new GoogleAuthProvider()); }
+function logout() { return signOut(auth); }
+function isAdmin(user) { return Boolean(user && ADMIN_EMAILS.includes(String(user.email || '').toLowerCase())); }
 
-const OKK_DOC = (key) => doc(db, 'okk', key);
-async function fsSet(key, value) { await setDoc(OKK_DOC(key), { data: value }); }
+const OKK_DOC = key => doc(db, 'okk', key);
+async function fsSet(key, value) { await setDoc(OKK_DOC(key), { data:value }); }
 async function fsGet(key) {
   const snap = await getDoc(OKK_DOC(key));
   return snap.exists() ? snap.data().data : null;
 }
-function fsListen(key, callback) {
-  return onSnapshot(OKK_DOC(key), snap => { if (snap.exists()) callback(snap.data().data); });
-}
+function fsListen(key, callback) { return onSnapshot(OKK_DOC(key), snap => { if (snap.exists()) callback(snap.data().data); }); }
 
 const EDITOR_LEASE_DOC = doc(db, 'runtime', 'shift_editor_lease');
+const SAME_ACCOUNT_STALE_MS = 90 * 1000;
 function normalizeLease(snap) { return snap.exists() ? snap.data() : null; }
 
 async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
@@ -59,16 +52,18 @@ async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
     const expired = !current || Number(current.expiresAt || 0) <= now;
     const sameSession = current && current.uid === user.uid && current.sessionId === sessionId;
     const sameAccount = current && current.uid === user.uid;
-    // 同じGoogleアカウントは「同じ本部担当者」とみなし、古いタブ・再読込の残留ロックを引き継ぐ。
-    if (!expired && !sameAccount) return { acquired:false, lease:current };
+    const sameAccountStale = sameAccount && now - Number(current.heartbeatAt || current.acquiredAt || 0) >= SAME_ACCOUNT_STALE_MS;
+
+    if (!expired && !sameSession && !sameAccountStale) return { acquired:false, lease:current };
+
     const lease = {
-      uid: user.uid,
+      uid:user.uid,
       sessionId,
-      email: user.email || '',
-      displayName: user.displayName || user.email || '本部管理者',
-      acquiredAt: sameAccount ? (current.acquiredAt || now) : now,
-      heartbeatAt: now,
-      expiresAt: now + ttlMs,
+      email:user.email || '',
+      displayName:user.displayName || user.email || '本部管理者',
+      acquiredAt:sameSession || sameAccountStale ? (current?.acquiredAt || now) : now,
+      heartbeatAt:now,
+      expiresAt:now + ttlMs,
     };
     transaction.set(EDITOR_LEASE_DOC, lease);
     return { acquired:true, lease };
