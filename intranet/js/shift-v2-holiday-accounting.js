@@ -31,7 +31,8 @@
     takeover('month-builder-auto-off', calculate, 'change');
     takeover('month-builder-soft', calculate, 'change');
     takeover('month-builder-apply', applyPreview);
-    window.shiftV2HolidayAccounting = { version:'1', preview:() => currentPreview };
+    injectReadableStyles();
+    window.shiftV2HolidayAccounting = { version:'2', preview:() => currentPreview };
   }
 
   function takeover(id, handler, eventName='click') {
@@ -67,13 +68,18 @@
     if (!summary || !body || !p) return;
 
     const scheduledOffWorkTotal = (p.people || []).reduce((sum,item) => sum + Number(item.emergency || 0), 0);
+    const stores = loadStores();
+    const skills = readArray(SKILLS_KEY);
+    const shortageGroups = groupShortages(p.shortages || [], stores, skills);
+    const shortageDays = new Set(shortageGroups.map(item => item.date)).size;
+
     summary.innerHTML = [
       metric('会社休業', `${p.closures?.length || 0}日`, '全社休業'),
-      metric('公休予定', `${p.generatedOffCount || 0}日`, '正社員・月8休を設定'),
-      metric('正社員 基礎配置', `${p.baseProposals?.length || 0}件`, '所定勤務日数'),
+      metric('公休予定', `延べ${p.generatedOffCount || 0}日`, '正社員の公休設定'),
+      metric('正社員配置', `延べ${p.baseProposals?.length || 0}シフト`, '基礎配置'),
       metric('B臨時招集', `${p.bEmergencyCalls?.length || 0}件`, '公休勤務・必要時のみ'),
-      metric('休日戻し候補', `${scheduledOffWorkTotal}日`, '年間休日管理で要調整'),
-      metric('残る不足', `${p.shortages?.length || 0}件`, '要確認'),
+      metric('休日戻し候補', `延べ${scheduledOffWorkTotal}日`, '年間休日管理で要調整'),
+      metric('不足', `${shortageDays}日 / ${shortageGroups.length}枠`, `${p.shortages?.length || 0}内部判定を集約`),
     ].join('');
 
     const rows = (p.people || []).map(item => {
@@ -87,20 +93,74 @@
       return `<tr class="${warn ? 'danger' : Number(item.overtimeMinutes || 0) > 25*60 ? 'warn' : ''}"><td><strong>${esc(item.name)}</strong><small>${esc(item.staffId)} ${item.plan ? '・'+esc(item.plan)+'プラン' : ''}</small></td><td>${plannedOff}日</td><td>${offWork ? `<b>${offWork}日</b>` : '0日'}</td><td><b>${actualRest}日</b></td><td>${item.paid}</td><td>${item.prescribedDays}日</td><td><b>${placement}</b></td><td>${formatHours(item.overtimeMinutes)}h / ${item.allowedOvertimeHours}h</td><td><b>${callText}</b>${offWork ? `<small>休日戻し候補 ${offWork}日</small>` : ''}</td></tr>`;
     }).join('');
 
-    const stores = loadStores();
-    const skills = readArray(SKILLS_KEY);
-    const shortages = (p.shortages || []).slice(0,80).map(item => {
-      const store = stores.find(s => s.id === item.rule.storeId);
-      const skill = skills.find(s => s.id === item.rule.skillId);
-      return `<div class="month-shortage ${item.rule.mode === 'soft' ? 'soft' : 'hard'}"><b>${esc(item.date)} ${esc(store?.name || item.rule.storeId)}</b><span>${fmtTime(item.rule.start)}-${fmtTime(item.rule.end)} ${esc(skill?.name || item.rule.skillId)} Lv${item.rule.minLevel}：${item.minimum}/${item.rule.count}</span></div>`;
+    const readableShortages = shortageGroups.slice(0, 120).map(item => {
+      const level = item.softOnly ? 'soft' : 'hard';
+      const skillText = item.skills.slice(0, 4).join(' / ') + (item.skills.length > 4 ? ` ほか${item.skills.length - 4}` : '');
+      const maxNeed = item.maxShortage > 0 ? `最大${item.maxShortage}名不足` : '要確認';
+      return `<div class="month-shortage ${level} readable-shortage" data-readable-shortage="${esc(item.date)}"><b>${esc(item.date)} ${esc(item.storeName)}　${fmtTime(item.start)}-${fmtTime(item.end)}</b><span>${maxNeed} ・ 不足条件 ${item.entries}件</span>${skillText ? `<small>${esc(skillText)}</small>` : ''}</div>`;
     }).join('');
 
     const conflicts = (p.conflicts || []).length ? `<div class="month-warning-box danger"><strong>既存データとの重複 ${p.conflicts.length}件</strong>${p.conflicts.slice(0,20).map(item => `<div>${esc(item.message)}</div>`).join('')}</div>` : '';
     const notes = (p.notes || []).length ? `<div class="month-warning-box"><strong>自動調整メモ</strong>${p.notes.slice(0,30).map(note => `<div>${esc(note)}</div>`).join('')}</div>` : '';
+    const shortageTitle = shortageGroups.length ? `不足の確認　${shortageDays}日 / ${shortageGroups.length}枠` : '不足の確認';
+    const shortageLead = shortageGroups.length
+      ? `<div class="readable-shortage-lead"><strong>店長が直す単位にまとめています。</strong><span>「1枠」＝同じ日・店舗・時間帯。内部では30分×スキル単位で ${p.shortages?.length || 0}件を判定しています。</span></div>`
+      : '';
+    const rawDetail = (p.shortages || []).length
+      ? `<details class="internal-shortage-detail"><summary>開発用の内部判定を見る（${p.shortages.length}件）</summary><div>画面上は ${shortageGroups.length}枠へ集約しています。内部判定件数は人員配置ロジックの検証用で、現場の不足件数としては扱いません。</div></details>`
+      : '';
 
-    body.innerHTML = `${conflicts}${notes}<section class="month-builder-section"><h3>正社員 月間サマリー</h3><div class="month-table-wrap"><table class="month-table"><thead><tr><th>従業員</th><th>公休予定</th><th>公休勤務</th><th>実休見込</th><th>有休</th><th>所定日</th><th>配置内訳</th><th>予定時間外 / 許容</th><th>臨時招集</th></tr></thead><tbody>${rows || '<tr><td colspan="9">正社員がいません。</td></tr>'}</tbody></table></div></section><section class="month-builder-section"><h3>配置後も残る不足</h3><div class="month-shortages">${shortages || '<div class="month-all-clear"><i class="fa-solid fa-circle-check"></i> 対象ルールは充足しています。</div>'}</div></section><div class="month-builder-assumption"><strong>休日の数え方：</strong>「公休予定」は元々休みにした日、「公休勤務」はその日に臨時招集した日、「実休見込」は実際に休む予定の日数です。Bプランで公休勤務を入れた分は、年間105日の会社休日設計を維持するための「休日戻し候補」として別管理します。固定残業A25h/B45hは配置上限には使わず、30h社内ライン・承認済み例外・36協定設定を優先します。</div>`;
+    body.innerHTML = `${conflicts}${notes}<section class="month-builder-section"><h3>正社員 月間サマリー</h3><div class="month-table-wrap"><table class="month-table"><thead><tr><th>従業員</th><th>公休予定</th><th>公休勤務</th><th>実休見込</th><th>有休</th><th>所定日</th><th>配置内訳</th><th>予定時間外 / 許容</th><th>臨時招集</th></tr></thead><tbody>${rows || '<tr><td colspan="9">正社員がいません。</td></tr>'}</tbody></table></div></section><section class="month-builder-section readable-shortage-section"><h3>${shortageTitle}</h3>${shortageLead}<div class="month-shortages">${readableShortages || '<div class="month-all-clear"><i class="fa-solid fa-circle-check"></i> 対象ルールは充足しています。</div>'}</div>${rawDetail}</section><div class="month-builder-assumption"><strong>数字の見方：</strong>「公休予定」「正社員配置」「休日戻し候補」は延べ数です。「不足」は日数と、日・店舗・時間帯でまとめた運用上の枠数を表示します。<br><strong>休日の数え方：</strong>「公休予定」は元々休みにした日、「公休勤務」はその日に臨時招集した日、「実休見込」は実際に休む予定の日数です。Bプランで公休勤務を入れた分は、年間105日の会社休日設計を維持するための「休日戻し候補」として別管理します。固定残業A25h/B45hは配置上限には使わず、30h社内ライン・承認済み例外・36協定設定を優先します。</div>`;
 
     if (apply) apply.disabled = (p.conflicts || []).some(item => ['company_closure','paid_leave','off'].includes(item.type));
+  }
+
+  function groupShortages(shortages, stores, skills) {
+    const storeMap = new Map(stores.map(store => [String(store.id), store.name || store.id]));
+    const skillMap = new Map(skills.map(skill => [String(skill.id), skill.name || skill.id]));
+    const groups = new Map();
+
+    shortages.forEach(item => {
+      const rule = item?.rule || {};
+      const date = String(item?.date || '');
+      const storeId = String(rule.storeId || '');
+      const start = Number(rule.start || 0);
+      const end = Number(rule.end || 0);
+      const key = [date, storeId, start, end].join('|');
+      if (!groups.has(key)) {
+        groups.set(key, {
+          date,
+          storeId,
+          storeName: storeMap.get(storeId) || storeId || '店舗未設定',
+          start,
+          end,
+          entries: 0,
+          maxShortage: 0,
+          skills: [],
+          softOnly: true,
+        });
+      }
+      const group = groups.get(key);
+      group.entries += 1;
+      group.maxShortage = Math.max(group.maxShortage, Number(item.shortage || 0), Math.max(0, Number(rule.count || 0) - Number(item.minimum || 0)));
+      group.softOnly = group.softOnly && rule.mode === 'soft';
+      const skillName = skillMap.get(String(rule.skillId || '')) || String(rule.skillId || '');
+      const label = skillName ? `${skillName}${Number(rule.minLevel || 0) ? ` Lv${rule.minLevel}` : ''}` : '';
+      if (label && !group.skills.includes(label)) group.skills.push(label);
+    });
+
+    return Array.from(groups.values()).sort((a,b) => a.date.localeCompare(b.date) || a.start - b.start || a.storeName.localeCompare(b.storeName,'ja'));
+  }
+
+  function injectReadableStyles() {
+    if (document.getElementById('holiday-accounting-readable-style')) return;
+    const style = document.createElement('style');
+    style.id = 'holiday-accounting-readable-style';
+    style.textContent = `
+      .readable-shortage-lead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px;padding:7px 9px;border-radius:8px;background:#f8fafc;border:1px solid #e4e7ec;font-size:8px;color:#667085}
+      .readable-shortage-lead strong{color:#344054}.readable-shortage{min-width:240px;cursor:pointer}.readable-shortage small{font-size:7px;color:#667085;margin-top:2px}.internal-shortage-detail{margin-top:8px;padding:7px 9px;border-radius:8px;background:#fcfcfd;border:1px solid #eaecf0;font-size:8px;color:#667085}.internal-shortage-detail summary{cursor:pointer;font-weight:900;color:#475467}.internal-shortage-detail div{padding-top:6px;line-height:1.6}
+    `;
+    document.head.appendChild(style);
   }
 
   async function applyPreview() {
