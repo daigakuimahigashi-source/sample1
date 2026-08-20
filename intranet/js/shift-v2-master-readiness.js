@@ -103,8 +103,17 @@
       ? '<strong><i class="fa-solid fa-circle-check"></i> マスタ確認済み</strong><span>人員・スキル・必要人数が現場確認済みです。不足判定を正式値として扱います。</span>'
       : `<strong><i class="fa-solid fa-triangle-exclamation"></i> 現在は仮マスタで計算中</strong><span>${statusText(s)} 不足日数・不足人数はロジック確認用の参考値です。</span>`;
 
-    const metrics = summary.querySelectorAll('.month-metric');
-    const shortage = metrics[metrics.length - 1];
+    const metrics = Array.from(summary.querySelectorAll('.month-metric'));
+    const shortage = metrics.find(metric => {
+      const label = metric.querySelector('small')?.textContent?.trim() || '';
+      return label === '不足' || label === '不足（仮判定）';
+    });
+
+    metrics.forEach(metric => {
+      const label = metric.querySelector('small')?.textContent?.trim() || '';
+      if (label === '希望休反映') metric.classList.remove('mr-provisional-metric');
+    });
+
     if (shortage) {
       const label = shortage.querySelector('small');
       if (label) label.textContent = confirmed ? '不足' : '不足（仮判定）';
