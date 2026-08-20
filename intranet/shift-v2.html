@@ -4,121 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OKK シフトプランナー V2</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="css/shift-v2.css">
-  <link rel="stylesheet" href="css/shift-v2-compliance.css">
-  <link rel="stylesheet" href="css/shift-v2-audit.css">
-  <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.2.0/encoding.min.js"></script>
-</head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand"><div class="brand-mark"><i class="fa-solid fa-chart-gantt"></i></div><div><h1>OKK シフトプランナー V2</h1><p>出勤店舗・開始時刻・終了時刻だけで、配置・確認・MF CSVまで連動</p></div></div>
-      <div class="actions"><span id="sync-status" style="font-size:10px;color:#aeb8c8">ローカル保存</span><button id="login-btn" class="btn btn-dark"><i class="fa-brands fa-google"></i>ログイン</button><button id="save-btn" class="btn btn-green"><i class="fa-solid fa-floppy-disk"></i>保存</button><button id="settings-btn" class="btn btn-light"><i class="fa-solid fa-sliders"></i>店舗設定</button><a href="index.html" class="btn btn-dark" style="text-decoration:none"><i class="fa-solid fa-arrow-left"></i>売上ダッシュボード</a></div>
-    </header>
-
-    <nav class="tabs" aria-label="表示切替"><button class="tab active" data-view="planner"><i class="fa-solid fa-pen-ruler"></i> ガント入力</button><button class="tab" data-view="staff"><i class="fa-solid fa-user-clock"></i> 従業員別</button><button class="tab" data-view="store"><i class="fa-solid fa-store"></i> 店舗別</button><button class="tab" data-view="csv"><i class="fa-solid fa-file-csv"></i> MF CSV</button></nav>
-
-    <main class="workspace">
-      <section id="view-planner" class="view active">
-        <div class="card toolbar"><div class="toolbar-left"><button id="prev-day" class="btn btn-light btn-small"><i class="fa-solid fa-chevron-left"></i></button><input id="work-date" class="control" type="date"><button id="next-day" class="btn btn-light btn-small"><i class="fa-solid fa-chevron-right"></i></button><button id="today-btn" class="btn btn-light btn-small">今日</button></div><div class="toolbar-right"><span style="font-size:10px;font-weight:800;color:#667085">新規配置の出勤店舗</span><div id="new-store-buttons" class="store-filter"></div></div></div>
-        <div class="planner"><aside class="card side"><div class="panel-title">従業員一覧<small>名前を中央の時間軸へドラッグ</small></div><div style="padding:8px 9px 0"><input id="staff-search" class="control" style="width:100%" placeholder="氏名・番号・スキルで検索"></div><div id="staff-list" class="staff-list"></div></aside><section class="card gantt-card"><div id="gantt-scroll" class="gantt-scroll"><div id="gantt-canvas" class="gantt-canvas"></div></div></section><aside class="card side inspector-panel"><div class="panel-title">シフト詳細<small>バーを選ぶと編集できます</small></div><div id="inspector" class="inspector"></div></aside></div>
-      </section>
-
-      <section id="view-staff" class="view"><div class="summary" id="staff-summary"></div><div class="card"><div class="data-head"><h2>従業員別 月間シフト</h2><input id="staff-month" class="control" type="month"></div><div class="table-wrap"><table><thead><tr><th>従業員番号</th><th>氏名</th><th>日付</th><th>出勤店舗</th><th>勤務時間</th><th>配置ルート</th></tr></thead><tbody id="staff-view-body"></tbody></table></div></div></section>
-      <section id="view-store" class="view"><div class="card toolbar"><div class="toolbar-left"><span style="font-size:11px;font-weight:900">店舗別配置</span><input id="store-date" class="control" type="date"></div><div style="font-size:10px;color:#667085">那覇エリアは、久茂地・美栄橋の閉店後を松山合流として自動表示します。</div></div><div id="store-grid" class="store-grid"></div></section>
-      <section id="view-csv" class="view"><div class="card toolbar"><div class="toolbar-left"><label style="font-size:10px;font-weight:900;color:#667085">開始</label><input id="csv-start" class="control" type="date"><label style="font-size:10px;font-weight:900;color:#667085">終了</label><input id="csv-end" class="control" type="date"><button id="csv-refresh" class="btn btn-light"><i class="fa-solid fa-rotate"></i>更新</button></div><button id="csv-download" class="btn btn-green"><i class="fa-solid fa-download"></i>Shift-JIS CSVを保存</button></div><div class="card csv-panel"><div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:9px;padding:9px 11px;font-size:10px;line-height:1.6;margin-bottom:10px">MFクラウド勤怠の14列形式で出力します。日をまたぐ終了時刻は、翌5時なら「29:00」のように24時超で出力します。勤務のない日はこのV2では出力しません。</div><textarea id="csv-preview" class="csv-preview" readonly></textarea></div></section>
-    </main>
-  </div>
-
-  <div id="settings-modal" class="modal-bg" role="dialog" aria-modal="true"><div class="modal"><div class="modal-head"><div><strong>店舗・エリア設定</strong><div style="font-size:9px;color:#8a94a5;margin-top:2px">コードを変更せず、閉店時刻と那覇エリアの自動合流を調整</div></div><button id="settings-close" class="btn btn-light btn-small"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div class="table-wrap"><table class="settings-table"><thead><tr><th>店舗名</th><th>エリア</th><th>閉店時刻</th><th>閉店後の合流</th><th>合流先</th><th>表示色</th></tr></thead><tbody id="settings-body"></tbody></table></div><p style="font-size:9px;line-height:1.6;color:#667085;margin:12px 0 0">初期仕様：松山・久茂地・美栄橋は那覇エリア、美里は沖縄エリア。美里は終了時刻を超えても自動合流しません。</p></div><div class="modal-foot"><button id="settings-reset" class="btn btn-light">初期値に戻す</button><button id="settings-save" class="btn btn-green">設定を保存</button></div></div></div>
-  <div id="toast" class="toast"></div>
-
-  <script type="module">
-    import { auth, loginWithGoogle, logout, isAdmin, onAuthStateChanged, fsGet, fsSet, fsListen } from './js/firebase-config.js';
-    window.shiftV2Cloud = { get: fsGet, set: fsSet, listen: fsListen };
-    window.shiftV2Login = () => loginWithGoogle();
-    window.shiftV2Logout = () => logout();
-    onAuthStateChanged(auth, user => { window.shiftV2User = user; window.shiftV2IsAdmin = isAdmin(user); document.dispatchEvent(new CustomEvent('shiftv2-auth', { detail: { user, admin: isAdmin(user) } })); });
-    document.dispatchEvent(new Event('shiftv2-cloud-ready'));
-  </script>
-  <script src="js/shift-v2.js"></script>
-  <script src="js/shift-v2-compliance.js"></script>
-  <script src="js/shift-v2-time-summary.js"></script>
-  <script src="js/shift-v2-audit.js"></script>
-  <script src="js/shift-v2-staff-master.js"></script>
-  <script src="js/shift-v2-rules-bootstrap.js"></script>
-  <script src="js/shift-v2-rules.js"></script>
-  <script src="js/shift-v2-rules-restore.js"></script>
-  <script src="js/shift-v2-staff-constraints.js"></script>
-  <script src="js/shift-v2-work-plan.js"></script>
-  <script src="js/shift-v2-overtime-approval.js"></script>
-  <script src="js/shift-v2-holidays.js"></script>
-  <script src="js/shift-v2-holiday-auto-guard.js"></script>
-  <script src="js/shift-v2-auto-placement.js"></script>
-  <script src="js/shift-v2-month-builder.js"></script>
-  <script src="js/shift-v2-demo-mode.js"></script>
-
+  <style>
+    html,body{margin:0;min-height:100%;font-family:Arial,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;background:#f5f7fa;color:#344054}
+    .entry{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+    .card{background:#fff;border:1px solid #e4e7ec;border-radius:14px;padding:22px 26px;box-shadow:0 12px 36px rgba(16,24,40,.08);text-align:center}
+    .card strong{display:block;font-size:15px;margin-bottom:7px}.card span{font-size:11px;color:#667085}.card a{display:inline-block;margin-top:14px;color:#175cd3;font-size:11px;font-weight:700}
+  </style>
   <script>
     (() => {
-      const files = [
-        'shift-v2.js',
-        'shift-v2-compliance.js',
-        'shift-v2-time-summary.js',
-        'shift-v2-audit.js',
-        'shift-v2-staff-master.js',
-        'shift-v2-rules-bootstrap.js',
-        'shift-v2-rules.js',
-        'shift-v2-rules-restore.js',
-        'shift-v2-staff-constraints.js',
-        'shift-v2-work-plan.js',
-        'shift-v2-overtime-approval.js',
-        'shift-v2-holidays.js',
-        'shift-v2-holiday-auto-guard.js',
-        'shift-v2-auto-placement.js',
-        'shift-v2-month-builder.js',
-        'shift-v2-demo-mode.js'
-      ];
-      const rawBase = 'https://raw.githubusercontent.com/daigakuimahigashi-source/sample1/main/intranet/js/';
-      const ready = () => Boolean(document.getElementById('work-date')?.value && document.getElementById('new-store-buttons')?.children.length);
-
-      async function previewFallback() {
-        if (ready() || window.__shiftV2PreviewFallbackRunning) return;
-        window.__shiftV2PreviewFallbackRunning = true;
-        const status = document.getElementById('sync-status');
-        if (status) status.textContent = 'プレビュー読込中...';
-        try {
-          for (const file of files) {
-            const response = await fetch(rawBase + file, { cache: 'no-store' });
-            if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
-            const code = await response.text();
-            (0, eval)(`${code}\n//# sourceURL=${rawBase}${file}`);
-          }
-          document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
-          setTimeout(() => {
-            if (ready()) {
-              if (status) status.textContent = 'プレビュー動作中';
-            } else {
-              throw new Error('V2初期化を確認できませんでした');
-            }
-          }, 250);
-        } catch (error) {
-          console.error('V2 preview fallback failed', error);
-          if (status) {
-            status.textContent = 'プレビュー読込失敗';
-            status.style.color = '#f04438';
-            status.title = String(error?.message || error);
-          }
-          const canvas = document.getElementById('gantt-canvas');
-          if (canvas && !canvas.children.length) canvas.innerHTML = '<div style="padding:24px;font-size:12px;color:#b42318"><strong>プレビュー用JavaScriptを読み込めませんでした。</strong><br>Firebase Hosting版で開くか、ネットワーク制限を確認してください。</div>';
-        }
-      }
-
-      window.addEventListener('load', () => setTimeout(previewFallback, 700), { once: true });
+      const target = './shift-v2-app.html' + location.search + location.hash;
+      location.replace(target);
     })();
   </script>
+</head>
+<body>
+  <div class="entry"><div class="card"><strong>OKK シフトプランナーを起動しています</strong><span>自動で切り替わらない場合は下のリンクを押してください。</span><a href="shift-v2-app.html">シフトプランナーを開く</a></div></div>
 </body>
 </html>
