@@ -56,7 +56,8 @@
         'shift-v2-ui-layout.js',
         'shift-v2-rules-tabs.js',
         'shift-v2-master-typography.js',
-        'shift-v2-guided-ui.js'
+        'shift-v2-guided-ui.js',
+        'shift-v2-quick-add.js'
       ];
 
       function loadScript(src) {
@@ -71,7 +72,7 @@
       }
 
       async function boot() {
-        const response = await fetch('./shift-v2.html?v=live7ad-' + Date.now(), { cache: 'no-store' });
+        const response = await fetch('./shift-v2.html?v=live7ae-' + Date.now(), { cache: 'no-store' });
         if (!response.ok) throw new Error(`画面テンプレート HTTP ${response.status}`);
         const html = await response.text();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
@@ -79,12 +80,12 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live7ad');
+          await loadScript('./js/' + file + '?v=live7ae');
         }
 
         const build = document.createElement('div');
         build.id = 'v2-live-build';
-        build.textContent = 'LIVE7AD';
+        build.textContent = 'LIVE7AE';
         document.body.appendChild(build);
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
