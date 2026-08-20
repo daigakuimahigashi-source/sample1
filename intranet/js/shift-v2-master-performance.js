@@ -21,7 +21,7 @@
   function bind() {
     document.addEventListener('click', event => {
       if (event.target.closest?.('.tab[data-view="master"],[data-unified-master="employees"]')) schedule(70);
-      if (event.target.closest?.('[data-master-skill],[data-auto],#master-sync-cloud')) schedule(60);
+      if (event.target.closest?.('[data-auto],#master-sync-cloud')) schedule(60);
     }, false);
 
     document.addEventListener('input', event => {
@@ -34,6 +34,8 @@
 
     document.addEventListener('shiftv2-auth', () => schedule(320));
     document.addEventListener('shiftv2-access-changed', () => schedule(60));
+    document.addEventListener('shiftv2-master-render-request', () => schedule(0));
+    document.addEventListener('shiftv2-master-data-changed', () => schedule(0));
   }
 
   function schedule(delay = 0) {
