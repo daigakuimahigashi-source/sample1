@@ -40,7 +40,6 @@ async function fsGet(key) {
 function fsListen(key, callback) { return onSnapshot(OKK_DOC(key), snap => { if (snap.exists()) callback(snap.data().data); }); }
 
 const EDITOR_LEASE_DOC = doc(db, 'runtime', 'shift_editor_lease');
-const SAME_ACCOUNT_STALE_MS = 90 * 1000;
 function normalizeLease(snap) { return snap.exists() ? snap.data() : null; }
 
 async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
@@ -52,16 +51,17 @@ async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
     const expired = !current || Number(current.expiresAt || 0) <= now;
     const sameSession = current && current.uid === user.uid && current.sessionId === sessionId;
     const sameAccount = current && current.uid === user.uid;
-    const sameAccountStale = sameAccount && now - Number(current.heartbeatAt || current.acquiredAt || 0) >= SAME_ACCOUNT_STALE_MS;
 
-    if (!expired && !sameSession && !sameAccountStale) return { acquired:false, lease:current };
+    // 同じGoogleアカウントなら、旧タブ・旧リリースが残した編集席を即時に引き継ぐ。
+    // 引き継がれた旧セッションは次回heartbeatでrenewに失敗して閲覧側へ落ちる。
+    if (!expired && !sameSession && !sameAccount) return { acquired:false, lease:current };
 
     const lease = {
       uid:user.uid,
       sessionId,
       email:user.email || '',
       displayName:user.displayName || user.email || '本部管理者',
-      acquiredAt:sameSession || sameAccountStale ? (current?.acquiredAt || now) : now,
+      acquiredAt:sameAccount ? (current?.acquiredAt || now) : now,
       heartbeatAt:now,
       expiresAt:now + ttlMs,
     };
