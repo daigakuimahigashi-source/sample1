@@ -26,14 +26,14 @@
       ];
       function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('読み込み失敗: '+src));document.body.appendChild(s);});}
       async function boot(){
-        const response=await fetch('./shift-v2-template.html?v=live7bh-'+Date.now(),{cache:'no-store'});
+        const response=await fetch('./shift-v2-template.html?v=live7bi-'+Date.now(),{cache:'no-store'});
         if(!response.ok) throw new Error('画面テンプレート HTTP '+response.status);
         const html=await response.text();
         const parsed=new DOMParser().parseFromString(html,'text/html');
         parsed.querySelectorAll('script').forEach(node=>node.remove());
         document.body.innerHTML=parsed.body.innerHTML;
-        for(const file of localScripts){await loadScript('./js/'+file+'?v=live7bh');}
-        const build=document.createElement('div');build.id='v2-live-build';build.textContent='LIVE7BH';document.body.appendChild(build);
+        for(const file of localScripts){await loadScript('./js/'+file+'?v=live7bi');}
+        const build=document.createElement('div');build.id='v2-live-build';build.textContent='LIVE7BI';document.body.appendChild(build);
         document.dispatchEvent(new Event('DOMContentLoaded',{bubbles:true}));
         const encoding=document.createElement('script');encoding.src='https://cdn.jsdelivr.net/npm/encoding-japanese@2.2.0/encoding.min.js';encoding.async=true;document.head.appendChild(encoding);
         if(localStorage.getItem('okk_shift_v2_demo_mode')==='1'){const status=document.getElementById('sync-status');if(status)status.textContent='デモ・クラウド同期OFF';window.shiftV2Cloud=null;window.shiftV2User=null;window.shiftV2IsAdmin=false;}else{setTimeout(loadFirebase,800);}
