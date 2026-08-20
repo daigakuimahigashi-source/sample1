@@ -30,7 +30,7 @@
       const move = event.target.closest?.('[data-skill-move]');
       if (move) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         if (!canEdit()) return locked();
         moveSkill(move.dataset.skillId, move.dataset.skillMove === 'up' ? -1 : 1);
         return;
@@ -39,14 +39,14 @@
       const remove = event.target.closest?.('[data-skill-delete]');
       if (remove) {
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         if (!canEdit()) return locked();
         deleteSkill(remove.dataset.skillDelete);
         return;
       }
 
-      if (event.target.closest?.('[data-view="rules"],#stable-rules-tabs [data-stable-tab="skills"]')) {
-        setTimeout(attach, 80);
+      if (event.target.closest?.('[data-view="rules"],#stable-rules-tabs [data-stable-tab="skills"],#rs-add-skill')) {
+        setTimeout(attach, 100);
       }
     }, true);
 
@@ -54,22 +54,22 @@
 
     document.addEventListener('dragstart', event => {
       const handle = event.target.closest?.('[data-skill-drag]');
-      const row = handle?.closest?.('[data-skill-row]');
+      const row = handle?.closest?.('#rs-skill-list [data-skill]');
       if (!row || !canEdit()) return;
-      draggedSkillId = row.dataset.skillRow || '';
+      draggedSkillId = row.dataset.skill || '';
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/skill-id', draggedSkillId);
       row.classList.add('skill-dragging');
     }, true);
 
     document.addEventListener('dragend', event => {
-      event.target.closest?.('[data-skill-row]')?.classList.remove('skill-dragging');
+      event.target.closest?.('#rs-skill-list [data-skill]')?.classList.remove('skill-dragging');
       draggedSkillId = '';
       document.querySelectorAll('.skill-drop-target').forEach(node => node.classList.remove('skill-drop-target'));
     }, true);
 
     document.addEventListener('dragover', event => {
-      const row = event.target.closest?.('#skill-master-list [data-skill-row]');
+      const row = event.target.closest?.('#rs-skill-list [data-skill]');
       if (!row || !draggedSkillId || !canEdit()) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
@@ -78,10 +78,11 @@
     }, true);
 
     document.addEventListener('drop', event => {
-      const row = event.target.closest?.('#skill-master-list [data-skill-row]');
+      const row = event.target.closest?.('#rs-skill-list [data-skill]');
       if (!row || !draggedSkillId || !canEdit()) return;
       event.preventDefault();
-      const targetId = row.dataset.skillRow || '';
+      event.stopImmediatePropagation();
+      const targetId = row.dataset.skill || '';
       document.querySelectorAll('.skill-drop-target').forEach(node => node.classList.remove('skill-drop-target'));
       if (targetId && targetId !== draggedSkillId) reorderByDrop(draggedSkillId, targetId, event.clientY, row);
       draggedSkillId = '';
@@ -89,7 +90,7 @@
   }
 
   function attach() {
-    const list = document.getElementById('skill-master-list');
+    const list = document.getElementById('rs-skill-list');
     if (!list) return;
     decorate();
     if (listObserver) listObserver.disconnect();
@@ -98,12 +99,12 @@
   }
 
   function decorate() {
-    const list = document.getElementById('skill-master-list');
+    const list = document.getElementById('rs-skill-list');
     if (!list) return;
     const editable = canEdit();
-    const rows = Array.from(list.querySelectorAll('[data-skill-row]'));
+    const rows = Array.from(list.querySelectorAll('[data-skill]'));
     rows.forEach((row, index) => {
-      const skillId = row.dataset.skillRow || '';
+      const skillId = row.dataset.skill || '';
       row.classList.add('skill-manager-row');
       row.draggable = editable;
 
@@ -125,7 +126,7 @@
         remove.className = 'skill-delete-button';
         remove.dataset.skillDelete = skillId;
         remove.title = 'このスキルを削除';
-        remove.innerHTML = '<i class="fa-solid fa-trash"></i>削除';
+        remove.innerHTML = '<i class="fa-solid fa-trash"></i> 削除';
         row.appendChild(remove);
       }
 
@@ -137,6 +138,7 @@
   }
 
   function canEdit() {
+    if (!window.shiftV2User) return true;
     return window.shiftV2Access?.canEditHeadquarters?.() === true;
   }
 
@@ -248,12 +250,11 @@
     const message = sessionStorage.getItem(RETURN_KEY);
     if (!message) return;
     sessionStorage.removeItem(RETURN_KEY);
-    const open = () => {
+    setTimeout(() => {
       document.querySelector('.tab[data-view="rules"]')?.click();
       setTimeout(() => document.querySelector('#stable-rules-tabs [data-stable-tab="skills"]')?.click(), 80);
-      setTimeout(() => { attach(); notify(message); }, 140);
-    };
-    setTimeout(open, 80);
+      setTimeout(() => { attach(); notify(message); }, 160);
+    }, 80);
   }
 
   function read(key, fallback) {
@@ -278,18 +279,18 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      #skill-master-list .skill-manager-row{grid-template-columns:76px 104px minmax(150px,1fr) auto auto!important;transition:background .12s,border-color .12s}
-      #skill-master-list .skill-order-actions{display:flex;align-items:center;gap:2px}
-      #skill-master-list .skill-order-actions button{display:grid;place-items:center;width:22px;height:25px;padding:0;border:1px solid #e4e7ec;border-radius:6px;background:#fff;color:#667085;cursor:pointer}
-      #skill-master-list .skill-order-actions button:hover:not(:disabled){background:#f2f4f7;color:#101828}
-      #skill-master-list .skill-order-actions button:disabled{opacity:.25;cursor:default}
-      #skill-master-list .skill-drag-handle{cursor:grab!important}
-      #skill-master-list .skill-dragging{opacity:.45}
-      #skill-master-list .skill-drop-target{background:#eff8ff!important;box-shadow:inset 0 0 0 1px #84caff}
-      #skill-master-list .skill-delete-button{border:1px solid #fecdca;background:#fff5f4;color:#b42318;border-radius:7px;padding:6px 8px;font-size:8px;font-weight:900;cursor:pointer;white-space:nowrap}
-      #skill-master-list .skill-delete-button:hover:not(:disabled){background:#fee4e2}
-      #skill-master-list .skill-delete-button:disabled{opacity:.35;cursor:default}
-      @media(max-width:760px){#skill-master-list .skill-manager-row{grid-template-columns:70px 1fr auto!important}#skill-master-list .skill-master-id{display:none}#skill-master-list .skill-delete-button{grid-column:3}.skill-manager-row>[data-skill-toggle]{grid-column:2}}
+      #rs-skill-list .skill-manager-row{grid-template-columns:82px 72px minmax(180px,1fr) auto auto!important;gap:8px!important;align-items:center}
+      #rs-skill-list .skill-order-actions{display:flex;align-items:center;gap:3px}
+      #rs-skill-list .skill-order-actions button{display:grid;place-items:center;width:22px;height:26px;padding:0;border:1px solid #d0d5dd;border-radius:6px;background:#fff;color:#475467;cursor:pointer}
+      #rs-skill-list .skill-order-actions button:hover:not(:disabled){background:#f2f4f7;color:#101828}
+      #rs-skill-list .skill-order-actions button:disabled{opacity:.25;cursor:default}
+      #rs-skill-list .skill-drag-handle{cursor:grab!important}
+      #rs-skill-list .skill-dragging{opacity:.45}
+      #rs-skill-list .skill-drop-target{background:#eff8ff!important;box-shadow:inset 0 0 0 1px #84caff}
+      #rs-skill-list .skill-delete-button{border:1px solid #fecdca;background:#fff5f4;color:#b42318;border-radius:7px;padding:6px 9px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}
+      #rs-skill-list .skill-delete-button:hover:not(:disabled){background:#fee4e2}
+      #rs-skill-list .skill-delete-button:disabled{opacity:.35;cursor:default}
+      @media(max-width:760px){#rs-skill-list .skill-manager-row{grid-template-columns:72px 1fr auto!important}#rs-skill-list .rs-id{display:none}#rs-skill-list .skill-delete-button{grid-column:3}}
     `;
     document.head.appendChild(style);
   }
