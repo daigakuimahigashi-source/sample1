@@ -3,11 +3,13 @@
 
   const STYLE_ID = 'shift-v2-quick-add-style';
   const MODAL_ID = 'quick-add-modal';
+  const SHIFTS_KEY = 'okk_shift_v2_shifts';
+  const HOLIDAY_KEY = 'okk_shift_v2_holidays';
+  const CLOUD_SHIFTS = 'shiftV2Shifts';
   const DEFAULT_START = 17 * 60;
   const DAY_START = 15 * 60;
   const DAY_END = 30 * 60;
   const SLOT = 30;
-  const SLOT_PX = 46;
   let pendingStaff = null;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
@@ -104,7 +106,7 @@
       const note = document.createElement('div');
       note.className = 'quick-add-note';
       note.style.cssText = 'position:absolute;left:12px;bottom:7px;z-index:3;background:rgba(255,255,255,.94);padding:3px 6px;border-radius:6px;border:1px solid #e4e7ec;pointer-events:none';
-      note.textContent = 'ドラッグでも追加できます。左の「追加」なら店舗・時間を選んで配置できます。';
+      note.textContent = '左の「追加」なら店舗・時間を選んで配置できます。ドラッグ操作も残しています。';
       empty.appendChild(note);
     }
   }
@@ -184,7 +186,7 @@
     if (summary) summary.textContent = `${store} / ${fmtTime(start)}〜${fmtTime(end)} / ${formatDuration(duration)}`;
   }
 
-  function confirmQuickAdd() {
+  async function confirmQuickAdd() {
     if (!pendingStaff) return;
     const storeId = document.getElementById('quick-add-store')?.value || '';
     const start = Number(document.getElementById('quick-add-start')?.value || DEFAULT_START);
@@ -193,57 +195,65 @@
     if (end <= start) return showToast('終了時刻は開始時刻より後にしてください。');
 
     const staff = { ...pendingStaff };
-    closeModal();
-    createByDrop(staff.staffId, storeId, start, end);
-  }
+    const date = staff.date || document.getElementById('work-date')?.value || '';
+    if (!date) return showToast('日付を選んでください。');
 
-  function createByDrop(staffId, storeId, start, end) {
-    const dropTrack = document.getElementById('empty-drop-track');
-    if (!dropTrack) return showToast('追加先がまだ表示されていません。ガント入力タブを開いてください。');
+    const shifts = loadObject(SHIFTS_KEY);
+    if (!Array.isArray(shifts[date])) shifts[date] = [];
+    if (shifts[date].some(item => sameId(item.staffId, staff.staffId))) return showToast('このスタッフはすでにこの日に配置されています。');
+
+    const requestedOff = isRequestedOff(staff.staffId, date);
+    const shift = {
+      id: uid(),
+      staffId: staff.staffId,
+      startStoreId: storeId,
+      start,
+      end,
+      memo: requestedOff ? '希望休を管理者判断で上書き配置' : '',
+      manualAdded: true,
+      requestedOffOverride: requestedOff,
+      createdAt: new Date().toISOString(),
+      createdBy: actorName(),
+    };
+    shifts[date].push(shift);
+    localStorage.setItem(SHIFTS_KEY, JSON.stringify(shifts));
 
     try {
-      const storeButton = document.querySelector(`#new-store-buttons button[data-store="${cssEsc(storeId)}"]`);
-      storeButton?.click();
-
-      const dt = new DataTransfer();
-      dt.setData('text/staff-id', staffId);
-      const rect = dropTrack.getBoundingClientRect();
-      const slotsFromStart = (start - DAY_START) / SLOT;
-      const clientX = rect.left + (slotsFromStart * SLOT_PX) + 4;
-      const dropEvent = new DragEvent('drop', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: dt,
-        clientX,
-        clientY: rect.top + Math.max(8, rect.height / 2)
-      });
-      dropTrack.dispatchEvent(dropEvent);
-
-      setTimeout(() => applyInspectorValues(storeId, start, end, 0), 80);
+      if (window.shiftV2Cloud && window.shiftV2User) await window.shiftV2Cloud.set(CLOUD_SHIFTS, shifts);
     } catch (error) {
-      console.warn('Quick add failed', error);
-      showToast('追加に失敗しました。従来どおりドラッグでも追加できます。');
+      console.warn('Quick add cloud save failed', error);
     }
+
+    sessionStorage.setItem('okk_shift_v2_quick_add_restore', JSON.stringify({ date, shiftId: shift.id }));
+    closeModal();
+    showToast(`${staff.name} を ${fmtTime(start)}〜${fmtTime(end)} で追加しました。`);
+    setTimeout(() => window.location.reload(), 280);
   }
 
-  function applyInspectorValues(storeId, start, end, step) {
-    const sequence = [
-      ['ins-store', storeId],
-      ['ins-start', String(start)],
-      ['ins-end', String(end)],
-    ];
-    if (step >= sequence.length) {
-      showToast(`${fmtTime(start)}〜${fmtTime(end)} で追加しました。右側からいつでも修正・削除できます。`);
-      setTimeout(() => document.getElementById('inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
-      return;
-    }
-    const [id, value] = sequence[step];
-    const control = document.getElementById(id);
-    if (control) {
-      control.value = value;
-      control.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    setTimeout(() => applyInspectorValues(storeId, start, end, step + 1), 70);
+  function restoreAfterReload() {
+    const raw = sessionStorage.getItem('okk_shift_v2_quick_add_restore');
+    if (!raw) return;
+    sessionStorage.removeItem('okk_shift_v2_quick_add_restore');
+    let info;
+    try { info = JSON.parse(raw); } catch { return; }
+    setTimeout(() => {
+      const input = document.getElementById('work-date');
+      if (input && info.date) {
+        input.value = info.date;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      setTimeout(() => {
+        const edit = document.querySelector(`#gantt-canvas [data-select="${cssEsc(info.shiftId || '')}"]`);
+        edit?.click();
+        document.getElementById('inspector')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 220);
+    }, 450);
+  }
+
+  function isRequestedOff(staffId, date) {
+    const holiday = loadObject(HOLIDAY_KEY);
+    const days = Array.isArray(holiday.staffDays) ? holiday.staffDays : [];
+    return days.some(item => sameId(item.staffId, staffId) && item.date === date && item.requestedOff === true);
   }
 
   function timeOptions(min, max, selected) {
@@ -265,6 +275,17 @@
     return mins ? `${hours}時間${mins}分` : `${hours}時間`;
   }
 
+  function loadObject(key) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key));
+      return value && typeof value === 'object' ? value : {};
+    } catch { return {}; }
+  }
+
+  function sameId(a, b) { return String(a || '').toUpperCase() === String(b || '').toUpperCase(); }
+  function uid() { return `shift_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`; }
+  function actorName() { return window.shiftV2User?.displayName || window.shiftV2User?.email || 'ローカル利用者'; }
+
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
@@ -282,4 +303,6 @@
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4200);
   }
+
+  restoreAfterReload();
 })();
