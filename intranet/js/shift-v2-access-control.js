@@ -7,8 +7,9 @@
   const STYLE_ID = 'shift-v2-access-control-style';
   let user = null;
   let isAdmin = false;
+  let authResolved = false;
   let lease = null;
-  let mode = 'viewer';
+  let mode = 'signed-out';
   let heartbeat = null;
   let takeoverTimer = null;
   let sessionId = sessionStorage.getItem(SESSION_KEY);
@@ -22,12 +23,12 @@
 
   injectStyles();
   installGuards();
+  render();
   document.addEventListener('shiftv2-auth', onAuth);
   document.addEventListener('shiftv2-editor-lease', event => {
     lease = event.detail?.lease || null;
     recalcMode();
   });
-  document.addEventListener('DOMContentLoaded', () => setTimeout(render, 100), { once:true });
   window.addEventListener('beforeunload', () => {
     if (mode === 'editor') window.shiftV2EditorLease?.release?.(user, sessionId).catch?.(() => {});
   });
@@ -35,7 +36,10 @@
   window.shiftV2Access = {
     get mode(){ return mode; },
     get lease(){ return lease; },
+    get authResolved(){ return authResolved; },
     canEditHeadquarters(){ return mode === 'editor'; },
+    canUseManagerFunctions(){ return mode === 'editor' || mode === 'admin-viewer'; },
+    isSignedIn(){ return Boolean(user); },
     assertEdit(){
       if (mode === 'editor') return true;
       notifyLocked();
@@ -44,6 +48,7 @@
   };
 
   async function onAuth(event) {
+    authResolved = true;
     const nextUser = event.detail?.user || null;
     const nextAdmin = Boolean(event.detail?.admin);
     const previousUser = user;
@@ -58,8 +63,13 @@
     stopHeartbeat();
     stopTakeoverTimer();
 
-    if (!user || !isAdmin) {
-      mode = 'viewer';
+    if (!user) {
+      mode = 'signed-out';
+      render();
+      return;
+    }
+    if (!isAdmin) {
+      mode = 'no-access';
       render();
       return;
     }
@@ -70,26 +80,30 @@
     try {
       const result = await window.shiftV2EditorLease?.acquire?.(user, sessionId);
       lease = result?.lease || lease;
-      mode = result?.acquired ? 'editor' : 'viewer';
+      mode = result?.acquired ? 'editor' : 'admin-viewer';
       if (mode === 'editor') startHeartbeat();
       else startTakeoverTimer();
     } catch (error) {
       console.warn('Editor lease acquire failed', error);
-      mode = 'viewer';
+      mode = 'admin-viewer';
       startTakeoverTimer();
     }
     render();
   }
 
   function recalcMode() {
-    if (!user || !isAdmin) mode = 'viewer';
-    else mode = lease && lease.uid === user.uid && lease.sessionId === sessionId && Number(lease.expiresAt || 0) > Date.now() ? 'editor' : 'viewer';
+    if (!authResolved) mode = 'signed-out';
+    else if (!user) mode = 'signed-out';
+    else if (!isAdmin) mode = 'no-access';
+    else if (lease && lease.uid === user.uid && lease.sessionId === sessionId && Number(lease.expiresAt || 0) > Date.now()) mode = 'editor';
+    else mode = 'admin-viewer';
+
     if (mode === 'editor') {
       stopTakeoverTimer();
       startHeartbeat();
     } else {
       stopHeartbeat();
-      if (user && isAdmin) startTakeoverTimer();
+      if (mode === 'admin-viewer') startTakeoverTimer();
     }
     render();
   }
@@ -106,38 +120,38 @@
       }
     }, HEARTBEAT_MS);
   }
-
-  function stopHeartbeat() {
-    if (heartbeat) clearInterval(heartbeat);
-    heartbeat = null;
-  }
+  function stopHeartbeat() { if (heartbeat) clearInterval(heartbeat); heartbeat = null; }
 
   function startTakeoverTimer() {
     if (takeoverTimer) return;
     takeoverTimer = setInterval(() => {
       if (!user || !isAdmin || mode === 'editor') return;
-      if (!lease || Number(lease.expiresAt || 0) <= Date.now()) tryAcquire();
+      const sameAccount = lease && lease.uid === user.uid;
+      if (sameAccount || !lease || Number(lease.expiresAt || 0) <= Date.now()) tryAcquire();
     }, TAKEOVER_CHECK_MS);
   }
-
-  function stopTakeoverTimer() {
-    if (takeoverTimer) clearInterval(takeoverTimer);
-    takeoverTimer = null;
-  }
+  function stopTakeoverTimer() { if (takeoverTimer) clearInterval(takeoverTimer); takeoverTimer = null; }
 
   function installGuards() {
-    const blockedSelector = [
+    const headquartersOnly = [
       '#save-btn','#settings-btn','#settings-save','#settings-reset',
       '#mf-staff-import','#mf-staff-file','#master-sync-cloud',
       '#month-builder-open','#month-builder-calc','#month-builder-apply',
-      '[data-auto]','[data-skill-person]','[data-select]','[data-handle]',
+      '[data-auto]','[data-select]','[data-handle]',
       '.hrm-cell','[data-stable-confirm="need"]'
     ].join(',');
 
+    const anySignedInManager = [
+      '#rs-staff-body .rs-lv',
+      '[data-card-skill]'
+    ].join(',');
+
     const guard = event => {
-      if (mode === 'editor') return;
-      const target = event.target?.closest?.(blockedSelector);
+      const target = event.target?.closest?.(`${headquartersOnly},${anySignedInManager}`);
       if (!target) return;
+      const managerAllowed = target.matches?.(anySignedInManager) || target.closest?.(anySignedInManager);
+      const allowed = managerAllowed ? (mode === 'editor' || mode === 'admin-viewer') : mode === 'editor';
+      if (allowed) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       notifyLocked();
@@ -152,20 +166,12 @@
       event.stopImmediatePropagation();
       notifyLocked();
     }, true);
-
-    document.addEventListener('drop', event => {
-      if (mode === 'editor') return;
-      if (!event.target?.closest?.('#gantt-canvas,#empty-drop-track,.track')) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      notifyLocked();
-    }, true);
   }
 
   function render() {
     renderBanner();
     applyReadonlyUi();
-    document.dispatchEvent(new CustomEvent('shiftv2-access-changed', { detail:{ mode, lease } }));
+    document.dispatchEvent(new CustomEvent('shiftv2-access-changed', { detail:{ mode, lease, user, authResolved } }));
   }
 
   function renderBanner() {
@@ -176,43 +182,54 @@
       document.querySelector('.topbar')?.insertAdjacentElement('afterend', bar);
     }
     if (!bar) return;
-    if (!user) {
+    if (mode === 'signed-out') {
       bar.className = 'access-banner viewer';
-      bar.innerHTML = '<strong>閲覧モード</strong><span>Googleログイン後、本部管理者は空いていれば編集席を取得します。</span>';
+      bar.innerHTML = '<strong>ログインが必要です</strong><span>Googleアカウントでログインしてください。</span>';
+      return;
+    }
+    if (mode === 'no-access') {
+      bar.className = 'access-banner viewer';
+      bar.innerHTML = '<strong>権限未登録</strong><span>このGoogleアカウントにはOKKシフトの利用権限が登録されていません。</span>';
       return;
     }
     if (mode === 'editor') {
       bar.className = 'access-banner editor';
-      bar.innerHTML = `<strong>本部編集モード</strong><span>${esc(user.displayName || user.email || '本部管理者')}さんが編集席を使用中</span>`;
+      bar.innerHTML = `<strong>本部編集モード</strong><span>${esc(user?.displayName || user?.email || '本部管理者')}さんが編集席を使用中</span>`;
       return;
     }
     const holder = lease && Number(lease.expiresAt || 0) > Date.now() ? (lease.displayName || lease.email || '別の本部管理者') : '別の本部管理者';
     bar.className = 'access-banner viewer';
-    bar.innerHTML = `<strong>閲覧・店長相当モード</strong><span>${esc(holder)}さんが本部編集モードを使用中です。シフト・マスタ変更はできません。</span>`;
+    bar.innerHTML = `<strong>閲覧・店長相当モード</strong><span>${esc(holder)}さんが本部編集モードを使用中です。</span>`;
   }
 
   function applyReadonlyUi() {
-    const readonly = mode !== 'editor';
-    document.documentElement.classList.toggle('shift-v2-headquarters-readonly', readonly);
+    const headquartersReadonly = mode !== 'editor';
+    document.documentElement.classList.toggle('shift-v2-headquarters-readonly', headquartersReadonly);
+    document.documentElement.classList.toggle('shift-v2-no-access', mode === 'signed-out' || mode === 'no-access');
     ['save-btn','settings-btn','settings-save','settings-reset','mf-staff-import','master-sync-cloud','month-builder-calc','month-builder-apply'].forEach(id => {
       const node = document.getElementById(id);
-      if (node) node.disabled = readonly;
+      if (node) node.disabled = headquartersReadonly;
     });
     const masterTab = document.querySelector('.tab[data-view="master"]');
-    if (masterTab) masterTab.hidden = readonly;
-    document.querySelectorAll('.hrm-cell').forEach(node => { node.disabled = readonly || !document.getElementById('stable-store')?.value; });
-    document.querySelectorAll('[data-auto],[data-skill-person]').forEach(node => { node.disabled = readonly; });
-    document.querySelectorAll('.staff-card').forEach(node => { if (readonly) node.setAttribute('draggable','false'); });
+    if (masterTab) masterTab.hidden = headquartersReadonly;
+    document.querySelectorAll('.hrm-cell').forEach(node => { node.disabled = headquartersReadonly || !document.getElementById('stable-store')?.value; });
+    document.querySelectorAll('[data-auto]').forEach(node => { node.disabled = headquartersReadonly; });
+    document.querySelectorAll('.staff-card').forEach(node => { node.setAttribute('draggable', mode === 'editor' ? 'true' : 'false'); });
   }
 
   function notifyLocked() {
-    const holder = lease && Number(lease.expiresAt || 0) > Date.now() ? (lease.displayName || lease.email || '別の本部管理者') : '別の本部管理者';
     const toast = document.getElementById('toast');
-    if (toast) {
-      toast.textContent = `${holder}さんが本部編集モードを使用中です`;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2200);
+    if (!toast) return;
+    let message = 'この操作は現在できません';
+    if (mode === 'signed-out') message = 'Googleログイン後に操作できます';
+    else if (mode === 'no-access') message = 'このアカウントには利用権限がありません';
+    else if (mode === 'admin-viewer') {
+      const holder = lease && Number(lease.expiresAt || 0) > Date.now() ? (lease.displayName || lease.email || '別の本部管理者') : '別の本部管理者';
+      message = `${holder}さんが本部編集モードを使用中です`;
     }
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
   }
 
   function injectStyles() {
