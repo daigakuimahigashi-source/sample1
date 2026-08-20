@@ -51,11 +51,7 @@ async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
     const expired = !current || Number(current.expiresAt || 0) <= now;
     const sameSession = current && current.uid === user.uid && current.sessionId === sessionId;
     const sameAccount = current && current.uid === user.uid;
-
-    // 同じGoogleアカウントなら、旧タブ・旧リリースが残した編集席を即時に引き継ぐ。
-    // 引き継がれた旧セッションは次回heartbeatでrenewに失敗して閲覧側へ落ちる。
     if (!expired && !sameSession && !sameAccount) return { acquired:false, lease:current };
-
     const lease = {
       uid:user.uid,
       sessionId,
@@ -67,6 +63,33 @@ async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
     };
     transaction.set(EDITOR_LEASE_DOC, lease);
     return { acquired:true, lease };
+  });
+}
+
+async function forceAcquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
+  if (!user || !isAdmin(user) || !sessionId) return { acquired:false, lease:null };
+  const now = Date.now();
+  return runTransaction(db, async transaction => {
+    const snap = await transaction.get(EDITOR_LEASE_DOC);
+    const current = normalizeLease(snap);
+    const lease = {
+      uid:user.uid,
+      sessionId,
+      email:user.email || '',
+      displayName:user.displayName || user.email || '本部管理者',
+      acquiredAt:now,
+      heartbeatAt:now,
+      expiresAt:now + ttlMs,
+      forcedTakeoverAt:now,
+      previousHolder: current ? {
+        uid: current.uid || '',
+        email: current.email || '',
+        displayName: current.displayName || '',
+        heartbeatAt: Number(current.heartbeatAt || 0)
+      } : null,
+    };
+    transaction.set(EDITOR_LEASE_DOC, lease);
+    return { acquired:true, lease, previous:current };
   });
 }
 
@@ -129,7 +152,7 @@ export {
   auth, db,
   loginWithGoogle, logout, isAdmin, onAuthStateChanged,
   fsSet, fsGet, fsListen,
-  acquireEditorLease, renewEditorLease, releaseEditorLease, listenEditorLease,
+  acquireEditorLease, forceAcquireEditorLease, renewEditorLease, releaseEditorLease, listenEditorLease,
   setStaffLink, getStaffLink,
   savePref, getPref, getAllPrefs, listenPrefs,
 };
