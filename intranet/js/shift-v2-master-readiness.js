@@ -21,6 +21,15 @@
     observer.observe(document.body, { childList:true, subtree:true });
     document.addEventListener('click', onClick, true);
     document.addEventListener('change', onChange, true);
+    document.addEventListener('shiftv2-master-readiness-changed', () => {
+      renderPanel();
+      patchMonthUi();
+    });
+    window.addEventListener('storage', event => {
+      if (event.key !== KEY) return;
+      renderPanel();
+      patchMonthUi();
+    });
   }
 
   function state() {
@@ -29,10 +38,11 @@
       return {
         staffSkillsConfirmed: Boolean(value?.staffSkillsConfirmed),
         staffingNeedConfirmed: Boolean(value?.staffingNeedConfirmed),
+        staffingNeedConfirmedStores: Array.isArray(value?.staffingNeedConfirmedStores) ? value.staffingNeedConfirmedStores.map(String) : [],
         updatedAt: value?.updatedAt || ''
       };
     } catch {
-      return { staffSkillsConfirmed:false, staffingNeedConfirmed:false, updatedAt:'' };
+      return { staffSkillsConfirmed:false, staffingNeedConfirmed:false, staffingNeedConfirmedStores:[], updatedAt:'' };
     }
   }
 
@@ -124,7 +134,10 @@
   function statusText(s) {
     const pending = [];
     if (!s.staffSkillsConfirmed) pending.push('人員・スキル未確認');
-    if (!s.staffingNeedConfirmed) pending.push('必要人数未確認');
+    if (!s.staffingNeedConfirmed) {
+      const count = (s.staffingNeedConfirmedStores || []).length;
+      pending.push(count ? `必要人数 ${count}店舗確認済み` : '必要人数未確認');
+    }
     return pending.join(' / ') || '確認済み';
   }
 
