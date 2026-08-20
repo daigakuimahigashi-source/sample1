@@ -13,8 +13,6 @@
   let heartbeat = null;
   let takeoverTimer = null;
 
-  // 同じブラウザのタブ・再読込は同じ編集セッションとして扱う。
-  // 旧版のsessionStorage IDがあれば初回だけ移行し、現在残っているロックもそのまま引き継ぐ。
   let sessionId = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) sessionId = `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`;
   localStorage.setItem(SESSION_KEY, sessionId);
@@ -31,9 +29,12 @@
     lease = event.detail?.lease || null;
     recalcMode();
   });
-
-  // unloadで即解放すると、同じブラウザの別タブまで編集席を失うため解放しない。
-  // 全タブが閉じられた場合はFirestore側の有効期限で自動解放される。
+  document.addEventListener('click', event => {
+    const takeover = event.target.closest?.('#shift-v2-takeover-editor');
+    if (!takeover) return;
+    event.preventDefault();
+    void forceTakeover();
+  });
 
   window.shiftV2Access = {
     get mode(){ return mode; },
@@ -89,6 +90,28 @@
       console.warn('Editor lease acquire failed', error);
       mode = 'admin-viewer';
       startTakeoverTimer();
+    }
+    render();
+  }
+
+  async function forceTakeover() {
+    if (!user || !isAdmin || mode !== 'admin-viewer') return;
+    const holder = holderInfo();
+    const updated = lease?.heartbeatAt ? new Date(Number(lease.heartbeatAt)).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '不明';
+    const ok = window.confirm(`現在の編集者: ${holder.name}\n最終更新: ${updated}\n\n本部編集席をこの端末へ引き継ぎますか？\n相手が実際に編集中の場合、その端末は閲覧モードになります。`);
+    if (!ok) return;
+    try {
+      const result = await window.shiftV2EditorLease?.forceAcquire?.(user, sessionId);
+      lease = result?.lease || lease;
+      mode = result?.acquired ? 'editor' : 'admin-viewer';
+      if (mode === 'editor') {
+        stopTakeoverTimer();
+        startHeartbeat();
+        notify('本部編集席を引き継ぎました');
+      }
+    } catch (error) {
+      console.warn('Forced editor takeover failed', error);
+      notify('編集席の引き継ぎに失敗しました');
     }
     render();
   }
@@ -208,8 +231,8 @@
     const holder = holderInfo();
     bar.className = 'access-banner viewer';
     bar.innerHTML = holder.mine
-      ? '<strong>閲覧モード</strong><span>あなたの別タブまたは前回セッションが編集席を使用中です。自動的に引き継ぎを試みます。</span>'
-      : `<strong>閲覧・店長相当モード</strong><span>${esc(holder.name)}さんが本部編集モードを使用中です。</span>`;
+      ? '<strong>閲覧モード</strong><span>あなたの別タブまたは前回セッションが編集席を使用中です。</span><button id="shift-v2-takeover-editor" type="button">編集席を引き継ぐ</button>'
+      : `<strong>閲覧・店長相当モード</strong><span>${esc(holder.name)}さんが本部編集モードを使用中です。</span><button id="shift-v2-takeover-editor" type="button">編集席を引き継ぐ</button>`;
   }
 
   function applyReadonlyUi() {
@@ -228,15 +251,18 @@
   }
 
   function notifyLocked() {
+    if (mode === 'signed-out') return notify('Googleログイン後に操作できます');
+    if (mode === 'no-access') return notify('このアカウントには利用権限がありません');
+    if (mode === 'admin-viewer') {
+      const holder = holderInfo();
+      return notify(holder.mine ? 'あなたの別タブまたは前回セッションが編集中です' : `${holder.name}さんが本部編集モードを使用中です`);
+    }
+    notify('この操作は現在できません');
+  }
+
+  function notify(message) {
     const toast = document.getElementById('toast');
     if (!toast) return;
-    let message = 'この操作は現在できません';
-    if (mode === 'signed-out') message = 'Googleログイン後に操作できます';
-    else if (mode === 'no-access') message = 'このアカウントには利用権限がありません';
-    else if (mode === 'admin-viewer') {
-      const holder = holderInfo();
-      message = holder.mine ? 'あなたの別タブまたは前回セッションが編集中です' : `${holder.name}さんが本部編集モードを使用中です`;
-    }
     toast.textContent = message;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2200);
@@ -248,8 +274,10 @@
     style.id = STYLE_ID;
     style.textContent = `
       .access-banner{display:flex;align-items:center;gap:10px;padding:7px 16px;font:700 10px/1.5 'Noto Sans JP',sans-serif;border-bottom:1px solid #e4e7ec}
-      .access-banner strong{font-size:10px}.access-banner span{color:#475467}
+      .access-banner strong{font-size:10px}.access-banner span{color:#475467;flex:1}
       .access-banner.editor{background:#ecfdf3;color:#067647;border-color:#abefc6}.access-banner.viewer{background:#fffaeb;color:#b54708;border-color:#fedf89}
+      #shift-v2-takeover-editor{border:1px solid #f79009;background:#fff;color:#b54708;border-radius:7px;padding:5px 9px;font:800 9px/1.2 'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap}
+      #shift-v2-takeover-editor:hover{background:#fffaeb}
       .shift-v2-headquarters-readonly #view-master{display:none!important}
       .shift-v2-headquarters-readonly .shift-bar{cursor:default!important}
       .shift-v2-headquarters-readonly [data-handle]{display:none!important}
