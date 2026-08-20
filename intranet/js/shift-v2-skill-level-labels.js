@@ -13,6 +13,7 @@
     '一人で担当できる',
     '他の従業員を教育できる',
   ];
+  let timer = null;
 
   if (window.__shiftV2SkillLevelLabelsInstalled) return;
   window.__shiftV2SkillLevelLabelsInstalled = true;
@@ -22,14 +23,29 @@
 
   function init() {
     patchAll();
-    observe(document.getElementById('view-master'));
-    observe(document.getElementById('view-rules'));
-    document.addEventListener('click', () => setTimeout(patchAll, 50), true);
+    bindEvents();
   }
 
-  function observe(root) {
-    if (!root) return;
-    new MutationObserver(() => patchAll()).observe(root, { childList:true, subtree:true });
+  function bindEvents() {
+    document.addEventListener('click', event => {
+      if (event.target.closest?.('.tab[data-view="master"],.tab[data-view="rules"],[data-unified-master],#master-manage-skills,[data-master-skill]')) schedule(40);
+    }, false);
+
+    document.addEventListener('input', event => {
+      if (event.target?.id === 'master-search') schedule(20);
+    }, false);
+
+    document.addEventListener('change', event => {
+      if (event.target?.matches?.('#master-employment,#master-store,#master-inactive,[data-master-plan],#stable-store')) schedule(20);
+    }, false);
+
+    document.addEventListener('shiftv2-auth', () => schedule(260));
+    document.addEventListener('shiftv2-master-rendered', () => schedule(0));
+  }
+
+  function schedule(delay = 0) {
+    clearTimeout(timer);
+    timer = setTimeout(patchAll, delay);
   }
 
   function patchAll() {
@@ -43,15 +59,9 @@
     document.querySelectorAll('#view-master .skill-legend-item').forEach((node, index) => {
       const level = Number(node.querySelector('b')?.textContent ?? index);
       if (!Number.isInteger(level) || level < 0 || level > 3) return;
-      const b = node.querySelector('b');
-      node.innerHTML = '';
-      if (b) node.appendChild(b);
-      else {
-        const num = document.createElement('b');
-        num.textContent = String(level);
-        node.appendChild(num);
-      }
-      node.append(document.createTextNode(LABELS[level]));
+      const expected = `${level}${LABELS[level]}`;
+      if ((node.textContent || '').replace(/\s+/g, '') === expected.replace(/\s+/g, '')) return;
+      node.innerHTML = `<b>${level}</b>${esc(LABELS[level])}`;
     });
   }
 
@@ -60,10 +70,12 @@
       const level = levelFrom(button);
       if (level < 0) return;
       const span = button.querySelector('span');
-      if (span) span.textContent = LABELS[level];
-      if (button.title) {
-        const prefix = button.title.split(':')[0];
-        button.title = `${prefix}: ${level} ${LABELS[level]}`;
+      if (span && span.textContent !== LABELS[level]) span.textContent = LABELS[level];
+      const title = button.title || '';
+      if (title) {
+        const prefix = title.split(':')[0];
+        const expected = `${prefix}: ${level} ${LABELS[level]}`;
+        if (title !== expected) button.title = expected;
       }
     });
   }
@@ -74,8 +86,8 @@
       if (level < 0 || level > 3) return;
       const strong = node.querySelector('strong');
       const small = node.querySelector('small');
-      if (strong) strong.textContent = LABELS[level];
-      if (small) small.textContent = DETAIL[level];
+      if (strong && strong.textContent !== LABELS[level]) strong.textContent = LABELS[level];
+      if (small && small.textContent !== DETAIL[level]) small.textContent = DETAIL[level];
     });
   }
 
@@ -84,7 +96,9 @@
       const value = Number(option.value);
       if (!Number.isInteger(value) || value < 0 || value > 3) return;
       const text = option.textContent || '';
-      if (/Lv|未経験|できる|任せ|教育|サポート|一人/.test(text)) option.textContent = `${value} ${LABELS[value]}`;
+      if (!/Lv|未経験|できる|任せ|教育|サポート|一人/.test(text)) return;
+      const expected = `${value} ${LABELS[value]}`;
+      if (text !== expected) option.textContent = expected;
     });
   }
 
@@ -92,5 +106,9 @@
     for (let i = 0; i <= 3; i += 1) if (button.classList.contains(`level-${i}`)) return i;
     const b = Number(button.querySelector('b')?.textContent ?? -1);
     return Number.isInteger(b) && b >= 0 && b <= 3 ? b : -1;
+  }
+
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
 })();
