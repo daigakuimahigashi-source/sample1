@@ -4,8 +4,10 @@
   const AFTER_APPLY_KEY = 'okk_shift_v2_guided_after_apply';
   const TARGET_DATE_KEY = 'okk_shift_v2_guided_target_date';
   const TARGET_STORE_KEY = 'okk_shift_v2_guided_target_store';
+  const TARGET_CONTEXT_KEY = 'okk_shift_v2_guided_target_context';
   const STYLE_ID = 'shift-v2-guided-ui-style';
   const GUIDE_ID = 'shift-v2-guided-help';
+  const REPAIR_ID = 'guided-repair-focus';
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
@@ -21,7 +23,6 @@
     const observer = new MutationObserver(() => enhanceUi());
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 月間AUTO反映後は、ユーザーが確認したい日・店舗に自動で移動する。
     setTimeout(restoreAfterApply, 900);
   }
 
@@ -30,11 +31,7 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      #${GUIDE_ID}{
-        margin:10px 0 12px;padding:10px 12px;border:1px solid #dbe4f0;border-left:4px solid #344054;
-        border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;
-        box-shadow:0 4px 14px rgba(16,24,40,.04);font-family:'Noto Sans JP',sans-serif
-      }
+      #${GUIDE_ID}{margin:10px 0 12px;padding:10px 12px;border:1px solid #dbe4f0;border-left:4px solid #344054;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 14px rgba(16,24,40,.04);font-family:'Noto Sans JP',sans-serif}
       #${GUIDE_ID} .guide-main{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
       #${GUIDE_ID} strong{font-size:12px;color:#101828;white-space:nowrap}
       #${GUIDE_ID} span{font-size:10px;color:#667085;font-weight:700}
@@ -47,10 +44,14 @@
       .month-shortage.guided-shortage::after{content:'確認先に選ぶ';position:absolute;right:7px;top:6px;font-size:8px;font-weight:900;color:#667085;background:#fff;border:1px solid #e4e7ec;border-radius:999px;padding:2px 6px}
       .month-shortage.guided-shortage.guided-selected{outline:2px solid #344054;outline-offset:1px;background:#fff9f8}
       .month-shortage.guided-shortage.guided-selected::after{content:'反映後にここを開く';color:#fff;background:#344054;border-color:#344054}
+      #${REPAIR_ID}{margin:0 0 12px;padding:10px 12px;border:1px solid #fedf89;border-left:4px solid #f79009;border-radius:10px;background:#fffcf5;font-family:'Noto Sans JP',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+      #${REPAIR_ID} .repair-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+      #${REPAIR_ID} strong{font-size:11px;color:#7a2e0e}#${REPAIR_ID} span{font-size:9px;color:#93370d;font-weight:800}#${REPAIR_ID} b{font-size:9px;color:#101828;background:#fff;border:1px solid #fedf89;border-radius:999px;padding:4px 7px}
+      #${REPAIR_ID} .repair-actions{display:flex;gap:6px}
       .guided-flash{animation:guidedFlash 1.1s ease 2}
       @keyframes guidedFlash{0%,100%{box-shadow:0 0 0 0 rgba(52,64,84,0)}50%{box-shadow:0 0 0 5px rgba(52,64,84,.18)}}
       #guided-toast{position:fixed;left:50%;top:88px;transform:translateX(-50%);z-index:10050;background:#101828;color:#fff;padding:10px 14px;border-radius:10px;font:800 11px/1.6 'Noto Sans JP',sans-serif;box-shadow:0 12px 30px rgba(16,24,40,.22);max-width:min(640px,90vw);text-align:center}
-      @media(max-width:900px){#${GUIDE_ID}{align-items:flex-start;flex-direction:column}#${GUIDE_ID} .guide-main{display:block}#${GUIDE_ID} .guide-arrow{display:none}}
+      @media(max-width:900px){#${GUIDE_ID}{align-items:flex-start;flex-direction:column}#${GUIDE_ID} .guide-main{display:block}#${GUIDE_ID} .guide-arrow{display:none}#${REPAIR_ID}{align-items:flex-start}}
     `;
     document.head.appendChild(style);
   }
@@ -100,14 +101,8 @@
     if (notice && !modal.querySelector('.month-builder-guide')) {
       const guide = document.createElement('div');
       guide.className = 'month-builder-guide';
-      guide.innerHTML = '<strong>ここでは月間案を作るだけです。</strong> 不足カードを押すと「反映後に確認する日・店舗」を選べます。最後に右下の「この案を反映」を押すと、その日・店舗の日別編集画面へ移動します。';
+      guide.innerHTML = '<strong>ここでは月間案を作るだけです。</strong> 不足カードを押すと「反映後に確認する日・店舗」を選べます。反映後は、不足時間帯と不足条件も日別画面に残します。';
       notice.insertAdjacentElement('afterend', guide);
-    }
-
-    const calc = document.getElementById('month-builder-calc');
-    if (calc && calc.dataset.guidedEnhanced !== '1') {
-      calc.dataset.guidedEnhanced = '1';
-      calc.innerHTML = '<i class="fa-solid fa-rotate"></i> 再計算';
     }
 
     const apply = document.getElementById('month-builder-apply');
@@ -143,8 +138,17 @@
         const storeId = shortage.dataset.store || '';
         const storeName = shortage.dataset.storeName || '';
         sessionStorage.setItem(TARGET_DATE_KEY, date);
-        if (storeId) sessionStorage.setItem(TARGET_STORE_KEY, storeId);
-        else sessionStorage.removeItem(TARGET_STORE_KEY);
+        if (storeId) sessionStorage.setItem(TARGET_STORE_KEY, storeId); else sessionStorage.removeItem(TARGET_STORE_KEY);
+        sessionStorage.setItem(TARGET_CONTEXT_KEY, JSON.stringify({
+          date,
+          storeId,
+          storeName,
+          windows: shortage.dataset.windows || '',
+          skills: shortage.dataset.skills || '',
+          maxShortage: shortage.dataset.maxShortage || '',
+          start: shortage.dataset.windowStart || '',
+          end: shortage.dataset.windowEnd || '',
+        }));
         document.querySelectorAll('#month-builder-modal .month-shortage').forEach(card => card.classList.remove('guided-selected'));
         shortage.classList.add('guided-selected');
         showToast(`${formatDate(date)}${storeName ? `・${storeName}` : ''} を、反映後に個別修正で開きます`);
@@ -161,6 +165,29 @@
         const target = selected || firstShortage || (month ? `${month}-01` : '');
         if (target) sessionStorage.setItem(AFTER_APPLY_KEY, target);
         if (!sessionStorage.getItem(TARGET_STORE_KEY) && firstStore) sessionStorage.setItem(TARGET_STORE_KEY, firstStore);
+        if (!sessionStorage.getItem(TARGET_CONTEXT_KEY) && firstCard) {
+          sessionStorage.setItem(TARGET_CONTEXT_KEY, JSON.stringify({
+            date:firstShortage,
+            storeId:firstStore,
+            storeName:firstCard.dataset.storeName || '',
+            windows:firstCard.dataset.windows || '',
+            skills:firstCard.dataset.skills || '',
+            maxShortage:firstCard.dataset.maxShortage || '',
+            start:firstCard.dataset.windowStart || '',
+            end:firstCard.dataset.windowEnd || '',
+          }));
+        }
+        return;
+      }
+
+      if (event.target.closest?.('[data-repair-dismiss]')) {
+        document.getElementById(REPAIR_ID)?.remove();
+        sessionStorage.removeItem(TARGET_CONTEXT_KEY);
+        return;
+      }
+
+      if (event.target.closest?.('[data-repair-scroll]')) {
+        document.getElementById('gantt-scroll')?.scrollIntoView({ behavior:'smooth', block:'center' });
         return;
       }
 
@@ -180,16 +207,38 @@
     const target = sessionStorage.getItem(AFTER_APPLY_KEY);
     if (!target) return;
     const targetStore = sessionStorage.getItem(TARGET_STORE_KEY) || '';
+    const context = readTargetContext();
     sessionStorage.removeItem(AFTER_APPLY_KEY);
     sessionStorage.removeItem(TARGET_DATE_KEY);
     sessionStorage.removeItem(TARGET_STORE_KEY);
 
-    // month-builder本体の復元処理より後に上書きする。
     setTimeout(() => {
       openDate(target, targetStore);
       const storeName = selectPlannerStore(targetStore);
-      showToast(`月間一括作成を反映しました。${formatDate(target)}${storeName ? `・${storeName}` : ''} を開いています。配置済みスタッフの「編集」から個別修正できます。`, 6500);
+      installRepairFocus(context);
+      showToast(`月間一括作成を反映しました。${formatDate(target)}${storeName ? `・${storeName}` : ''} を開いています。上の「今回の修正ポイント」を見て個別修正してください。`, 6500);
     }, 450);
+  }
+
+  function installRepairFocus(context) {
+    if (!context?.date) return;
+    document.getElementById(REPAIR_ID)?.remove();
+    const guide = document.getElementById(GUIDE_ID);
+    if (!guide) return;
+    const panel = document.createElement('div');
+    panel.id = REPAIR_ID;
+    panel.innerHTML = `
+      <div class="repair-main">
+        <strong><i class="fa-solid fa-triangle-exclamation"></i> 今回の修正ポイント</strong>
+        <b>${esc(formatDate(context.date))}${context.storeName ? `・${esc(context.storeName)}` : ''}</b>
+        ${context.windows ? `<span>不足時間帯：${esc(context.windows)}</span>` : ''}
+        ${context.maxShortage ? `<span>最大不足：${esc(context.maxShortage)}人</span>` : ''}
+        ${context.skills ? `<span>不足条件：${esc(context.skills)}</span>` : ''}
+      </div>
+      <div class="repair-actions"><button type="button" class="btn btn-light btn-small" data-repair-scroll><i class="fa-solid fa-arrow-down"></i> ガントを見る</button><button type="button" class="btn btn-light btn-small" data-repair-dismiss>閉じる</button></div>`;
+    guide.insertAdjacentElement('afterend', panel);
+    panel.classList.add('guided-flash');
+    setTimeout(() => panel.classList.remove('guided-flash'), 2400);
   }
 
   function openDate(date, storeId = '') {
@@ -220,6 +269,15 @@
     return button.textContent?.trim() || '';
   }
 
+  function readTargetContext() {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(TARGET_CONTEXT_KEY));
+      return value && typeof value === 'object' ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
   function parseDate(text) {
     const match = String(text || '').match(/20\d{2}-\d{2}-\d{2}/);
     return match ? match[0] : '';
@@ -233,6 +291,10 @@
   function cssEsc(value) {
     if (window.CSS?.escape) return CSS.escape(String(value));
     return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+  }
+
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
 
   function showToast(message, duration = 3200) {
