@@ -21,7 +21,7 @@ const ADMIN_EMAILS = [
   'rreeeccoo05@gmail.com',         // 荒井令子
   'matayoshi.mw@gmail.com',        // 又吉佳祐
   '010420.love@gmail.com',         // 又吉未愉
-  // 又吉達郎：メールアドレス確定後に追加
+  'tatu19960104@gmail.com',        // 又吉達郎
 ];
 
 const app  = initializeApp(firebaseConfig);
