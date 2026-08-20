@@ -92,7 +92,7 @@
         lead.className = 'manager-shortage-lead';
         wrap.insertAdjacentElement('beforebegin', lead);
       }
-      lead.innerHTML = '<strong>1店舗×1日でまとめています。</strong><span>不足カードを選ぶと、反映後にその日・その店舗を開いて個別修正できます。</span>';
+      lead.innerHTML = '<strong>1店舗×1日でまとめています。</strong><span>不足カードを選ぶと、反映後にその日・店舗・不足時間帯まで引き継いで個別修正できます。</span>';
     } else {
       lead?.remove();
     }
@@ -121,7 +121,9 @@
   function renderGroup(group) {
     const windows = group.windows.map(window => `${fmtTime(window.start)}-${fmtTime(window.end)}`).join(' / ') || '要確認';
     const skills = group.skills.slice(0,5).join(' / ') + (group.skills.length > 5 ? ` ほか${group.skills.length - 5}` : '');
-    return `<div class="month-shortage hard manager-shortage-card" data-date="${esc(group.date)}" data-store="${esc(group.storeId)}" data-store-name="${esc(group.storeName)}">
+    const firstStart = group.windows.length ? group.windows[0].start : '';
+    const lastEnd = group.windows.length ? group.windows[group.windows.length - 1].end : '';
+    return `<div class="month-shortage hard manager-shortage-card" data-date="${esc(group.date)}" data-store="${esc(group.storeId)}" data-store-name="${esc(group.storeName)}" data-window-start="${esc(firstStart)}" data-window-end="${esc(lastEnd)}" data-windows="${esc(windows)}" data-skills="${esc(skills)}" data-max-shortage="${esc(formatNeed(group.maxShortage))}">
       <b>${esc(group.date)} ${esc(group.storeName)}</b>
       <span><strong>不足時間帯</strong> ${esc(windows)}</span>
       <span><strong>最大不足目安</strong> ${formatNeed(group.maxShortage)}人</span>
