@@ -2,10 +2,19 @@
   'use strict';
 
   const STAFF_KEY = 'okk_shift_v2_staff';
+  const STORES_KEY = 'okk_shift_v2_config';
+  const READINESS_KEY = 'okk_shift_v2_master_readiness_v1';
   const REVIEW_KEY = 'okk_shift_v2_skill_reviewed_v1';
   const FILTER_KEY = 'okk_shift_v2_skill_filter_v1';
+  const FILTER_MIGRATION_KEY = 'okk_shift_v2_skill_filter_v2_ready';
   const STYLE_ID = 'shift-v2-field-hearing-finish-style';
   const CONTROLS_ID = 'fhf-skill-controls';
+  const DEFAULT_STORES = [
+    { id:'matsuyama', name:'松山店' },
+    { id:'kumoji', name:'久茂地店' },
+    { id:'miebashi', name:'美栄橋店' },
+    { id:'misato', name:'美里店' },
+  ];
   const LEVEL_TEXT = {
     0: '未経験',
     1: 'できる',
@@ -20,6 +29,7 @@
   else init();
 
   function init() {
+    migrateFilters();
     injectStyles();
     patch();
     observer = new MutationObserver(schedulePatch);
@@ -54,14 +64,14 @@
 
   function patchCopy(view) {
     const heroText = view.querySelector('.rs-hero p');
-    const nextHero = '現場で確認するのは2つだけです。①スタッフのスキル → ②店舗・時間ごとの必要人数。入力が終わったら確認済みにします。';
+    const nextHero = '現場で確認するのは2つだけです。①スタッフのスキル → ②店舗・時間ごとの必要人数。スキルは入力後に「この内容で確認」を押して確定します。';
     if (heroText && heroText.textContent !== nextHero) heroText.textContent = nextHero;
 
     const staffTitle = document.querySelector('#rs-staff .rs-head h3');
     if (staffTitle && staffTitle.textContent !== '1. スタッフのスキル') staffTitle.textContent = '1. スタッフのスキル';
 
     const staffHelp = document.querySelector('#rs-staff .rs-head small');
-    const help = '各スキルをクリックして設定。0 未経験 / 1 できる / 2 任せられる / 3 教えられる';
+    const help = '① 0〜3を入力 → ② その人の「この内容で確認」を押す。0 未経験 / 1 できる / 2 任せられる / 3 教えられる';
     if (staffHelp && staffHelp.textContent !== help) staffHelp.textContent = help;
   }
 
@@ -76,16 +86,16 @@
     controls.className = 'fhf-controls';
     controls.innerHTML = `
       <div class="fhf-filter-block">
-        <span class="fhf-label">表示</span>
+        <span class="fhf-label">絞り込み</span>
         <div class="fhf-segment" role="group" aria-label="雇用区分で絞り込み">
           <button type="button" data-fhf-employment="all">全員</button>
           <button type="button" data-fhf-employment="fulltime">正社員</button>
           <button type="button" data-fhf-employment="parttime">アルバイト</button>
         </div>
-        <label class="fhf-unreviewed"><input id="fhf-only-unreviewed" type="checkbox"> 未確認だけ</label>
+        <label class="fhf-unreviewed"><input id="fhf-only-unreviewed" type="checkbox"> <strong>未確認の人だけ表示</strong></label>
       </div>
       <div class="fhf-progress-wrap">
-        <div class="fhf-progress-copy"><strong id="fhf-progress-text">確認 0 / 0名</strong><span id="fhf-progress-note">未確認を順番に入力</span></div>
+        <div class="fhf-progress-copy"><strong id="fhf-progress-text">確認 0 / 0名</strong><span id="fhf-progress-note">入力後に確認ボタン</span></div>
         <div class="fhf-progress"><span id="fhf-progress-bar"></span></div>
       </div>
       <div class="fhf-legend" aria-label="スキルレベルの意味">
@@ -105,7 +115,7 @@
       const level = clampLevel(button.textContent);
       button.dataset.fhfLevel = String(level);
       button.title = `Lv${level}：${LEVEL_TEXT[level]}（クリックで次のLvへ）`;
-      button.setAttribute('aria-label', `${button.closest('tr')?.querySelector('.rs-person-name')?.textContent || 'スタッフ'} ${button.closest('td')?.cellIndex || ''} Lv${level} ${LEVEL_TEXT[level]}`);
+      button.setAttribute('aria-label', `${button.closest('tr')?.querySelector('.rs-person-name')?.textContent || 'スタッフ'} Lv${level} ${LEVEL_TEXT[level]}`);
     });
   }
 
@@ -138,7 +148,7 @@
       const label = isReviewed ? '確認済み' : (allZero ? '0のまま確認' : 'この内容で確認');
       if (action.textContent !== label) action.textContent = label;
       action.classList.toggle('reviewed', isReviewed);
-      action.title = isReviewed ? 'クリックすると未確認へ戻します' : '数値を変更しない場合も、この内容で確認済みにできます';
+      action.title = isReviewed ? 'クリックすると未確認へ戻します' : 'この人の8項目を確認済みにします';
     });
   }
 
@@ -162,8 +172,7 @@
 
   function updateProgress() {
     const reviewed = reviewedSet();
-    const rows = Array.from(document.querySelectorAll('#rs-staff-body tr[data-person]')).filter(row => !row.classList.contains('fh-store-hidden'));
-    const ids = Array.from(new Set(rows.map(row => normalizeId(row.dataset.person)).filter(Boolean)));
+    const ids = currentStoreRowIds();
     const done = ids.filter(id => reviewed.has(id)).length;
     const total = ids.length;
     const remaining = Math.max(0, total - done);
@@ -173,12 +182,12 @@
     const note = document.getElementById('fhf-progress-note');
     const bar = document.getElementById('fhf-progress-bar');
     if (text) text.textContent = `確認 ${done} / ${total}名`;
-    if (note) note.textContent = remaining ? `残り${remaining}名` : (total ? 'この店舗は確認完了' : '対象スタッフなし');
+    if (note) note.textContent = remaining ? `残り${remaining}名` : (total ? 'この店舗は入力確認完了' : '対象スタッフなし');
     if (bar) bar.style.width = `${pct}%`;
 
     const count = document.getElementById('fh-visible-count');
     if (count && total) {
-      const storeName = document.getElementById('fh-store')?.selectedOptions?.[0]?.textContent || '対象店舗';
+      const storeName = currentStoreName() || '対象店舗';
       count.innerHTML = `<strong>${esc(storeName)}</strong> ${total}名 / <span>${remaining}名 未確認</span>`;
     }
 
@@ -205,14 +214,34 @@
   }
 
   function patchMasterConfirmButton() {
-    const button = document.querySelector('[data-fh-confirm="staff"]');
+    const button = document.querySelector('[data-fh-confirm="staff"],[data-fh-confirm="staff-store"]');
     if (!button) return;
-    const staff = eligibleStaff();
-    const reviewed = reviewedSet();
-    const done = staff.filter(person => reviewed.has(normalizeId(person.id || person.employeeNumber))).length;
-    const remaining = Math.max(0, staff.length - done);
+    button.dataset.fhConfirm = 'staff-store';
+
+    const storeId = currentStoreId();
+    const stores = loadStores();
+    const s = readiness();
+    const confirmedStores = new Set(s.staffSkillsConfirmedStores || []);
+    const label = button.querySelector('span');
     const state = button.querySelector('b');
-    if (!button.classList.contains('confirmed') && state) state.textContent = remaining ? `残り${remaining}名` : '確認可能';
+
+    if (!storeId) {
+      const count = stores.filter(store => confirmedStores.has(String(store.id))).length;
+      button.classList.toggle('confirmed', count === stores.length && stores.length > 0);
+      button.disabled = true;
+      if (label) label.textContent = '人員・スキル';
+      if (state) state.textContent = `${count}/${stores.length}店舗`;
+      return;
+    }
+
+    const ids = currentStoreRowIds();
+    const reviewed = reviewedSet();
+    const remaining = ids.filter(id => !reviewed.has(id)).length;
+    const confirmed = confirmedStores.has(storeId);
+    button.disabled = false;
+    button.classList.toggle('confirmed', confirmed);
+    if (label) label.textContent = `${currentStoreName()} 人員・スキル`;
+    if (state) state.textContent = confirmed ? '確認済み' : (remaining ? `残り${remaining}名` : '確認可能');
   }
 
   function onClick(event) {
@@ -236,20 +265,17 @@
 
     const level = event.target.closest?.('#rs-staff-body .rs-lv');
     if (level) {
-      const id = level.closest('tr[data-person]')?.dataset.person;
-      if (id) markReviewed(id);
+      // 数字を触っただけでは「確認済み」にしない。
+      // その人の8項目を入力後、左側の確認ボタンを明示的に押して確定する。
       setTimeout(schedulePatch, 30);
       return;
     }
 
-    const masterConfirm = event.target.closest?.('[data-fh-confirm="staff"]');
-    if (masterConfirm && !masterConfirm.classList.contains('confirmed')) {
-      const remaining = eligibleStaff().filter(person => !reviewedSet().has(normalizeId(person.id || person.employeeNumber))).length;
-      if (remaining > 0) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        showToast(`人員・スキルはあと${remaining}名未確認です。「未確認だけ」で順番に確認してください。`);
-      }
+    const storeConfirm = event.target.closest?.('[data-fh-confirm="staff-store"]');
+    if (storeConfirm) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleCurrentStoreSkillConfirmation();
     }
   }
 
@@ -268,10 +294,28 @@
     if (event.target?.id === 'rs-staff-search') setTimeout(schedulePatch, 30);
   }
 
-  function markReviewed(id) {
-    const set = reviewedSet();
-    set.add(normalizeId(id));
-    saveReviewed(set);
+  function toggleCurrentStoreSkillConfirmation() {
+    const storeId = currentStoreId();
+    if (!storeId) return;
+    const ids = currentStoreRowIds();
+    const reviewed = reviewedSet();
+    const remaining = ids.filter(id => !reviewed.has(id)).length;
+    if (remaining > 0) {
+      showToast(`${currentStoreName()}はあと${remaining}名未確認です。入力後に各スタッフの「この内容で確認」を押してください。`);
+      return;
+    }
+
+    const s = readiness();
+    const confirmed = new Set(s.staffSkillsConfirmedStores || []);
+    if (confirmed.has(storeId)) confirmed.delete(storeId); else confirmed.add(storeId);
+    s.staffSkillsConfirmedStores = Array.from(confirmed);
+    s.staffSkillsConfirmed = allStoresConfirmed(s.staffSkillsConfirmedStores);
+    s.updatedAt = new Date().toISOString();
+    localStorage.setItem(READINESS_KEY, JSON.stringify(s));
+
+    const mirror = document.getElementById('mr-staff-skills');
+    if (mirror) mirror.checked = s.staffSkillsConfirmed;
+    schedulePatch();
   }
 
   function toggleReviewed(id) {
@@ -294,15 +338,21 @@
     localStorage.setItem(REVIEW_KEY, JSON.stringify(Array.from(set)));
   }
 
+  function migrateFilters() {
+    if (sessionStorage.getItem(FILTER_MIGRATION_KEY) === '1') return;
+    saveFilters({ employment:'all', onlyUnreviewed:false });
+    sessionStorage.setItem(FILTER_MIGRATION_KEY, '1');
+  }
+
   function loadFilters() {
     try {
       const value = JSON.parse(sessionStorage.getItem(FILTER_KEY));
       return {
         employment: ['all', 'fulltime', 'parttime'].includes(value?.employment) ? value.employment : 'all',
-        onlyUnreviewed: value?.onlyUnreviewed !== false,
+        onlyUnreviewed: Boolean(value?.onlyUnreviewed),
       };
     } catch {
-      return { employment: 'all', onlyUnreviewed: true };
+      return { employment: 'all', onlyUnreviewed: false };
     }
   }
 
@@ -326,13 +376,52 @@
     return true;
   }
 
-  function eligibleStaff() {
-    return loadStaff().filter(person => {
-      if (!person) return false;
-      if (person.active === false) return false;
-      if (person.shiftTarget === false || person.shiftEnabled === false || person.shiftEligible === false) return false;
-      return Boolean(normalizeId(person.id || person.employeeNumber));
-    });
+  function currentStoreRowIds() {
+    return Array.from(document.querySelectorAll('#rs-staff-body tr[data-person]'))
+      .filter(row => !row.classList.contains('fh-store-hidden'))
+      .map(row => normalizeId(row.dataset.person))
+      .filter(Boolean);
+  }
+
+  function currentStoreId() {
+    return String(document.getElementById('fh-store')?.value || '');
+  }
+
+  function currentStoreName() {
+    const id = currentStoreId();
+    return loadStores().find(store => String(store.id) === id)?.name || '';
+  }
+
+  function readiness() {
+    try {
+      const value = JSON.parse(localStorage.getItem(READINESS_KEY));
+      const stores = loadStores();
+      let staffStores = Array.isArray(value?.staffSkillsConfirmedStores) ? value.staffSkillsConfirmedStores.map(String) : [];
+      if (!staffStores.length && value?.staffSkillsConfirmed === true) staffStores = stores.map(store => String(store.id));
+      return {
+        ...value,
+        staffSkillsConfirmed:Boolean(value?.staffSkillsConfirmed),
+        staffSkillsConfirmedStores:staffStores,
+        staffingNeedConfirmed:Boolean(value?.staffingNeedConfirmed),
+        staffingNeedConfirmedStores:Array.isArray(value?.staffingNeedConfirmedStores) ? value.staffingNeedConfirmedStores.map(String) : [],
+      };
+    } catch {
+      return { staffSkillsConfirmed:false, staffSkillsConfirmedStores:[], staffingNeedConfirmed:false, staffingNeedConfirmedStores:[] };
+    }
+  }
+
+  function allStoresConfirmed(ids) {
+    const set = new Set((ids || []).map(String));
+    const stores = loadStores();
+    return Boolean(stores.length) && stores.every(store => set.has(String(store.id)));
+  }
+
+  function loadStores() {
+    try {
+      const value = JSON.parse(localStorage.getItem(STORES_KEY));
+      if (Array.isArray(value) && value.length) return value;
+    } catch {}
+    return DEFAULT_STORES;
   }
 
   function loadStaff() {
@@ -378,10 +467,10 @@
     style.id = STYLE_ID;
     style.textContent = `
       #view-rules .fhf-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:9px 10px;border-top:1px solid #eaecf0;border-bottom:1px solid #eaecf0;background:#fcfcfd}
-      #view-rules .fhf-filter-block{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.fhf-label{font-size:9px;font-weight:900;color:#475467}.fhf-segment{display:flex;padding:2px;background:#f2f4f7;border-radius:8px}.fhf-segment button{border:0;background:transparent;border-radius:6px;padding:6px 9px;color:#667085;font-size:9px;font-weight:800;cursor:pointer}.fhf-segment button.active{background:#fff;color:#101828;box-shadow:0 1px 4px rgba(16,24,40,.12)}.fhf-unreviewed{display:flex;align-items:center;gap:5px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;padding:6px 9px;font-size:9px;font-weight:900;color:#344054;cursor:pointer}
+      #view-rules .fhf-filter-block{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.fhf-label{font-size:9px;font-weight:900;color:#475467}.fhf-segment{display:flex;padding:2px;background:#f2f4f7;border-radius:8px}.fhf-segment button{border:0;background:transparent;border-radius:6px;padding:6px 9px;color:#667085;font-size:9px;font-weight:800;cursor:pointer}.fhf-segment button.active{background:#fff;color:#101828;box-shadow:0 1px 4px rgba(16,24,40,.12)}.fhf-unreviewed{display:flex;align-items:center;gap:5px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;padding:6px 9px;font-size:9px;color:#344054;cursor:pointer}.fhf-unreviewed strong{font-weight:900}
       #view-rules .fhf-progress-wrap{min-width:190px}.fhf-progress-copy{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:8px;color:#667085}.fhf-progress-copy strong{font-size:9px;color:#344054}.fhf-progress{height:5px;margin-top:4px;border-radius:999px;background:#eaecf0;overflow:hidden}.fhf-progress span{display:block;height:100%;width:0;background:#12b76a;border-radius:inherit;transition:width .18s ease}
       #view-rules .fhf-legend{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.fhf-legend span{display:flex;align-items:center;gap:3px;border-radius:999px;padding:3px 6px;font-size:8px;font-weight:800;color:#475467;background:#fff;border:1px solid #e4e7ec}.fhf-legend b{display:grid;place-items:center;width:15px;height:15px;border-radius:50%;font-size:8px}.fhf-legend .lv0 b{background:#f2f4f7}.fhf-legend .lv1 b{background:#eff8ff;color:#175cd3}.fhf-legend .lv2 b{background:#ecfdf3;color:#067647}.fhf-legend .lv3 b{background:#f4f3ff;color:#5925dc}
-      #view-rules #rs-staff-body tr.fhf-hidden{display:none!important}.fhf-review-action{display:inline-flex;margin:4px 0 0;border:1px solid #d0d5dd;background:#fff;color:#475467;border-radius:7px;padding:3px 6px;font-size:8px;font-weight:900;cursor:pointer}.fhf-review-action:hover{background:#f8fafc}.fhf-review-action.reviewed{background:#ecfdf3;border-color:#abefc6;color:#067647}.fh-person-status.set{background:#ecfdf3!important;color:#067647!important}.fh-person-status.unset{background:#fffaeb!important;color:#b54708!important}
+      #view-rules #rs-staff-body tr.fhf-hidden{display:none!important}.fhf-review-action{display:inline-flex;margin:4px 0 0;border:1px solid #d0d5dd;background:#fff;color:#475467;border-radius:7px;padding:4px 7px;font-size:8px;font-weight:900;cursor:pointer}.fhf-review-action:hover{background:#f8fafc}.fhf-review-action.reviewed{background:#ecfdf3;border-color:#abefc6;color:#067647}.fh-person-status.set{background:#ecfdf3!important;color:#067647!important}.fh-person-status.unset{background:#fffaeb!important;color:#b54708!important}
       #view-rules #rs-staff-body .rs-lv{transition:transform .1s ease,box-shadow .1s ease}#view-rules #rs-staff-body .rs-lv:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(16,24,40,.14)}
       @media(max-width:900px){#view-rules .fhf-controls{align-items:stretch;flex-direction:column}.fhf-progress-wrap{width:100%}.fhf-legend{width:100%}}
     `;
