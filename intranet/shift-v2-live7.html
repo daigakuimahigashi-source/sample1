@@ -63,7 +63,8 @@
         'shift-v2-quick-add.js',
         'shift-v2-month-shortage-presenter.js',
         'shift-v2-master-readiness.js',
-        'shift-v2-field-hearing.js'
+        'shift-v2-field-hearing.js',
+        'shift-v2-field-hearing-finish.js'
       ];
 
       function loadScript(src) {
@@ -78,7 +79,7 @@
       }
 
       async function boot() {
-        const response = await fetch('./shift-v2.html?v=live7aq-' + Date.now(), { cache: 'no-store' });
+        const response = await fetch('./shift-v2.html?v=live7ar-' + Date.now(), { cache: 'no-store' });
         if (!response.ok) throw new Error(`画面テンプレート HTTP ${response.status}`);
         const html = await response.text();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
@@ -86,12 +87,12 @@
         document.body.innerHTML = parsed.body.innerHTML;
 
         for (const file of localScripts) {
-          await loadScript('./js/' + file + '?v=live7aq');
+          await loadScript('./js/' + file + '?v=live7ar');
         }
 
         const build = document.createElement('div');
         build.id = 'v2-live-build';
-        build.textContent = 'LIVE7AQ';
+        build.textContent = 'LIVE7AR';
         document.body.appendChild(build);
 
         document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
