@@ -8,6 +8,11 @@
   const STYLE_ID = 'shift-v2-staff-review-style';
   const FILTER_ID = 'stable-unreviewed-only';
 
+  let tableObserver = null;
+  let observedHead = null;
+  let observedBody = null;
+  let tableRefreshQueued = false;
+
   if (window.__shiftV2StaffReviewInstalled) return;
   window.__shiftV2StaffReviewInstalled = true;
 
@@ -54,7 +59,9 @@
         const personId = normalizeId(skill.closest('tr[data-person]')?.dataset.person);
         // Lv変更は確認完了ではない。既存の確認済み状態があれば全店舗で再確認に戻す。
         if (personId) clearPersonFromAllStores(personId);
-        scheduleRefresh(90);
+        // renderStaff() が表を丸ごと作り直すため、直後と少し後の両方で復元する。
+        scheduleRefresh(0);
+        scheduleRefresh(60);
         return;
       }
 
@@ -97,12 +104,32 @@
     const head = document.getElementById('rs-staff-head');
     if (!staffSection || !body || !head) return;
 
+    observeTableRerenders(head, body);
     installFilter();
     decorateHeader(head);
     decorateRows(body);
     updateProgress();
     applyFilters();
     convertGlobalStaffConfirmToProgress();
+  }
+
+  function observeTableRerenders(head, body) {
+    if (tableObserver && observedHead === head && observedBody === body) return;
+
+    tableObserver?.disconnect();
+    observedHead = head;
+    observedBody = body;
+    tableObserver = new MutationObserver(() => {
+      if (tableRefreshQueued) return;
+      tableRefreshQueued = true;
+      requestAnimationFrame(() => {
+        tableRefreshQueued = false;
+        // head/body の直下差し替えだけを監視。確認セルの追加自体では再発火しない。
+        refresh();
+      });
+    });
+    tableObserver.observe(head, { childList:true, subtree:false });
+    tableObserver.observe(body, { childList:true, subtree:false });
   }
 
   function installFilter() {
@@ -117,7 +144,7 @@
     label.innerHTML = `<input id="${FILTER_ID}" type="checkbox"> <span>未確認の人だけ表示</span>`;
     left.appendChild(label);
 
-    // 初期値は必ずOFF。ユーザーがこのタブ内でONにした時だけsessionStorageで維持。
+    // 初期値はOFF。ユーザーがこの画面内でONにした時だけsessionStorageで維持。
     const saved = sessionStorage.getItem(FILTER_KEY);
     label.querySelector('input').checked = saved === '1';
   }
