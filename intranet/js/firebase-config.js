@@ -2,7 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getDocs }
+import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection, getDocs, runTransaction }
   from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -57,6 +57,66 @@ function fsListen(key, callback) {
   });
 }
 
+// ===== 本部編集席（同時編集は1セッションのみ） =====
+const EDITOR_LEASE_DOC = doc(db, 'runtime', 'shift_editor_lease');
+
+function normalizeLease(snap) {
+  return snap.exists() ? snap.data() : null;
+}
+
+async function acquireEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
+  if (!user || !isAdmin(user) || !sessionId) return { acquired:false, lease:null };
+  const now = Date.now();
+  return runTransaction(db, async transaction => {
+    const snap = await transaction.get(EDITOR_LEASE_DOC);
+    const current = normalizeLease(snap);
+    const expired = !current || Number(current.expiresAt || 0) <= now;
+    const mine = current && current.uid === user.uid && current.sessionId === sessionId;
+    if (!expired && !mine) return { acquired:false, lease:current };
+    const lease = {
+      uid: user.uid,
+      sessionId,
+      email: user.email || '',
+      displayName: user.displayName || user.email || '本部管理者',
+      acquiredAt: mine ? (current.acquiredAt || now) : now,
+      heartbeatAt: now,
+      expiresAt: now + ttlMs,
+    };
+    transaction.set(EDITOR_LEASE_DOC, lease);
+    return { acquired:true, lease };
+  });
+}
+
+async function renewEditorLease(user, sessionId, ttlMs = 5 * 60 * 1000) {
+  if (!user || !sessionId) return { renewed:false, lease:null };
+  const now = Date.now();
+  return runTransaction(db, async transaction => {
+    const snap = await transaction.get(EDITOR_LEASE_DOC);
+    const current = normalizeLease(snap);
+    if (!current || current.uid !== user.uid || current.sessionId !== sessionId) {
+      return { renewed:false, lease:current };
+    }
+    const lease = { ...current, heartbeatAt:now, expiresAt:now + ttlMs };
+    transaction.set(EDITOR_LEASE_DOC, lease);
+    return { renewed:true, lease };
+  });
+}
+
+async function releaseEditorLease(user, sessionId) {
+  if (!user || !sessionId) return false;
+  return runTransaction(db, async transaction => {
+    const snap = await transaction.get(EDITOR_LEASE_DOC);
+    const current = normalizeLease(snap);
+    if (!current || current.uid !== user.uid || current.sessionId !== sessionId) return false;
+    transaction.delete(EDITOR_LEASE_DOC);
+    return true;
+  });
+}
+
+function listenEditorLease(callback) {
+  return onSnapshot(EDITOR_LEASE_DOC, snap => callback(normalizeLease(snap)));
+}
+
 // ===== スタッフアカウント紐付け =====
 const LINK_DOC = (uid) => doc(db, 'staff_links', uid);
 
@@ -107,6 +167,7 @@ export {
   auth, db,
   loginWithGoogle, logout, isAdmin, onAuthStateChanged,
   fsSet, fsGet, fsListen,
+  acquireEditorLease, renewEditorLease, releaseEditorLease, listenEditorLease,
   setStaffLink, getStaffLink,
   savePref, getPref, getAllPrefs, listenPrefs,
 };
