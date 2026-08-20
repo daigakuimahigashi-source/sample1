@@ -3,12 +3,14 @@
 
   const SESSION_KEY = 'okk_shift_v2_editor_session';
   const HEARTBEAT_MS = 60 * 1000;
+  const TAKEOVER_CHECK_MS = 30 * 1000;
   const STYLE_ID = 'shift-v2-access-control-style';
   let user = null;
   let isAdmin = false;
   let lease = null;
   let mode = 'viewer';
   let heartbeat = null;
+  let takeoverTimer = null;
   let sessionId = sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) {
     sessionId = `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`;
@@ -42,22 +44,39 @@
   };
 
   async function onAuth(event) {
-    user = event.detail?.user || null;
-    isAdmin = Boolean(event.detail?.admin);
+    const nextUser = event.detail?.user || null;
+    const nextAdmin = Boolean(event.detail?.admin);
+    const previousUser = user;
+    const wasEditor = mode === 'editor';
+
+    if (wasEditor && previousUser && (!nextUser || nextUser.uid !== previousUser.uid)) {
+      try { await window.shiftV2EditorLease?.release?.(previousUser, sessionId); } catch (error) { console.warn('Editor lease release failed', error); }
+    }
+
+    user = nextUser;
+    isAdmin = nextAdmin;
     stopHeartbeat();
+    stopTakeoverTimer();
+
     if (!user || !isAdmin) {
       mode = 'viewer';
       render();
       return;
     }
+    await tryAcquire();
+  }
+
+  async function tryAcquire() {
     try {
       const result = await window.shiftV2EditorLease?.acquire?.(user, sessionId);
       lease = result?.lease || lease;
       mode = result?.acquired ? 'editor' : 'viewer';
       if (mode === 'editor') startHeartbeat();
+      else startTakeoverTimer();
     } catch (error) {
       console.warn('Editor lease acquire failed', error);
       mode = 'viewer';
+      startTakeoverTimer();
     }
     render();
   }
@@ -65,7 +84,13 @@
   function recalcMode() {
     if (!user || !isAdmin) mode = 'viewer';
     else mode = lease && lease.uid === user.uid && lease.sessionId === sessionId && Number(lease.expiresAt || 0) > Date.now() ? 'editor' : 'viewer';
-    if (mode === 'editor') startHeartbeat(); else stopHeartbeat();
+    if (mode === 'editor') {
+      stopTakeoverTimer();
+      startHeartbeat();
+    } else {
+      stopHeartbeat();
+      if (user && isAdmin) startTakeoverTimer();
+    }
     render();
   }
 
@@ -85,6 +110,19 @@
   function stopHeartbeat() {
     if (heartbeat) clearInterval(heartbeat);
     heartbeat = null;
+  }
+
+  function startTakeoverTimer() {
+    if (takeoverTimer) return;
+    takeoverTimer = setInterval(() => {
+      if (!user || !isAdmin || mode === 'editor') return;
+      if (!lease || Number(lease.expiresAt || 0) <= Date.now()) tryAcquire();
+    }, TAKEOVER_CHECK_MS);
+  }
+
+  function stopTakeoverTimer() {
+    if (takeoverTimer) clearInterval(takeoverTimer);
+    takeoverTimer = null;
   }
 
   function installGuards() {
