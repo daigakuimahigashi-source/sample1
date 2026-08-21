@@ -43,9 +43,10 @@
       if (!window.shiftV2Cloud || !window.shiftV2User) throw new Error('cloud-not-ready');
       await window.shiftV2Cloud.set(CLOUD_STAFF, staff);
 
-      // 旧モジュールが持っている closure state も、保存済みクラウド値へ同期させる。
-      document.dispatchEvent(new CustomEvent('shiftv2-auth', {
-        detail:{ user:window.shiftV2User, admin:Boolean(window.shiftV2IsAdmin) }
+      // 保存後に認証イベントを再発火しない。
+      // 認証再発火は hydrate / lease / UI再描画を連鎖させ、従業員画面を重くするため。
+      document.dispatchEvent(new CustomEvent('shiftv2-master-saved', {
+        detail:{ key:CLOUD_STAFF, count:staff.length }
       }));
       notify('従業員マスタをクラウド保存しました');
     } catch (error) {
