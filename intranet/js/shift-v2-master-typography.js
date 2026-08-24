@@ -34,6 +34,15 @@
       #view-master .master-table th{font-size:11px!important;font-weight:900!important;padding-top:9px!important;padding-bottom:9px!important}
       #view-master .master-table td{font-size:11px!important;padding-top:7px!important;padding-bottom:7px!important}
 
+      /* Keep employee / A-B / affiliation / skill names visible while the page scrolls. */
+      #view-master .master-table thead th{
+        position:sticky!important;
+        top:48px!important;
+        z-index:32!important;
+        background:#fff!important;
+        box-shadow:0 1px 0 #d0d5dd,0 5px 10px rgba(16,24,40,.05)!important;
+      }
+
       #view-master .employee-col{min-width:270px!important;width:270px!important}
       #view-master .employee-button{
         display:flex!important;
