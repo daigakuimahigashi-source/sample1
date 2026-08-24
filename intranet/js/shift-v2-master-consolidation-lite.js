@@ -3,7 +3,10 @@
 
   const STAFF_KEY = 'okk_shift_v2_staff';
   const CLOUD_STAFF = 'staff';
-  let saving = false;
+  let cloudTimer = null;
+  let cloudSaving = false;
+  let pendingSnapshot = null;
+  let pendingMessage = '';
 
   if (window.__shiftV2MasterConsolidationLiteInstalled) return;
   window.__shiftV2MasterConsolidationLiteInstalled = true;
@@ -31,7 +34,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       if (!canEdit()) return;
-      void cycleSkill(skill.dataset.personId, skill.dataset.masterSkill);
+      cycleSkill(skill.dataset.personId, skill.dataset.masterSkill);
     }, true);
 
     document.addEventListener('change', event => {
@@ -40,7 +43,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       if (!canEdit()) return;
-      void savePlan(plan.dataset.masterPlan, plan.value);
+      savePlan(plan.dataset.masterPlan, plan.value);
     }, true);
 
     document.addEventListener('shiftv2-access-changed', () => setTimeout(patchStaticUi, 30));
@@ -68,45 +71,62 @@
     }
   }
 
-  async function cycleSkill(personId, skillId) {
-    if (saving) return;
-    const before = staffList();
-    const next = clone(before);
+  function cycleSkill(personId, skillId) {
+    const next = staffList();
     const person = next.find(item => sameId(item.id, personId));
     if (!person) return;
     if (!person.skillLevels || typeof person.skillLevels !== 'object') person.skillLevels = {};
     const current = clamp(person.skillLevels[skillId]);
     person.skillLevels[skillId] = (current + 1) % 4;
     person.skillUpdatedAt = new Date().toISOString();
-    await persist(next, before, `${person.name || person.id}：スキルLvを更新しました`);
+    persistLocalAndQueue(next, `${person.name || person.id}：スキルLvを更新しました`);
   }
 
-  async function savePlan(personId, value) {
-    if (saving) return;
-    const before = staffList();
-    const next = clone(before);
+  function savePlan(personId, value) {
+    const next = staffList();
     const person = next.find(item => sameId(item.id, personId));
     if (!person || person.employmentType !== '正社員') return;
     person.workPlanId = ['A','B'].includes(value) ? value : '';
     person.workPlanUpdatedAt = new Date().toISOString();
-    await persist(next, before, `${person.name || person.id}：${person.workPlanId || '未設定'}プランを保存しました`);
+    persistLocalAndQueue(next, `${person.name || person.id}：${person.workPlanId || '未設定'}プランを保存しました`);
   }
 
-  async function persist(next, before, message) {
-    saving = true;
+  function persistLocalAndQueue(next, message) {
     localStorage.setItem(STAFF_KEY, JSON.stringify(next));
+
+    // UIは待たせず即時反映。Firestoreは最新状態だけ後追い保存する。
     document.dispatchEvent(new CustomEvent('shiftv2-master-data-changed'));
+    document.dispatchEvent(new CustomEvent('shiftv2-master-render-request'));
+
+    pendingSnapshot = clone(next);
+    pendingMessage = message;
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(flushCloud, 180);
+  }
+
+  async function flushCloud() {
+    if (cloudSaving || !pendingSnapshot) return;
+    if (!window.shiftV2Cloud || !window.shiftV2User) return;
+
+    const snapshot = pendingSnapshot;
+    const message = pendingMessage;
+    pendingSnapshot = null;
+    pendingMessage = '';
+    cloudSaving = true;
+
     try {
-      if (window.shiftV2Cloud && window.shiftV2User) await window.shiftV2Cloud.set(CLOUD_STAFF, next);
-      toast(message);
-      document.dispatchEvent(new CustomEvent('shiftv2-master-render-request'));
+      await window.shiftV2Cloud.set(CLOUD_STAFF, snapshot);
+      // 保存中にさらに操作された場合、古い完了通知は出さない。
+      if (!pendingSnapshot) toast(message);
     } catch (error) {
-      localStorage.setItem(STAFF_KEY, JSON.stringify(before));
-      console.warn('Employee master save failed', error);
-      toast('クラウド保存に失敗したため変更を戻しました');
-      document.dispatchEvent(new CustomEvent('shiftv2-master-render-request'));
+      console.warn('Employee master background save failed', error);
+      toast('クラウド保存に失敗しました。もう一度変更してください');
     } finally {
-      saving = false;
+      cloudSaving = false;
+      if (pendingSnapshot) {
+        clearTimeout(cloudTimer);
+        cloudTimer = setTimeout(flushCloud, 80);
+      }
     }
   }
 
