@@ -34,11 +34,19 @@
       #view-master .master-table th{font-size:11px!important;font-weight:900!important;padding-top:9px!important;padding-bottom:9px!important}
       #view-master .master-table td{font-size:11px!important;padding-top:7px!important;padding-bottom:7px!important}
 
-      /* Keep employee / A-B / affiliation / skill names visible while the page scrolls. */
+      /* Employee list owns its vertical scroll so the column names can stay fixed. */
+      #view-master .master-table-wrap{
+        max-height:calc(100vh - 285px)!important;
+        min-height:260px!important;
+        height:auto!important;
+        overflow:auto!important;
+        position:relative!important;
+        overscroll-behavior:contain;
+      }
       #view-master .master-table thead th{
         position:sticky!important;
-        top:48px!important;
-        z-index:32!important;
+        top:0!important;
+        z-index:40!important;
         background:#fff!important;
         box-shadow:0 1px 0 #d0d5dd,0 5px 10px rgba(16,24,40,.05)!important;
       }
@@ -98,16 +106,9 @@
       #view-master .master-section-tab{font-size:11px!important}
       #view-master .btn{font-size:11px!important}
 
-      /* Keep the project-wide rule: the page owns vertical scrolling. */
-      #view-master .master-table-wrap{
-        max-height:none!important;
-        height:auto!important;
-        overflow-y:visible!important;
-        overflow-x:auto!important;
-      }
-
       @media(max-width:900px){
         #view-master .employee-col{min-width:240px!important;width:240px!important}
+        #view-master .master-table-wrap{max-height:calc(100vh - 250px)!important}
       }
     `;
     document.head.appendChild(style);
