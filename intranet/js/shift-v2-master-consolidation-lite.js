@@ -3,6 +3,7 @@
 
   const STAFF_KEY = 'okk_shift_v2_staff';
   const CLOUD_STAFF = 'staff';
+  const LEVEL_LABELS = ['未経験','サポートがあればできる','一人でできる','教育できる'];
   let cloudTimer = null;
   let cloudSaving = false;
   let pendingSnapshot = null;
@@ -34,15 +35,15 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       if (!canEdit()) return;
-      cycleSkill(skill.dataset.personId, skill.dataset.masterSkill);
+      cycleSkill(skill);
     }, true);
 
     document.addEventListener('change', event => {
       const plan = event.target.closest?.('[data-master-plan]');
       if (!plan) return;
-      event.preventDefault();
       event.stopImmediatePropagation();
       if (!canEdit()) return;
+      updatePlanUi(plan);
       savePlan(plan.dataset.masterPlan, plan.value);
     }, true);
 
@@ -71,14 +72,28 @@
     }
   }
 
-  function cycleSkill(personId, skillId) {
+  function cycleSkill(button) {
+    const personId = button.dataset.personId;
+    const skillId = button.dataset.masterSkill;
     const next = staffList();
     const person = next.find(item => sameId(item.id, personId));
     if (!person) return;
     if (!person.skillLevels || typeof person.skillLevels !== 'object') person.skillLevels = {};
     const current = clamp(person.skillLevels[skillId]);
-    person.skillLevels[skillId] = (current + 1) % 4;
+    const level = (current + 1) % 4;
+    person.skillLevels[skillId] = level;
     person.skillUpdatedAt = new Date().toISOString();
+
+    // 押したセルだけ即時更新。テーブル全体は描画し直さない。
+    button.classList.remove('level-0','level-1','level-2','level-3');
+    button.classList.add(`level-${level}`);
+    const number = button.querySelector('b');
+    const label = button.querySelector('span');
+    if (number) number.textContent = String(level);
+    if (label) label.textContent = LEVEL_LABELS[level];
+    const skillName = String(button.title || '').split(':')[0];
+    if (skillName) button.title = `${skillName}: ${level} ${LEVEL_LABELS[level]}`;
+
     persistLocalAndQueue(next, `${person.name || person.id}：スキルLvを更新しました`);
   }
 
@@ -91,17 +106,25 @@
     persistLocalAndQueue(next, `${person.name || person.id}：${person.workPlanId || '未設定'}プランを保存しました`);
   }
 
+  function updatePlanUi(input) {
+    const group = input.closest('.master-plan-radios');
+    if (!group) return;
+    group.querySelectorAll('input[data-master-plan]').forEach(node => {
+      node.checked = node === input;
+    });
+    group.querySelectorAll('.plan-radio').forEach(label => {
+      label.classList.toggle('selected', label.contains(input));
+    });
+  }
+
   function persistLocalAndQueue(next, message) {
     localStorage.setItem(STAFF_KEY, JSON.stringify(next));
 
-    // UIは待たせず即時反映。Firestoreは最新状態だけ後追い保存する。
-    document.dispatchEvent(new CustomEvent('shiftv2-master-data-changed'));
-    document.dispatchEvent(new CustomEvent('shiftv2-master-render-request'));
-
+    // 画面は既に対象セルだけ更新済み。全表の再描画イベントは発火しない。
     pendingSnapshot = clone(next);
     pendingMessage = message;
     clearTimeout(cloudTimer);
-    cloudTimer = setTimeout(flushCloud, 180);
+    cloudTimer = setTimeout(flushCloud, 220);
   }
 
   async function flushCloud() {
@@ -116,7 +139,6 @@
 
     try {
       await window.shiftV2Cloud.set(CLOUD_STAFF, snapshot);
-      // 保存中にさらに操作された場合、古い完了通知は出さない。
       if (!pendingSnapshot) toast(message);
     } catch (error) {
       console.warn('Employee master background save failed', error);
