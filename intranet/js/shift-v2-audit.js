@@ -47,7 +47,9 @@
     bindEvents();
     startObserver();
     scheduleRefresh();
-    setInterval(detectShiftChanges, 700);
+    // Same-tab localStorage changes are delivered by the runtime guard. Keep a
+    // slow fallback for old cached guard builds instead of polling every 700ms.
+    setInterval(detectShiftChanges, 10000);
     setTimeout(() => hydrateCloudAudit(), 700);
   }
 
@@ -60,11 +62,16 @@
     document.addEventListener('pointerup', () => setTimeout(scheduleRefresh, 25));
     document.addEventListener('drop', () => setTimeout(scheduleRefresh, 25));
     document.addEventListener('shiftv2-auth', () => setTimeout(hydrateCloudAudit, 250));
+    document.addEventListener('shiftv2-storage', event => {
+      const keys = event.detail?.keys || [];
+      if (keys.includes(STORAGE_SHIFTS) || keys.includes('*')) detectShiftChanges();
+    });
     window.addEventListener('storage', event => {
       if (event.key === STORAGE_AUDIT) {
         audit = loadAudit();
         scheduleRefresh();
       }
+      if (event.key === STORAGE_SHIFTS || event.key === null) detectShiftChanges();
     });
 
     document.addEventListener('click', event => {
