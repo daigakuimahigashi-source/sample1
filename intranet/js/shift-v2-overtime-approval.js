@@ -48,7 +48,8 @@
     bindGlobalEvents();
     state.month = currentMonth();
     renderAll(true);
-    state.timer = setInterval(() => renderAll(false), 1200);
+    // Local changes are event-driven; this is only a compatibility backstop.
+    state.timer = setInterval(() => renderAll(false), 10000);
     document.addEventListener('shiftv2-auth', () => setTimeout(hydrateCloud, 250));
     setTimeout(hydrateCloud, 1100);
     exposeApi();
@@ -140,6 +141,12 @@
     document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
     window.addEventListener('storage', event => {
       if ([STAFF_KEY, SHIFTS_KEY, PLAN_KEY, AGREEMENT_KEY, APPROVAL_KEY].includes(event.key)) renderAll(true);
+    });
+    document.addEventListener('shiftv2-storage', event => {
+      const keys = event.detail?.keys || [];
+      if (keys.includes('*') || keys.some(key => [STAFF_KEY, SHIFTS_KEY, PLAN_KEY, AGREEMENT_KEY, APPROVAL_KEY].includes(key))) {
+        renderAll(true);
+      }
     });
     document.getElementById('work-date')?.addEventListener('change', () => setTimeout(() => renderAll(true), 0));
   }
